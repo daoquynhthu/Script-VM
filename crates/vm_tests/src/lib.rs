@@ -8,7 +8,10 @@ mod smoke {
     use vm_core::eir::fixtures::{
         eir_module_with_may_collect_without_root_map,
         eir_module_with_write_barrier_without_source, minimal_eir_validation_context,
+        minimal_valid_eir_module,
     };
+    use vm_core::control::ControlState;
+    use vm_core::id::EirFunctionId;
     use vm_core::eir::validate::{validate_eir_module, EirModuleInput, EirValidationError};
     use vm_core::id::SafepointId;
     use vm_core::runtime_plan::{fixtures::minimal_valid_plan, validate_runtime_plan};
@@ -30,7 +33,9 @@ mod smoke {
         let cache = runtime_plan_cache_key(&plan);
         assert!(cache.helper_registry_digest.is_some());
         let mut interpreter = Interpreter::new();
-        let _state = interpreter.run_plan(&plan);
+        let module = minimal_valid_eir_module();
+        let state = interpreter.run_module(&module, EirFunctionId::new(0));
+        assert_eq!(state, ControlState::Return(Some(Value::Int(0))));
         let validation = validate_sir_unit();
         assert!(validation.is_valid());
     }

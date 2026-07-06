@@ -686,3 +686,48 @@ Summary:
   Implemented GC metadata substrate: RootLocation enum, runtime RootMap/FrameMap/SafepointRecord with owner/location metadata, pending-control root visibility, GcProfile moving-GC policy checks, and metadata validation (safepoint/root-map/frame-map). Added cache compatibility layer: EirCacheKey, GcMetadataCacheKey, DigestInputSet, InternalCacheStore stale rejection, profile/helper digest mismatch rejection, and public-bytecode cache boundary guard.
 Next:
   Stage 12 fast interpreter minimal execution (WP-17).
+
+## 2026-07-06 21:00 · Stage 12 fast interpreter minimal execution (WP-17)
+
+Work Package: WP-17
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_eval/src/interpreter/mod.rs (new)
+  - crates/vm_eval/src/interpreter/state.rs (new)
+  - crates/vm_eval/src/interpreter/ops.rs (new)
+  - crates/vm_eval/src/interpreter/terminators.rs (new)
+  - crates/vm_eval/src/interpreter/helpers.rs (new)
+  - crates/vm_eval/src/interpreter/diagnostics.rs (new)
+  - crates/vm_eval/src/interpreter/error.rs (new)
+  - crates/vm_eval/src/interpreter/fixtures.rs (new)
+  - crates/vm_eval/src/lib.rs
+  - crates/vm_eval/src/interpreter.rs (removed)
+  - crates/vm_tests/src/lib.rs
+Spec References:
+  - PHASE-3-EIR-SCHEMA-CLOSURE.md
+  - PHASE-3-CONTROL-STATE-MODEL.md
+  - PHASE-3-RUNTIME-HELPER-REGISTRY.md
+  - PHASE-3-GC-METADATA-OWNERSHIP.md
+  - PHASE-3-VALIDATION-MATRIX.md
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G3 PASS
+  - G4 PASS
+  - G5 PASS
+  - G6 PASS
+  - G7 PASS
+Tests:
+  - cargo test --workspace PASS — verbatim unit-test suites:
+    - sir: "running 1 test" / "test result: ok. 1 passed"
+    - vm_core: "running 32 tests" / "test result: ok. 32 passed"
+    - vm_diag: "running 3 tests" / "test result: ok. 3 passed"
+    - vm_eval: "running 10 tests" / "test result: ok. 10 passed"
+    - vm_host: "running 6 tests" / "test result: ok. 6 passed"
+    - vm_runtime: "running 100 tests" / "test result: ok. 100 passed"
+    - vm_tests: "running 4 tests" / "test result: ok. 4 passed"
+    - unit-test total: 156 (1+32+3+10+6+100+4)
+Summary:
+  Implemented minimal EIR fast interpreter: InterpreterState with frame push/pop, block dispatch loop, Constant/Load/Store/Unary/Binary/Check/RuntimeHelper/Safepoint op handlers, Jump/Branch/Return/Raise/LoopBackedge terminators, helper bridge to perform_unwind, source span diagnostics, and safepoint poll hook. Tests cover literal execution, slot copy, branch bool check (positive/negative), binary add, loop backedge safepoint, undispatched helper error propagation, raise terminator, and helper_perform_unwind integration.
+Next:
+  Stage 13 conformance and regression (WP-18).

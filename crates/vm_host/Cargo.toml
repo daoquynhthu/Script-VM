@@ -1,0 +1,9 @@
+[package]
+name = "vm_host"
+version = "0.1.0"
+edition = "2021"
+description = "VM host boundary interface"
+
+[dependencies]
+vm_core = { path = "../vm_core" }
+vm_runtime = { path = "../vm_runtime" }

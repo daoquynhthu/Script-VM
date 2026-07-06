@@ -1,0 +1,9 @@
+[package]
+name = "vm_core"
+version = "0.1.0"
+edition = "2021"
+description = "VM core types and data structures"
+
+[dependencies]
+sir = { path = "../sir" }
+vm_diag = { path = "../vm_diag" }

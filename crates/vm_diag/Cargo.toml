@@ -1,0 +1,7 @@
+[package]
+name = "vm_diag"
+version = "0.1.0"
+edition = "2021"
+description = "VM diagnostics and error reporting"
+
+[dependencies]

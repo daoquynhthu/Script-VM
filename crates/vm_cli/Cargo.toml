@@ -1,0 +1,10 @@
+[package]
+name = "vm_cli"
+version = "0.1.0"
+edition = "2021"
+description = "VM command-line interface"
+
+[dependencies]
+vm_diag = { path = "../vm_diag" }
+vm_eval = { path = "../vm_eval" }
+vm_host = { path = "../vm_host" }

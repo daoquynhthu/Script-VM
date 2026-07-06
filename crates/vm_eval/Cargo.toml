@@ -1,0 +1,10 @@
+[package]
+name = "vm_eval"
+version = "0.1.0"
+edition = "2021"
+description = "VM evaluation and interpreter"
+
+[dependencies]
+vm_core = { path = "../vm_core" }
+vm_diag = { path = "../vm_diag" }
+vm_runtime = { path = "../vm_runtime" }

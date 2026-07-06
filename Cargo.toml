@@ -1,0 +1,13 @@
+[workspace]
+members = [
+    "crates/sir",
+    "crates/sir_validate",
+    "crates/vm_core",
+    "crates/vm_runtime",
+    "crates/vm_eval",
+    "crates/vm_diag",
+    "crates/vm_host",
+    "crates/vm_tests",
+    "crates/vm_cli",
+]
+resolver = "2"

@@ -1,0 +1,14 @@
+[package]
+name = "vm_tests"
+version = "0.1.0"
+edition = "2021"
+description = "VM integration tests"
+
+[dependencies]
+sir = { path = "../sir" }
+sir_validate = { path = "../sir_validate" }
+vm_core = { path = "../vm_core" }
+vm_diag = { path = "../vm_diag" }
+vm_eval = { path = "../vm_eval" }
+vm_host = { path = "../vm_host" }
+vm_runtime = { path = "../vm_runtime" }

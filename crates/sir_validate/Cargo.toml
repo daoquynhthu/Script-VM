@@ -1,0 +1,9 @@
+[package]
+name = "sir_validate"
+version = "0.1.0"
+edition = "2021"
+description = "SIR validation and diagnostics"
+
+[dependencies]
+sir = { path = "../sir" }
+vm_diag = { path = "../vm_diag" }

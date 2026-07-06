@@ -1,0 +1,9 @@
+[package]
+name = "vm_runtime"
+version = "0.1.0"
+edition = "2021"
+description = "VM runtime implementation"
+
+[dependencies]
+vm_core = { path = "../vm_core" }
+vm_diag = { path = "../vm_diag" }

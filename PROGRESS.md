@@ -643,3 +643,46 @@ Summary:
   Implemented call execution substrate: CallFrameInput, CallableTarget/registry, positional/named argument binding with arity errors, call-time default evaluation hook, parameter/return contract checks, builtin descriptor validation, CallRuntime orchestration, and call helper id constants. Expanded vm_host with HostFunctionWrapper/Descriptor, HostObjectWrapper, HostRootRegistry, host error normalization, and capability-gated execute_host_call protocol shell.
 Next:
   Stage 11 GC metadata and cache compatibility hooks (WP-15).
+
+## 2026-07-06 20:00 · Stage 11 GC metadata and cache compatibility hooks (WP-15, WP-16)
+
+Work Package: WP-15, WP-16
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/gc/mod.rs (new)
+  - crates/vm_runtime/src/gc/root_location.rs (new)
+  - crates/vm_runtime/src/gc/root_map.rs (new)
+  - crates/vm_runtime/src/gc/frame_map.rs (new)
+  - crates/vm_runtime/src/gc/safepoint.rs (new)
+  - crates/vm_runtime/src/gc/pending_control.rs (new)
+  - crates/vm_runtime/src/gc/profile.rs (new)
+  - crates/vm_runtime/src/gc/validate.rs (new)
+  - crates/vm_runtime/src/cache_compat.rs (new)
+  - crates/vm_runtime/src/lib.rs
+Spec References:
+  - PHASE-3-GC-METADATA-OWNERSHIP.md
+  - PHASE-3-GC-SAFEPOINT-ROOT-MODEL.md
+  - PHASE-3-CACHE-COMPATIBILITY-MATRIX.md
+  - PHASE-3-TARGET-PROFILE-SCHEMAS.md
+  - PHASE-3-RUNTIMEPLAN-SCHEMA-CLOSURE.md
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G3 PASS
+  - G4 PASS
+  - G5 PASS
+  - G6 PASS
+  - G7 PASS
+Tests:
+  - cargo test --workspace PASS — verbatim unit-test suites:
+    - sir: "running 1 test" / "test result: ok. 1 passed"
+    - vm_core: "running 32 tests" / "test result: ok. 32 passed"
+    - vm_diag: "running 3 tests" / "test result: ok. 3 passed"
+    - vm_host: "running 6 tests" / "test result: ok. 6 passed"
+    - vm_runtime: "running 100 tests" / "test result: ok. 100 passed"
+    - vm_tests: "running 4 tests" / "test result: ok. 4 passed"
+    - unit-test total: 146 (1+32+3+6+100+4)
+Summary:
+  Implemented GC metadata substrate: RootLocation enum, runtime RootMap/FrameMap/SafepointRecord with owner/location metadata, pending-control root visibility, GcProfile moving-GC policy checks, and metadata validation (safepoint/root-map/frame-map). Added cache compatibility layer: EirCacheKey, GcMetadataCacheKey, DigestInputSet, InternalCacheStore stale rejection, profile/helper digest mismatch rejection, and public-bytecode cache boundary guard.
+Next:
+  Stage 12 fast interpreter minimal execution (WP-17).

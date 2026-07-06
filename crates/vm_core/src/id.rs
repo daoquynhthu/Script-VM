@@ -44,6 +44,7 @@ define_runtime_id!(DeoptId);
 define_runtime_id!(RuntimeHelperId);
 define_runtime_id!(ObjectId);
 define_runtime_id!(FrameId);
+define_runtime_id!(CellId);
 define_runtime_id!(CallSiteId);
 define_runtime_id!(AccessSiteId);
 define_runtime_id!(SafepointId);

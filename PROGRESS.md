@@ -802,3 +802,128 @@ Summary:
 Next:
   WP-08/09 SlotState Cell/RuntimeInternal variants (ISSUE-008).
 
+
+## 2026-07-06 23:00 · Remediation pass 3: WP-08/09 frozen SlotState semantics (ISSUE-008)
+
+Work Package: WP-08, WP-09
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_core/src/id.rs
+  - crates/vm_runtime/src/binding_cell.rs (new)
+  - crates/vm_runtime/src/runtime_value.rs (new)
+  - crates/vm_runtime/src/frame.rs
+  - crates/vm_runtime/src/lib.rs
+Spec References:
+  - PHASE-3-EIR-OPERATION-SEMANTICS-ROUND1.md §2.2–§2.5
+  - PHASE-3-FAST-INTERPRETER-DATA-STRUCTURES.md §6.2, §7
+  - IMPLEMENTATION-CODING-PLAN.md Stage 7
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_runtime frame:: PASS — 10 frame/slot tests
+  - cargo test --workspace PASS (2 consecutive runs) — verbatim unit-test suites:
+    - sir: "running 1 test" / "test result: ok. 1 passed"
+    - vm_core: "running 38 tests" / "test result: ok. 38 passed"
+    - vm_diag: "running 3 tests" / "test result: ok. 3 passed"
+    - vm_eval: "running 10 tests" / "test result: ok. 10 passed"
+    - vm_host: "running 6 tests" / "test result: ok. 6 passed"
+    - vm_runtime: "running 108 tests" / "test result: ok. 108 passed"
+    - vm_tests: "running 4 tests" / "test result: ok. 4 passed"
+    - unit-test total: 170 (1+38+3+10+6+108+4)
+  - cargo check --workspace PASS
+Summary:
+  Extended SlotState with Cell(BindingCellRef) and RuntimeInternal(RuntimeValue). Added BindingCellStore with mutability-checked write_cell, ordinary read dereferencing cells per §2.5, immutable cell write rejection (TypeError), and runtime-internal slots rejecting user-visible read/write (InternalVMError) while exposing read_runtime_internal/write_runtime_internal for VM-internal access. Added CellId to vm_core.
+Next:
+  WP-07 helper dispatch expansion (Pass 4).
+
+## 2026-07-06 23:30 · Remediation pass 3b: WP-08/09 slot semantics audit fixes
+
+Work Package: WP-08, WP-09
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/binding_cell.rs
+  - crates/vm_runtime/src/frame.rs
+  - crates/vm_runtime/src/write_barrier.rs (new)
+  - crates/vm_runtime/src/lib.rs
+Spec References:
+  - PHASE-3-EIR-OPERATION-SEMANTICS-ROUND1.md §2.2–§2.5
+  - PHASE-3-FAST-INTERPRETER-DATA-STRUCTURES.md §6.2, §7.2–§7.4
+  - PHASE-3-GC-SAFEPOINT-ROOT-MODEL.md §6.2
+  - PHASE-3-VALIDATION-MATRIX.md (const assignment / readonly mutation)
+Gates:
+  - G4 PASS
+  - G5 PASS
+Tests:
+  - cargo test -p vm_runtime frame:: PASS — 13 frame/slot tests
+  - cargo test --workspace PASS (2 consecutive runs, full stdout in scratch logs) — verbatim unit-test suites:
+    - sir: "running 1 test" / "test result: ok. 1 passed"
+    - vm_core: "running 38 tests" / "test result: ok. 38 passed"
+    - vm_diag: "running 3 tests" / "test result: ok. 3 passed"
+    - vm_eval: "running 10 tests" / "test result: ok. 10 passed"
+    - vm_host: "running 6 tests" / "test result: ok. 6 passed"
+    - vm_runtime: "running 113 tests" / "test result: ok. 113 passed"
+    - vm_tests: "running 4 tests" / "test result: ok. 4 passed"
+    - unit-test total: 175 (1+38+3+10+6+113+4)
+  - cargo check --workspace PASS
+  - Evidence: C:\Users\Lenovo\AppData\Local\Temp\grok-goal-00af83e14af3\implementer\workspace-test-1.log, workspace-test-2.log, slot-tests.log, check.log
+Summary:
+  Audit remediation for Pass 3: BindingCell now includes type_contract and CellOwner per §7.2; immutable cell writes raise ReadOnlyError (assignment error); write_cell checks TypeContractChecker and invokes WriteBarrierHook on heap-ref mutation; SlotReadPolicy::PermitUninitialized supports §2.3 explicit-permit reads on value slots. Prior pass 3 entry understated errors (TypeError) and omitted write_barrier.rs; verification logs replaced with full cargo captures.
+Next:
+  WP-07 helper dispatch expansion (Pass 4).
+
+## 2026-07-06 23:45 · Remediation pass 3c: scope and evidence correction (documentation only)
+
+Work Package: WP-08, WP-09
+Agent Mode: main-only
+Changed Files:
+  - PROGRESS.md (this entry)
+  - C:\Users\Lenovo\AppData\Local\Temp\grok-goal-00af83e14af3\implementer\check.log (evidence capture)
+Spec References:
+  - AGENT.md §4, §12
+Gates:
+  - G7 PASS
+Tests:
+  - cargo check --workspace PASS (output saved to scratch check.log)
+  - cargo test -p vm_runtime frame:: PASS — 13 tests
+Summary:
+  Documentation correction: WP-08/09 slot work (passes 3+3b) cumulative changed files are crates/vm_core/src/id.rs, crates/vm_runtime/src/binding_cell.rs, crates/vm_runtime/src/runtime_value.rs, crates/vm_runtime/src/frame.rs, crates/vm_runtime/src/write_barrier.rs, crates/vm_runtime/src/lib.rs only. Pass 1 (eir/fixtures.rs, eir/validate.rs, tests/*/.gitkeep) and pass 2 (unwind/perform.rs) are separate bounded entries above; not part of pass 3 scope. Prior check.log was empty; replaced with full cargo check stdout (exit 0, warnings only).
+Next:
+  WP-07 helper dispatch expansion (Pass 4).
+
+## 2026-07-07 00:00 · Remediation pass 3: WP-08/09 frozen SlotState semantics (git-scoped handoff)
+
+Work Package: WP-08, WP-09
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_core/src/id.rs
+  - crates/vm_runtime/src/binding_cell.rs (new)
+  - crates/vm_runtime/src/runtime_value.rs (new)
+  - crates/vm_runtime/src/write_barrier.rs (new)
+  - crates/vm_runtime/src/frame.rs
+  - crates/vm_runtime/src/lib.rs
+  - PROGRESS.md
+  - ISSUE.md
+Spec References:
+  - PHASE-3-EIR-OPERATION-SEMANTICS-ROUND1.md §2.2–§2.5
+  - PHASE-3-FAST-INTERPRETER-DATA-STRUCTURES.md §6.2, §7.2–§7.4
+  - PHASE-3-GC-SAFEPOINT-ROOT-MODEL.md §6.2
+  - IMPLEMENTATION-CODING-PLAN.md Stage 7
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_runtime frame:: PASS — 13 frame/slot tests
+  - cargo test --workspace PASS (2 runs, scratch logs) — unit-test total: 175 (1+38+3+10+6+113+4)
+  - cargo check --workspace PASS
+Summary:
+  SlotState implements four frozen modes. BindingCell includes type_contract and CellOwner. Immutable cell writes raise ReadOnlyError. write_cell enforces TypeContractChecker and WriteBarrierHook on heap-ref mutation. SlotReadPolicy::PermitUninitialized supports §2.3 explicit-permit reads. Runtime-internal slots reject user-visible access (InternalVMError). Pass 1 and pass 2 committed separately (775dcf5, 342d3ea); this handoff matches git status for pass 3 only.
+Next:
+  WP-07 helper dispatch expansion (Pass 4).
+

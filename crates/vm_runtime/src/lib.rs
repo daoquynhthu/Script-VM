@@ -2,6 +2,7 @@
 //!
 //! This crate implements the Script VM runtime.
 
+pub mod binding_cell;
 pub mod cache;
 pub mod cache_compat;
 pub mod call;
@@ -14,6 +15,8 @@ pub mod module;
 pub mod readonly;
 pub mod runtime_error;
 pub mod runtime_plan;
+pub mod runtime_value;
 pub mod eir;
 pub mod unwind;
 pub mod value;
+pub mod write_barrier;

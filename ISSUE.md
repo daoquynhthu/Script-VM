@@ -684,3 +684,31 @@ Gate Impact:
 Resolution Notes:
   Helper `nested_block_inside_function_regions` builds reproducible two-level fixture.
 
+
+## ISSUE-20260706-008 · SlotState bootstrap omits Cell and RuntimeInternal variants — RESOLVED
+
+Severity: INFO
+Status: RESOLVED
+Work Package: WP-08, WP-09
+Detected By: Main Agent (remediation pass 3)
+Spec References:
+  - PHASE-3-EIR-OPERATION-SEMANTICS-ROUND1.md §2.2–§2.5
+  - PHASE-3-FAST-INTERPRETER-DATA-STRUCTURES.md §6.2, §7
+  - IMPLEMENTATION-CODING-PLAN.md Stage 7
+Affected Files:
+  - crates/vm_runtime/src/frame.rs
+  - crates/vm_runtime/src/binding_cell.rs
+  - crates/vm_runtime/src/runtime_value.rs
+  - crates/vm_core/src/id.rs
+Finding:
+  Original audit: SlotState had only Uninitialized and Value; frozen spec requires Cell and RuntimeInternal storage modes with distinct access policy.
+Evidence:
+  SlotState now has four variants; BindingCell includes type_contract and CellOwner; `write_cell` enforces mutability (immutable -> ReadOnlyError), TypeContractChecker, and WriteBarrierHook on heap-ref writes; `read_with_policy` supports §2.3 PermitUninitialized on value slots; runtime-internal slots reject user-visible read/write with InternalVMError; 13 frame::tests pass.
+Required Action:
+  Completed.
+Gate Impact:
+  G4 PASS
+  G5 PASS
+Resolution Notes:
+  LoadCell/StoreCell interpreter op wiring deferred to WP-17 per remediation plan non-goals.
+

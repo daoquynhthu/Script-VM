@@ -613,3 +613,50 @@ Required Action:
   Completed.
 Gate Impact:
   G6 PASS
+
+## ISSUE-20260706-005 · Negative tests missing for Shape/Field/Case ID rejection — RESOLVED
+
+Severity: MINOR
+Status: RESOLVED
+Work Package: WP-06
+Detected By: Main Agent (remediation pass 1)
+Spec References:
+  - PHASE-3-EIR-SCHEMA-CLOSURE.md §23
+  - PHASE-3-VALIDATION-MATRIX.md (P3-V4)
+  - AGENT.md §13
+Affected Files:
+  - crates/vm_core/src/eir/validate.rs
+  - crates/vm_core/src/eir/fixtures.rs
+Finding:
+  Original audit: UnknownShapeId, UnknownFieldId, UnknownCaseId rejection paths lacked dedicated negative tests.
+Evidence:
+  Added fixtures `eir_module_with_unknown_shape_id`, `eir_module_with_unknown_field_id`, `eir_module_with_unknown_case_id` and tests `unknown_shape_id_is_rejected`, `unknown_field_id_is_rejected`, `unknown_case_id_is_rejected`; all pass in `cargo test -p vm_core eir`.
+Required Action:
+  Completed.
+Gate Impact:
+  G5 PASS
+Resolution Notes:
+  Bound validation contexts `shape_bound_validation_context`, `field_bound_validation_context`, `case_bound_validation_context` added alongside fixtures.
+## ISSUE-20260706-006 · Negative tests missing for CallSite/AccessSite/Deopt ID rejection — RESOLVED
+
+Severity: MINOR
+Status: RESOLVED
+Work Package: WP-06
+Detected By: Main Agent (remediation pass 1)
+Spec References:
+  - PHASE-3-EIR-SCHEMA-CLOSURE.md §23
+  - AGENT.md §13
+Affected Files:
+  - crates/vm_core/src/eir/validate.rs
+  - crates/vm_core/src/eir/fixtures.rs
+Finding:
+  Original audit: UnknownCallSiteId, UnknownAccessSiteId, UnknownDeoptId validators lacked negative tests.
+Evidence:
+  Added fixtures `eir_module_with_unknown_call_site_id`, `eir_module_with_unknown_access_site_id`, `eir_module_with_unknown_deopt_id` and tests `unknown_call_site_id_is_rejected`, `unknown_access_site_id_is_rejected`, `unknown_deopt_id_is_rejected`; all pass in `cargo test -p vm_core eir`.
+Required Action:
+  Completed.
+Gate Impact:
+  G5 PASS
+Resolution Notes:
+  EIR-filtered test count now 23.
+

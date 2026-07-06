@@ -4,17 +4,21 @@ use vm_diag::source_span::SourceSpanId;
 
 use crate::digest::Digest;
 use crate::eir::schema::{
-    BlockParameter, Branch, ConstantEntry, ConstantOp, EirBlock, EirFunction, EirModule, EirOp,
-    EirOpKind, EirTerminator, Jump, OpMetadata, Return, SafepointRecord, StoreField, StoreOp,
+    AccessKind, AccessOp, BlockParameter, Branch, CallKind, CallOp, ConstantEntry, ConstantOp,
+    ConstructEnumValue, ConstructOp, EirBlock, EirFunction, EirModule, EirOp, EirOpKind,
+    EirTerminator, Jump, LoadField, LoadOp, OpMetadata, Return, SafepointRecord, StoreField,
+    StoreOp,
 };
-use crate::eir::schema::{CheckOp, CheckType, GuardFailureAction, GuardKind, GuardOp};
+use crate::eir::schema::{
+    CheckOp, CheckShape, CheckType, GuardFailureAction, GuardKind, GuardOp,
+};
 use crate::eir::validate::{EirValidationContext, HelperRegistryView};
 #[cfg(test)]
 use crate::eir::wire::{EirBlockWire, EirFunctionWire, EirModuleWire, EirOpWire};
 use crate::id::{
-    AccessSiteId, CallSiteId, ConstantId, EirBlockId, EirFunctionId, FieldId, FieldIndex,
-    FrameMapId, FunctionId, ModuleId, RootMapId, RuntimeHelperId, SafepointId, ShapeId, SlotId,
-    SlotLayoutId, TypeId,
+    AccessSiteId, CallSiteId, CaseId, CaseIndex, ConstantId, DeoptId, EirBlockId, EirFunctionId,
+    FieldId, FieldIndex, FrameMapId, FunctionId, ModuleId, RootMapId, RuntimeHelperId, SafepointId,
+    ShapeId, SlotId, SlotLayoutId, TypeId,
 };
 use crate::value::Value;
 use crate::profile::Version;
@@ -472,6 +476,193 @@ pub fn type_bound_validation_context() -> EirValidationContext {
     let mut ctx = minimal_eir_validation_context();
     ctx.type_ids.insert(TypeId::new(0));
     ctx
+}
+
+/// Validation context with shape 0 known.
+#[must_use]
+pub fn shape_bound_validation_context() -> EirValidationContext {
+    let mut ctx = minimal_eir_validation_context();
+    ctx.shape_ids.insert(ShapeId::new(0));
+    ctx
+}
+
+/// Validation context with shape 0 and field 0 known.
+#[must_use]
+pub fn field_bound_validation_context() -> EirValidationContext {
+    let mut ctx = shape_bound_validation_context();
+    ctx.field_ids.insert(FieldId::new(0));
+    ctx.access_site_ids.insert(AccessSiteId::new(0));
+    ctx
+}
+
+/// Validation context with shape 0 and case 0 known.
+#[must_use]
+pub fn case_bound_validation_context() -> EirValidationContext {
+    let mut ctx = shape_bound_validation_context();
+    ctx.case_ids.insert(CaseId::new(0));
+    ctx
+}
+
+/// Validation context with deopt 0 known.
+#[must_use]
+pub fn deopt_bound_validation_context() -> EirValidationContext {
+    let mut ctx = minimal_eir_validation_context();
+    ctx.deopt_ids.insert(DeoptId::new(0));
+    ctx
+}
+
+/// Module with CheckShape referencing unknown ShapeId.
+#[must_use]
+pub fn eir_module_with_unknown_shape_id() -> EirModule {
+    let span = SourceSpanId::new(1);
+    let mut module = minimal_valid_eir_module();
+    if let Some(function) = module.functions.first_mut() {
+        if let Some(block) = function.blocks.first_mut() {
+            block.ops.push(EirOp {
+                metadata: OpMetadata {
+                    source_span: Some(span),
+                    ..OpMetadata::default()
+                },
+                kind: EirOpKind::Check(CheckOp::Shape(CheckShape {
+                    operand: SlotId::new(0),
+                    shape_id: ShapeId::new(99),
+                    failure_error: crate::error::registry::RuntimeErrorCode::TypeError,
+                })),
+            });
+        }
+    }
+    module
+}
+
+/// Module with LoadField referencing unknown FieldId.
+#[must_use]
+pub fn eir_module_with_unknown_field_id() -> EirModule {
+    let span = SourceSpanId::new(1);
+    let mut module = minimal_valid_eir_module();
+    if let Some(function) = module.functions.first_mut() {
+        if let Some(block) = function.blocks.first_mut() {
+            block.ops.push(EirOp {
+                metadata: OpMetadata {
+                    source_span: Some(span),
+                    ..OpMetadata::default()
+                },
+                kind: EirOpKind::Load(LoadOp::Field(LoadField {
+                    dest: SlotId::new(0),
+                    receiver: SlotId::new(0),
+                    record_shape: ShapeId::new(0),
+                    field_id: FieldId::new(99),
+                    field_index: FieldIndex(0),
+                    access_site_id: AccessSiteId::new(0),
+                })),
+            });
+        }
+    }
+    module
+}
+
+/// Module with ConstructEnumValue referencing unknown CaseId.
+#[must_use]
+pub fn eir_module_with_unknown_case_id() -> EirModule {
+    let span = SourceSpanId::new(1);
+    let mut module = minimal_valid_eir_module();
+    if let Some(function) = module.functions.first_mut() {
+        if let Some(block) = function.blocks.first_mut() {
+            block.ops.push(EirOp {
+                metadata: OpMetadata {
+                    source_span: Some(span),
+                    ..OpMetadata::default()
+                },
+                kind: EirOpKind::Construct(ConstructOp::EnumValue(ConstructEnumValue {
+                    dest: SlotId::new(0),
+                    enum_shape: ShapeId::new(0),
+                    case_id: CaseId::new(99),
+                    case_index: CaseIndex(0),
+                    payload_slots: Vec::new(),
+                    safepoint_id: None,
+                })),
+            });
+        }
+    }
+    module
+}
+
+/// Module with CallOp referencing unknown CallSiteId.
+#[must_use]
+pub fn eir_module_with_unknown_call_site_id() -> EirModule {
+    let span = SourceSpanId::new(1);
+    let mut module = minimal_valid_eir_module();
+    if let Some(function) = module.functions.first_mut() {
+        if let Some(block) = function.blocks.first_mut() {
+            block.ops.push(EirOp {
+                metadata: OpMetadata {
+                    source_span: Some(span),
+                    ..OpMetadata::default()
+                },
+                kind: EirOpKind::Call(CallOp {
+                    dest: None,
+                    callee: SlotId::new(0),
+                    positional_args: Vec::new(),
+                    named_args: Vec::new(),
+                    call_site_id: CallSiteId::new(99),
+                    result_type_check: None,
+                    call_kind: CallKind::Generic,
+                }),
+            });
+        }
+    }
+    module
+}
+
+/// Module with AccessOp referencing unknown AccessSiteId.
+#[must_use]
+pub fn eir_module_with_unknown_access_site_id() -> EirModule {
+    let span = SourceSpanId::new(1);
+    let mut module = minimal_valid_eir_module();
+    if let Some(function) = module.functions.first_mut() {
+        if let Some(block) = function.blocks.first_mut() {
+            block.ops.push(EirOp {
+                metadata: OpMetadata {
+                    source_span: Some(span),
+                    ..OpMetadata::default()
+                },
+                kind: EirOpKind::Access(AccessOp {
+                    kind: AccessKind::AttributeRead,
+                    access_site_id: AccessSiteId::new(99),
+                    receiver: SlotId::new(0),
+                    dest: Some(SlotId::new(0)),
+                    index: None,
+                    value: None,
+                }),
+            });
+        }
+    }
+    module
+}
+
+/// Module with GuardOp Deopt failure referencing unknown DeoptId.
+#[must_use]
+pub fn eir_module_with_unknown_deopt_id() -> EirModule {
+    let span = SourceSpanId::new(1);
+    let mut module = minimal_valid_eir_module();
+    if let Some(function) = module.functions.first_mut() {
+        if let Some(block) = function.blocks.first_mut() {
+            block.ops.push(EirOp {
+                metadata: OpMetadata {
+                    source_span: Some(span),
+                    ..OpMetadata::default()
+                },
+                kind: EirOpKind::Guard(GuardOp {
+                    guard_kind: GuardKind::Type,
+                    inputs: vec![SlotId::new(0)],
+                    on_failure: GuardFailureAction::Deopt,
+                    deopt_id: Some(DeoptId::new(99)),
+                    helper_id: None,
+                    failure_error: None,
+                }),
+            });
+        }
+    }
+    module
 }
 
 /// Module whose RuntimePlan digest does not match the validation context.

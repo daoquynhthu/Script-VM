@@ -834,16 +834,20 @@ fn op_requires_source_mapping(kind: &EirOpKind, ctx: &EirValidationContext) -> b
 mod tests {
     use super::*;
     use crate::eir::fixtures::{
-        barrier_required_validation_context, eir_module_wire_with_missing_terminator,
-        eir_module_wire_with_unknown_op_kind, eir_module_wire_with_unknown_terminator_kind,
-        eir_module_with_digest_mismatch, eir_module_with_guard_without_failure_action,
-        eir_module_with_heap_store_without_barrier,
+        barrier_required_validation_context, case_bound_validation_context,
+        eir_module_wire_with_missing_terminator, eir_module_wire_with_unknown_op_kind,
+        eir_module_wire_with_unknown_terminator_kind, eir_module_with_digest_mismatch,
+        eir_module_with_guard_without_failure_action, eir_module_with_heap_store_without_barrier,
         eir_module_with_invalid_block_argument_count, eir_module_with_invalid_block_graph,
         eir_module_with_invalid_entry_block, eir_module_with_invalid_helper,
-        eir_module_with_may_collect_without_root_map, eir_module_with_unknown_constant,
+        eir_module_with_may_collect_without_root_map, eir_module_with_unknown_access_site_id,
+        eir_module_with_unknown_call_site_id, eir_module_with_unknown_case_id,
+        eir_module_with_unknown_constant, eir_module_with_unknown_deopt_id,
+        eir_module_with_unknown_field_id, eir_module_with_unknown_shape_id,
         eir_module_with_unknown_slot, eir_module_with_unknown_type_id,
-        eir_module_with_unmapped_raise_op, may_collect_validation_context,
-        minimal_eir_validation_context, minimal_valid_eir_module, type_bound_validation_context,
+        eir_module_with_unmapped_raise_op, field_bound_validation_context,
+        may_collect_validation_context, minimal_eir_validation_context, minimal_valid_eir_module,
+        shape_bound_validation_context, type_bound_validation_context,
     };
 
     #[test]
@@ -948,6 +952,54 @@ mod tests {
         let ctx = type_bound_validation_context();
         let err = validate_eir_module(EirModuleInput::Resolved(&module), &ctx).unwrap_err();
         assert!(matches!(err, EirValidationError::UnknownTypeId(_)));
+    }
+
+    #[test]
+    fn unknown_shape_id_is_rejected() {
+        let module = eir_module_with_unknown_shape_id();
+        let ctx = shape_bound_validation_context();
+        let err = validate_eir_module(EirModuleInput::Resolved(&module), &ctx).unwrap_err();
+        assert!(matches!(err, EirValidationError::UnknownShapeId(_)));
+    }
+
+    #[test]
+    fn unknown_field_id_is_rejected() {
+        let module = eir_module_with_unknown_field_id();
+        let ctx = field_bound_validation_context();
+        let err = validate_eir_module(EirModuleInput::Resolved(&module), &ctx).unwrap_err();
+        assert!(matches!(err, EirValidationError::UnknownFieldId(_)));
+    }
+
+    #[test]
+    fn unknown_case_id_is_rejected() {
+        let module = eir_module_with_unknown_case_id();
+        let ctx = case_bound_validation_context();
+        let err = validate_eir_module(EirModuleInput::Resolved(&module), &ctx).unwrap_err();
+        assert!(matches!(err, EirValidationError::UnknownCaseId(_)));
+    }
+
+    #[test]
+    fn unknown_call_site_id_is_rejected() {
+        let module = eir_module_with_unknown_call_site_id();
+        let ctx = minimal_eir_validation_context();
+        let err = validate_eir_module(EirModuleInput::Resolved(&module), &ctx).unwrap_err();
+        assert!(matches!(err, EirValidationError::UnknownCallSiteId(_)));
+    }
+
+    #[test]
+    fn unknown_access_site_id_is_rejected() {
+        let module = eir_module_with_unknown_access_site_id();
+        let ctx = minimal_eir_validation_context();
+        let err = validate_eir_module(EirModuleInput::Resolved(&module), &ctx).unwrap_err();
+        assert!(matches!(err, EirValidationError::UnknownAccessSiteId(_)));
+    }
+
+    #[test]
+    fn unknown_deopt_id_is_rejected() {
+        let module = eir_module_with_unknown_deopt_id();
+        let ctx = minimal_eir_validation_context();
+        let err = validate_eir_module(EirModuleInput::Resolved(&module), &ctx).unwrap_err();
+        assert!(matches!(err, EirValidationError::UnknownDeoptId(_)));
     }
 
     #[test]

@@ -731,3 +731,42 @@ Summary:
   Implemented minimal EIR fast interpreter: InterpreterState with frame push/pop, block dispatch loop, Constant/Load/Store/Unary/Binary/Check/RuntimeHelper/Safepoint op handlers, Jump/Branch/Return/Raise/LoopBackedge terminators, helper bridge to perform_unwind, source span diagnostics, and safepoint poll hook. Tests cover literal execution, slot copy, branch bool check (positive/negative), binary add, loop backedge safepoint, undispatched helper error propagation, raise terminator, and helper_perform_unwind integration.
 Next:
   Stage 13 conformance and regression (WP-18).
+
+## 2026-07-06 22:00 · Remediation pass 1: Stage 0 tests dirs + WP-06 negative tests
+
+Work Package: WP-00, WP-06
+Agent Mode: main-only
+Changed Files:
+  - tests/conformance/.gitkeep (created)
+  - tests/negative/.gitkeep (created)
+  - tests/diagnostics/.gitkeep (created)
+  - tests/regression/.gitkeep (created)
+  - tests/fixtures/.gitkeep (created)
+  - crates/vm_core/src/eir/fixtures.rs
+  - crates/vm_core/src/eir/validate.rs
+Spec References:
+  - IMPLEMENTATION-CODING-PLAN.md (Stage 0 §7, Stage 5 §12)
+  - PHASE-3-EIR-SCHEMA-CLOSURE.md §23
+  - PHASE-3-VALIDATION-MATRIX.md (P3-V4)
+  - AGENT.md §13
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test --workspace PASS — verbatim unit-test suites:
+    - sir: "running 1 test" / "test result: ok. 1 passed"
+    - vm_core: "running 38 tests" / "test result: ok. 38 passed"
+    - vm_diag: "running 3 tests" / "test result: ok. 3 passed"
+    - vm_eval: "running 10 tests" / "test result: ok. 10 passed"
+    - vm_host: "running 6 tests" / "test result: ok. 6 passed"
+    - vm_runtime: "running 100 tests" / "test result: ok. 100 passed"
+    - vm_tests: "running 4 tests" / "test result: ok. 4 passed"
+    - unit-test total: 162 (1+38+3+10+6+100+4)
+  - cargo test -p vm_core eir PASS — 23 eir-filtered tests
+Summary:
+  Remediation pass 1 closes earliest plan gaps: created missing Stage 0 tests/ directory scaffold (conformance, negative, diagnostics, regression, fixtures). Closed WP-06 ISSUE-005/006 by adding six negative fixtures and tests for UnknownShapeId, UnknownFieldId, UnknownCaseId, UnknownCallSiteId, UnknownAccessSiteId, and UnknownDeoptId rejection paths.
+Next:
+  WP-10 nested multi-region unwind test (ISSUE-007); then WP-08/09 SlotState Cell/RuntimeInternal (ISSUE-008).
+

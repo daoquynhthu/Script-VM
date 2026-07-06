@@ -272,6 +272,40 @@ mod tests {
         RuntimeRegionFrame::new(ControlRegionId::new(region_id), kind).with_cleanup(cleanup)
     }
 
+    fn nested_block_inside_function_regions() -> (RuntimeRegionFrame, RuntimeRegionFrame) {
+        let mut inner_cleanup = CleanupState::new();
+        inner_cleanup.register_defer(1, "inner");
+
+        let mut outer_cleanup = CleanupState::new();
+        outer_cleanup.register_defer(2, "outer");
+        outer_cleanup.set_finally(3);
+
+        let outer = RuntimeRegionFrame::new(ControlRegionId::new(1), ControlRegionKind::Function)
+            .with_cleanup(outer_cleanup);
+        let inner = RuntimeRegionFrame::new(ControlRegionId::new(2), ControlRegionKind::Block)
+            .with_cleanup(inner_cleanup);
+        (outer, inner)
+    }
+
+    #[test]
+    fn nested_regions_unwind_inner_defer_before_outer_defer_and_finally() {
+        let (outer, inner) = nested_block_inside_function_regions();
+        let mut ctx = UnwindContext::with_pending(PendingControl::Return(Some(Value::Int(42))));
+        ctx.push_region(outer);
+        ctx.push_region(inner);
+
+        let mut exec = ScriptExecutor::new(vec![], vec![], CleanupStepResult::Normal);
+        let mut store = ErrorStore::new();
+
+        let outcome = perform_unwind(&mut ctx, &mut exec, &mut store);
+        assert_eq!(
+            outcome,
+            UnwindOutcome::Resolved(VmControl::Return(Some(Value::Int(42))))
+        );
+        assert_eq!(exec.log, vec!["defer:1", "defer:2", "finally:3"]);
+        assert!(ctx.region_frames.is_empty());
+    }
+
     #[test]
     fn return_through_finally_preserves_return_when_finally_normal() {
         let mut ctx = UnwindContext::with_pending(PendingControl::Return(Some(Value::Int(9))));

@@ -770,3 +770,35 @@ Summary:
 Next:
   WP-10 nested multi-region unwind test (ISSUE-007); then WP-08/09 SlotState Cell/RuntimeInternal (ISSUE-008).
 
+
+## 2026-07-06 22:30 · Remediation pass 2: WP-10 nested unwind test coverage
+
+Work Package: WP-10
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/unwind/perform.rs
+Spec References:
+  - PHASE-3-STRUCTURED-UNWINDING-ALGORITHM.md §5, §10
+  - PLAN/TRACEABILITY-MATRIX.md TR-009
+  - AGENT.md §13
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_runtime nested_regions_unwind PASS
+  - cargo test --workspace PASS — verbatim unit-test suites:
+    - sir: "running 1 test" / "test result: ok. 1 passed"
+    - vm_core: "running 38 tests" / "test result: ok. 38 passed"
+    - vm_diag: "running 3 tests" / "test result: ok. 3 passed"
+    - vm_eval: "running 10 tests" / "test result: ok. 10 passed"
+    - vm_host: "running 6 tests" / "test result: ok. 6 passed"
+    - vm_runtime: "running 101 tests" / "test result: ok. 101 passed"
+    - vm_tests: "running 4 tests" / "test result: ok. 4 passed"
+    - unit-test total: 163 (1+38+3+10+6+101+4)
+Summary:
+  Closed ISSUE-007 by adding `nested_regions_unwind_inner_defer_before_outer_defer_and_finally` test: inner Block defer runs before outer Function defer and finally when pending Return unwinds a two-region stack; execution log asserts `defer:1` → `defer:2` → `finally:3` and empty region stack on resolution.
+Next:
+  WP-08/09 SlotState Cell/RuntimeInternal variants (ISSUE-008).
+

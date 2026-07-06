@@ -660,3 +660,27 @@ Gate Impact:
 Resolution Notes:
   EIR-filtered test count now 23.
 
+
+## ISSUE-20260706-007 · Nested multi-region unwind lacks test coverage — RESOLVED
+
+Severity: MINOR
+Status: RESOLVED
+Work Package: WP-10
+Detected By: Main Agent (remediation pass 2)
+Spec References:
+  - PHASE-3-STRUCTURED-UNWINDING-ALGORITHM.md §5, §10
+  - PLAN/TRACEABILITY-MATRIX.md TR-009
+  - AGENT.md §13
+Affected Files:
+  - crates/vm_runtime/src/unwind/perform.rs
+Finding:
+  Original audit: unwind tests exercised single-region stacks only; nested LIFO cleanup order was not verified.
+Evidence:
+  Added `nested_regions_unwind_inner_defer_before_outer_defer_and_finally` with Block-inside-Function region stack; `perform_unwind` log asserts `defer:1` (inner) → `defer:2` (outer) → `finally:3` before Return resolution; test passes.
+Required Action:
+  Completed.
+Gate Impact:
+  G5 PASS
+Resolution Notes:
+  Helper `nested_block_inside_function_regions` builds reproducible two-level fixture.
+

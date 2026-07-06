@@ -6,4 +6,5 @@ description = "VM host boundary interface"
 
 [dependencies]
 vm_core = { path = "../vm_core" }
+vm_diag = { path = "../vm_diag" }
 vm_runtime = { path = "../vm_runtime" }

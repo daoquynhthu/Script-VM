@@ -595,3 +595,51 @@ Summary:
   Implemented module runtime substrate: ModuleState transition validator with explicit-retry policy, ModuleInstance/ModuleRegistry storage, ExportTable with sealing and duplicate rejection, named/whole import resolution with circular-export and failed-module checks, capability-gated resolver shell, top-level control rejection, ModuleRuntime orchestration, and canonical module helper id constants.
 Next:
   Stage 10 call execution and host boundary (WP-12).
+
+## 2026-07-06 19:00 · Stage 10 call execution and host boundary (WP-12)
+
+Work Package: WP-12
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/call/mod.rs (new)
+  - crates/vm_runtime/src/call/input.rs (new)
+  - crates/vm_runtime/src/call/callable.rs (new)
+  - crates/vm_runtime/src/call/bind.rs (new)
+  - crates/vm_runtime/src/call/default.rs (new)
+  - crates/vm_runtime/src/call/contract.rs (new)
+  - crates/vm_runtime/src/call/builtin.rs (new)
+  - crates/vm_runtime/src/call/runtime.rs (new)
+  - crates/vm_runtime/src/lib.rs
+  - crates/vm_host/src/call.rs (new)
+  - crates/vm_host/src/error.rs (new)
+  - crates/vm_host/src/host_function.rs
+  - crates/vm_host/src/host_object.rs
+  - crates/vm_host/src/host_root.rs
+  - crates/vm_host/src/lib.rs
+  - crates/vm_host/Cargo.toml
+Spec References:
+  - PHASE-3-CALL-EXECUTION-PROTOCOL.md
+  - PHASE-3-HOST-BOUNDARY-CONTRACT.md
+  - PHASE-3-RUNTIME-ERROR-REGISTRY.md
+  - PHASE-3-VALIDATION-MATRIX.md
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G3 PASS
+  - G4 PASS
+  - G5 PASS
+  - G6 PASS
+  - G7 PASS
+Tests:
+  - cargo test --workspace PASS — verbatim unit-test suites:
+    - sir: "running 1 test" / "test result: ok. 1 passed"
+    - vm_core: "running 32 tests" / "test result: ok. 32 passed"
+    - vm_diag: "running 3 tests" / "test result: ok. 3 passed"
+    - vm_host: "running 6 tests" / "test result: ok. 6 passed"
+    - vm_runtime: "running 84 tests" / "test result: ok. 84 passed"
+    - vm_tests: "running 4 tests" / "test result: ok. 4 passed"
+    - unit-test total: 130 (1+32+3+6+84+4)
+Summary:
+  Implemented call execution substrate: CallFrameInput, CallableTarget/registry, positional/named argument binding with arity errors, call-time default evaluation hook, parameter/return contract checks, builtin descriptor validation, CallRuntime orchestration, and call helper id constants. Expanded vm_host with HostFunctionWrapper/Descriptor, HostObjectWrapper, HostRootRegistry, host error normalization, and capability-gated execute_host_call protocol shell.
+Next:
+  Stage 11 GC metadata and cache compatibility hooks (WP-15).

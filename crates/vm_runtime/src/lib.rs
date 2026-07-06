@@ -3,6 +3,7 @@
 //! This crate implements the Script VM runtime.
 
 pub mod cache;
+pub mod call;
 pub mod control;
 pub mod frame;
 pub mod heap;

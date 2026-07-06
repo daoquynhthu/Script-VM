@@ -554,3 +554,44 @@ Summary:
   Remediated ISSUE-20260706-001 through 004: registry-driven may_raise for EIR source mapping, helper registry digest in cache key, catch-region dispatch in perform_unwind, helper_perform_unwind dispatch shell. Initialized git repository and committed workspace snapshot.
 Next:
   Stage 9 module runtime (WP-11).
+
+## 2026-07-06 18:30 · Stage 9 module runtime (WP-11)
+
+Work Package: WP-11
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/module/mod.rs (new)
+  - crates/vm_runtime/src/module/state.rs (new)
+  - crates/vm_runtime/src/module/export.rs (new)
+  - crates/vm_runtime/src/module/instance.rs (new)
+  - crates/vm_runtime/src/module/registry.rs (new)
+  - crates/vm_runtime/src/module/import.rs (new)
+  - crates/vm_runtime/src/module/resolver.rs (new)
+  - crates/vm_runtime/src/module/validate.rs (new)
+  - crates/vm_runtime/src/module/runtime.rs (new)
+  - crates/vm_runtime/src/lib.rs
+Spec References:
+  - PHASE-3-MODULE-RUNTIME-CONTRACT.md
+  - PHASE-3-HOST-BOUNDARY-CONTRACT.md §11
+  - PHASE-3-RUNTIME-ERROR-REGISTRY.md
+  - PHASE-3-VALIDATION-MATRIX.md P3-V7
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G3 PASS
+  - G4 PASS
+  - G5 PASS
+  - G6 PASS
+  - G7 PASS
+Tests:
+  - cargo test --workspace PASS — verbatim unit-test suites:
+    - sir: "running 1 test" / "test result: ok. 1 passed"
+    - vm_core: "running 32 tests" / "test result: ok. 32 passed"
+    - vm_diag: "running 3 tests" / "test result: ok. 3 passed"
+    - vm_runtime: "running 69 tests" / "test result: ok. 69 passed"
+    - vm_tests: "running 4 tests" / "test result: ok. 4 passed"
+    - unit-test total: 109 (1+32+3+69+4)
+Summary:
+  Implemented module runtime substrate: ModuleState transition validator with explicit-retry policy, ModuleInstance/ModuleRegistry storage, ExportTable with sealing and duplicate rejection, named/whole import resolution with circular-export and failed-module checks, capability-gated resolver shell, top-level control rejection, ModuleRuntime orchestration, and canonical module helper id constants.
+Next:
+  Stage 10 call execution and host boundary (WP-12).

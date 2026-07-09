@@ -983,3 +983,23 @@ Summary:
 Next:
   Milestone H2 access/construction helpers (Pass 5).
 
+## 2026-07-07 03:00 · Agent onboarding HANDOVER.md
+
+Work Package: WP-00 (documentation)
+Agent Mode: main-only
+Changed Files:
+  - HANDOVER.md (created)
+  - PROGRESS.md (this entry)
+Spec References:
+  - AGENT.md
+  - docs/agent-plan/README.md
+  - docs/agent-plan/HANDOFF-TEMPLATE.md
+Gates:
+  - G7 PASS
+Tests:
+  - cargo test --workspace PASS — unit-test total: 195 (1+38+3+11+6+132+4)
+Summary:
+  Added HANDOVER.md for new Agent sessions: authority order, repo map, remediation commit chain, key code paths, open issues, git scope discipline, and recommended next task (Pass 5 H2).
+Next:
+  Milestone H2 access/construction helpers (Pass 5).
+

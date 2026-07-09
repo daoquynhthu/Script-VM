@@ -17,7 +17,10 @@ mod smoke {
     use vm_core::runtime_plan::{fixtures::minimal_valid_plan, validate_runtime_plan};
     use vm_eval::interpreter::Interpreter;
     use vm_runtime::cache::runtime_plan_cache_key;
-    use vm_runtime::helpers::{dispatch_helper, eir_validation_view, HELPER_PERFORM_UNWIND_ID, RuntimeHelperRegistry};
+    use vm_runtime::helpers::{
+        dispatch_helper_unwind_only, eir_validation_view, HELPER_PERFORM_UNWIND_ID,
+        RuntimeHelperRegistry,
+    };
     use vm_runtime::unwind::{UnwindContext, UnwindExecutor, UnwindOutcome};
     use vm_runtime::control::PendingControl;
     use vm_core::error::language::ErrorStore;
@@ -87,7 +90,7 @@ mod smoke {
             ControlRegionKind::Function,
         ));
         let mut store = ErrorStore::new();
-        let outcome = dispatch_helper(
+        let outcome = dispatch_helper_unwind_only(
             HELPER_PERFORM_UNWIND_ID,
             &mut ctx,
             &mut NoopUnwindExecutor,

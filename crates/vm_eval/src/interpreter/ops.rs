@@ -13,7 +13,7 @@ use vm_runtime::unwind::UnwindExecutor;
 
 use super::diagnostics::record_op_span;
 use super::error::InterpreterError;
-use super::helpers::{dispatch_runtime_helper, HelperDispatchOutcome};
+use super::helpers::{dispatch_runtime_helper, HelperBridgeOutcome};
 use super::state::InterpreterState;
 
 /// Execute a single EIR operation.
@@ -188,13 +188,14 @@ fn execute_runtime_helper(
     executor: &mut impl UnwindExecutor,
 ) -> Result<OpOutcome, InterpreterError> {
     match dispatch_runtime_helper(op, state, executor)? {
-        HelperDispatchOutcome::Value(value) => {
+        HelperBridgeOutcome::Value(value) => {
             if let Some(dest) = op.dest {
                 write_slot(state, dest, value)?;
             }
             Ok(OpOutcome::Continue)
         }
-        HelperDispatchOutcome::Control(control) => Ok(OpOutcome::Control(control)),
+        HelperBridgeOutcome::Unit => Ok(OpOutcome::Continue),
+        HelperBridgeOutcome::Control(control) => Ok(OpOutcome::Control(control)),
     }
 }
 

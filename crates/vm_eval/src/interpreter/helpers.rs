@@ -4,19 +4,22 @@
 
 use vm_core::eir::schema::RuntimeHelperOp;
 use vm_core::error::registry::VmStructuralErrorCode;
-
 use vm_core::id::SlotId;
+
 use vm_runtime::control::VmControl;
-use vm_runtime::helpers::dispatch::dispatch_helper;
-use vm_runtime::unwind::{UnwindExecutor, UnwindOutcome};
+use vm_runtime::helpers::{
+    dispatch_helper, HelperDispatchEnv, HelperDispatchOutcome,
+};
+use vm_runtime::unwind::UnwindExecutor;
 
 use super::error::InterpreterError;
 use super::state::InterpreterState;
 
 /// Result of helper dispatch inside the interpreter.
 #[derive(Debug, Clone, PartialEq)]
-pub enum HelperDispatchOutcome {
+pub enum HelperBridgeOutcome {
     Value(vm_core::value::Value),
+    Unit,
     Control(VmControl),
 }
 
@@ -43,25 +46,30 @@ pub fn dispatch_runtime_helper(
     op: &RuntimeHelperOp,
     state: &mut InterpreterState,
     executor: &mut impl UnwindExecutor,
-) -> Result<HelperDispatchOutcome, InterpreterError> {
-    let _args: Vec<vm_core::value::Value> = op
+) -> Result<HelperBridgeOutcome, InterpreterError> {
+    let args: Vec<vm_core::value::Value> = op
         .args
         .iter()
         .map(|slot| read_slot(state, *slot))
         .collect::<Result<_, _>>()?;
 
-    match dispatch_helper(
-        op.helper_id,
-        &mut state.unwind_ctx,
+    let source_span = state.last_source_span;
+    let mut env = HelperDispatchEnv {
+        heap: &mut state.heap,
+        error_store: &mut state.error_store,
+        type_checker: &state.type_checker,
+        callable_registry: &state.callable_registry,
+        write_barrier: &mut state.write_barrier,
+        source_span,
+        unwind_ctx: &mut state.unwind_ctx,
         executor,
-        &mut state.error_store,
-    ) {
-        Ok(UnwindOutcome::Resolved(control)) => Ok(HelperDispatchOutcome::Control(control)),
-        Ok(UnwindOutcome::Propagated(_)) => Err(InterpreterError::structural(
-            VmStructuralErrorCode::InvalidFrameStateError,
-            "helper left pending unwind state",
-        )),
-        Err(err) => Err(InterpreterError::vm_error(err)),
+    };
+
+    match dispatch_helper(op.helper_id, &args, &mut env) {
+        Ok(HelperDispatchOutcome::Value(value)) => Ok(HelperBridgeOutcome::Value(value)),
+        Ok(HelperDispatchOutcome::Unit) => Ok(HelperBridgeOutcome::Unit),
+        Ok(HelperDispatchOutcome::VmControl(control)) => Ok(HelperBridgeOutcome::Control(control)),
+        Err(err) => Err(InterpreterError::from_runtime_failure(err)),
     }
 }
 

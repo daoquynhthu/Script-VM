@@ -15,7 +15,10 @@ use vm_core::profile::Version;
 use vm_core::runtime_plan::schema::SafepointKind;
 use vm_core::value::Value;
 use vm_diag::source_span::SourceSpanId;
-use vm_runtime::helpers::dispatch::HELPER_PERFORM_UNWIND_ID;
+use vm_runtime::helpers::dispatch::{HELPER_ALLOC_OBJECT_ID, HELPER_PERFORM_UNWIND_ID};
+
+/// Helper id that remains undispatched after Milestone H1 (Access family).
+pub const UNDISPATCHED_HELPER_ID: RuntimeHelperId = RuntimeHelperId::new(15);
 
 fn const_op(dest: SlotId, id: u32, span: SourceSpanId) -> EirOp {
     EirOp {
@@ -361,7 +364,7 @@ pub fn undispatched_helper_module() -> EirModule {
                 metadata: OpMetadata::default(),
                 kind: EirOpKind::RuntimeHelper(RuntimeHelperOp {
                     dest: None,
-                    helper_id: RuntimeHelperId::new(0),
+                    helper_id: UNDISPATCHED_HELPER_ID,
                     args: vec![],
                     call_site: None,
                     access_site: None,
@@ -410,6 +413,40 @@ pub fn raise_error_module(error_value: Value) -> EirModule {
         },
     );
     base_module(function, constants)
+}
+
+/// Helper alloc_object dispatch fixture (Milestone H1).
+#[must_use]
+pub fn helper_alloc_object_module() -> EirModule {
+    let span = SourceSpanId::new(9);
+    let function = EirFunction {
+        eir_function_id: EirFunctionId::new(0),
+        function_id: Some(FunctionId::new(0)),
+        module_id: ModuleId::new(0),
+        entry_block: EirBlockId::new(0),
+        blocks: vec![EirBlock {
+            block_id: EirBlockId::new(0),
+            parameters: vec![],
+            ops: vec![EirOp {
+                metadata: OpMetadata::default(),
+                kind: EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                    dest: Some(SlotId::new(0)),
+                    helper_id: HELPER_ALLOC_OBJECT_ID,
+                    args: vec![],
+                    call_site: None,
+                    access_site: None,
+                    safepoint_id: None,
+                    deopt_id: None,
+                }),
+            }],
+            terminator: return_slot(SlotId::new(0)),
+            source_span: Some(span),
+        }],
+        slot_layout: SlotLayoutId::new(0),
+        frame_map: FrameMapId::new(0),
+        source_span: Some(span),
+    };
+    base_module(function, Default::default())
 }
 
 /// Helper perform_unwind dispatch fixture.

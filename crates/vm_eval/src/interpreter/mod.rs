@@ -14,8 +14,8 @@ mod terminators;
 pub use error::InterpreterError;
 pub use fixtures::{
     binary_add_module, branch_non_bool_module, branch_true_module,
-    helper_perform_unwind_module, literal_return_module, loop_backedge_module,
-    raise_error_module, slot_copy_module, undispatched_helper_module,
+    helper_alloc_object_module, helper_perform_unwind_module, literal_return_module,
+    loop_backedge_module, raise_error_module, slot_copy_module, undispatched_helper_module,
 };
 pub use helpers::BootstrapUnwindExecutor;
 pub use state::{InterpreterFrame, InterpreterState, SafepointPollState};
@@ -268,6 +268,14 @@ mod tests {
         let module = raise_error_module(Value::Error(handle));
         let result = interp.run_module(&module, EirFunctionId::new(0));
         assert_eq!(result, ControlState::Raise(handle));
+    }
+
+    #[test]
+    fn helper_alloc_object_integration_returns_object_ref() {
+        let module = helper_alloc_object_module();
+        let mut interp = Interpreter::new();
+        let result = interp.run_module(&module, EirFunctionId::new(0));
+        assert!(matches!(result, ControlState::Return(Some(Value::ObjectRef(_)))));
     }
 
     #[test]

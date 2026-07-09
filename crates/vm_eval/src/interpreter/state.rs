@@ -9,9 +9,13 @@ use vm_core::id::{EirBlockId, EirFunctionId};
 use vm_core::error::language::ErrorStore;
 use vm_core::id::SafepointId;
 use vm_diag::source_span::SourceSpanId;
-use vm_runtime::frame::SlotArray;
+use vm_runtime::call::callable::CallableRegistry;
+use vm_runtime::call::contract::StubTypeContractChecker;
 use vm_runtime::control::PendingControl;
+use vm_runtime::frame::SlotArray;
+use vm_runtime::heap::Heap;
 use vm_runtime::unwind::UnwindContext;
+use vm_runtime::write_barrier::NoopWriteBarrierHook;
 
 /// Single interpreter activation record.
 #[derive(Debug, Clone, PartialEq)]
@@ -66,6 +70,10 @@ pub struct InterpreterState {
     pub frames: Vec<InterpreterFrame>,
     pub constants: ConstantPool,
     pub error_store: ErrorStore,
+    pub heap: Heap,
+    pub callable_registry: CallableRegistry,
+    pub type_checker: StubTypeContractChecker,
+    pub write_barrier: NoopWriteBarrierHook,
     pub unwind_ctx: UnwindContext,
     pub safepoint_polls: SafepointPollState,
     pub last_source_span: Option<SourceSpanId>,
@@ -79,6 +87,10 @@ impl InterpreterState {
             frames: Vec::new(),
             constants,
             error_store: ErrorStore::new(),
+            heap: Heap::new(),
+            callable_registry: CallableRegistry::new(),
+            type_checker: StubTypeContractChecker::new(),
+            write_barrier: NoopWriteBarrierHook,
             unwind_ctx: UnwindContext::with_pending(PendingControl::Return(None)),
             safepoint_polls: SafepointPollState::default(),
             last_source_span: None,

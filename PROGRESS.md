@@ -927,3 +927,39 @@ Summary:
 Next:
   WP-07 helper dispatch expansion (Pass 4).
 
+## 2026-07-07 02:00 · Remediation pass 4: WP-07 Milestone H1 helper dispatch
+
+Work Package: WP-07
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/helpers/h1.rs (new)
+  - crates/vm_runtime/src/helpers/dispatch.rs
+  - crates/vm_runtime/src/helpers/mod.rs
+  - crates/vm_eval/src/interpreter/state.rs
+  - crates/vm_eval/src/interpreter/helpers.rs
+  - crates/vm_eval/src/interpreter/ops.rs
+  - crates/vm_eval/src/interpreter/fixtures.rs
+  - crates/vm_eval/src/interpreter/mod.rs
+  - crates/vm_tests/src/lib.rs
+  - PROGRESS.md
+Spec References:
+  - PHASE-3-RUNTIME-HELPER-REGISTRY.md §3
+  - PHASE-3-RUNTIME-HELPER-CONTRACTS.md §8.3–§8.4, §8.11–§8.12
+  - PHASE-3-RUNTIME-HELPER-IMPLEMENTATION-PLAN.md §20.2
+  - IMPLEMENTATION-CODING-PLAN.md
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_runtime helpers:: PASS — 24 helper/dispatch tests (10 h1 + 3 dispatch + 11 validate/canonical)
+  - cargo test -p vm_eval interpreter:: PASS — 11 tests incl helper_alloc_object_integration + undispatched_helper + helper_perform_unwind
+  - cargo test --workspace PASS (2 runs, scratch logs) — unit-test total: 188 (1+38+3+11+6+125+4)
+  - cargo check --workspace PASS
+Summary:
+  Pass 3 committed at 4d404ab. Implemented Milestone H1 helpers (alloc_object, construct_error, check_type_contract, check_callable, check_hashable, write_barrier) in helpers/h1.rs with central dispatch via HelperDispatchEnv/HelperDispatchOutcome. Interpreter state gains heap/callable_registry/type_checker/write_barrier substrate; bridge handles Value/Unit/VmControl outcomes. Undispatched negative test retargeted to helper_get_attribute (id 15). helper_perform_unwind routing preserved.
+Next:
+  Milestone H2 access/construction helpers (Pass 5).
+

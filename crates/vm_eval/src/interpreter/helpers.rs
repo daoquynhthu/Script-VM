@@ -8,8 +8,9 @@ use vm_core::id::SlotId;
 
 use vm_runtime::control::VmControl;
 use vm_runtime::helpers::{
-    dispatch_helper, HelperDispatchEnv, HelperDispatchOutcome,
+    dispatch_helper, HelperDispatchEnv, HelperDispatchOutcome, DEFAULT_MAX_CALL_DEPTH,
 };
+use vm_runtime::module::resolver::CapabilitySet;
 use vm_runtime::unwind::UnwindExecutor;
 
 use super::error::InterpreterError;
@@ -54,11 +55,19 @@ pub fn dispatch_runtime_helper(
         .collect::<Result<_, _>>()?;
 
     let source_span = state.last_source_span;
+    let capabilities = CapabilitySet::new();
+    let call_depth = state.frames.len() as u32;
     let mut env = HelperDispatchEnv {
         heap: &mut state.heap,
         error_store: &mut state.error_store,
         type_checker: &state.type_checker,
-        callable_registry: &state.callable_registry,
+        callable_registry: &mut state.callable_registry,
+        capabilities: &capabilities,
+        call_site_feedback: None,
+        call_depth,
+        max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+        module_runtime: None,
+        module_resolver: None,
         write_barrier: &mut state.write_barrier,
         source_span,
         unwind_ctx: &mut state.unwind_ctx,

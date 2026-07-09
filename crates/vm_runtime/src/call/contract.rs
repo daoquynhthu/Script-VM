@@ -52,7 +52,7 @@ fn contract_error() -> RuntimeFailure {
 pub fn check_parameter_contracts(
     params: &[ParameterSpec],
     binding: &ArgumentBinding,
-    checker: &impl TypeContractChecker,
+    checker: &(impl TypeContractChecker + ?Sized),
 ) -> RuntimeResult<()> {
     for (slot_id, value) in &binding.bound {
         let param = params
@@ -72,7 +72,7 @@ pub fn check_parameter_contracts(
 pub fn check_return_contract(
     value: &Value,
     return_type: Option<TypeId>,
-    checker: &impl TypeContractChecker,
+    checker: &(impl TypeContractChecker + ?Sized),
 ) -> RuntimeResult<()> {
     if let Some(type_id) = return_type {
         if !checker.value_matches_type(value, type_id) {

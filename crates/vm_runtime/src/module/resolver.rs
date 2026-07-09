@@ -82,7 +82,7 @@ impl<R: HostModuleResolver> HostModuleResolver for CapabilityGatedResolver<R> {
 }
 
 /// Resolve a module id with capability check before host access.
-pub fn resolve_with_capability<R: HostModuleResolver>(
+pub fn resolve_with_capability<R: HostModuleResolver + ?Sized>(
     resolver: &R,
     capabilities: &CapabilitySet,
     required_capability: CapabilityId,

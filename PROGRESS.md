@@ -1003,3 +1003,130 @@ Summary:
 Next:
   Milestone H2 access/construction helpers (Pass 5).
 
+
+## 2026-07-09 14:00 · Remediation pass 5: WP-07 Milestone H2 helper dispatch
+
+Work Package: WP-07
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/helpers/h2.rs (new)
+  - crates/vm_runtime/src/helpers/dispatch.rs
+  - crates/vm_runtime/src/helpers/mod.rs
+  - PROGRESS.md
+Spec References:
+  - PHASE-3-RUNTIME-HELPER-IMPLEMENTATION-PLAN.md §20.3
+  - PHASE-3-RUNTIME-HELPER-CONTRACTS.md §8.2–§8.3, §8.13–§8.14
+  - PHASE-3-RUNTIME-HELPER-REGISTRY.md §3
+  - IMPLEMENTATION-CODING-PLAN.md
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_runtime helpers::dispatch PASS — 24 tests (H1 regression + all H2 ids via dispatch_helper + undispatched id 15)
+  - cargo test -p vm_runtime helpers:: PASS — 51 helper tests
+  - cargo test -p vm_eval interpreter:: PASS — 11 tests (H1 bridge + undispatched)
+  - cargo test --workspace PASS (2 runs) — unit-test total: 215 (1+38+3+11+6+152+4)
+Summary:
+  Implemented Milestone H2 helpers (get/set attribute, index read/write, slice read, construct record/enum/map, numeric binary, compare, display) in helpers/h2.rs with bootstrap arg layouts over existing heap substrate. Routed canonical ids 11–14, 16–18, 21–23, 42 through central dispatch_helper; non-H2 ids remain InvalidHelperError (negative uses id 15 bind_method). Per-helper dispatch success + raise/reject coverage; no frozen-spec edits; interpreter H2 op expansion deferred (dispatch-boundary coverage sufficient per plan non-goals).
+Next:
+  Milestone H3 call-engine helpers (Pass 6), or Stage 13 / WP-18 conformance first matrix row.
+
+## 2026-07-09 16:30 · Remediation pass 6: WP-07 Milestone H3 call-engine helpers
+
+Work Package: WP-07
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/helpers/h3.rs (new)
+  - crates/vm_runtime/src/helpers/dispatch.rs
+  - crates/vm_runtime/src/helpers/mod.rs
+  - crates/vm_runtime/src/heap/heap.rs
+  - crates/vm_runtime/src/call/contract.rs
+  - crates/vm_eval/src/interpreter/helpers.rs
+  - crates/vm_eval/src/interpreter/fixtures.rs
+  - PROGRESS.md
+  - ISSUE.md
+Spec References:
+  - PHASE-3-RUNTIME-HELPER-IMPLEMENTATION-PLAN.md §20.4 / §12
+  - PHASE-3-RUNTIME-HELPER-CONTRACTS.md §8.1
+  - PHASE-3-CALL-EXECUTION-PROTOCOL.md §3–§8, §12
+  - PHASE-3-RUNTIME-HELPER-REGISTRY.md §3
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_runtime helpers::dispatch PASS — 32 tests (H1/H2 regression + H3 call helpers + undispatched id 28)
+  - cargo test -p vm_runtime helpers:: PASS — 64 helper tests
+  - cargo test -p vm_eval interpreter:: PASS — 11 tests (undispatched retargeted to id 28)
+  - cargo test --workspace PASS (2 runs) — unit-test total: 228 (1+38+3+11+6+165+4)
+Summary:
+  Implemented Milestone H3 helpers over existing call/ substrate: bind_method (15), check_arity (27), generic_call prepare path (25), call_builtin validate path (26). HelperDispatchEnv gains mut callable_registry, CapabilitySet, CallSiteFeedback, call_depth. heap.alloc_function for bound-method identity shells. Full body execution / frame push-pop deferred (ISSUE-20260709-001). Undispatched negative retargeted to helper_match_pattern id 28. H2 prerequisite retained unregressed.
+Next:
+  Milestone H4 control helpers (remaining raise/assert/defer/resource), or interpreter frame enter for prepared calls, or Stage 13 / WP-18.
+
+## 2026-07-09 18:00 · Remediation pass 7: WP-07 Milestone H4 control helpers
+
+Work Package: WP-07
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/helpers/h4.rs (new)
+  - crates/vm_runtime/src/helpers/dispatch.rs
+  - crates/vm_runtime/src/helpers/mod.rs
+  - PROGRESS.md
+Spec References:
+  - PHASE-3-RUNTIME-HELPER-IMPLEMENTATION-PLAN.md §20.5
+  - PHASE-3-RUNTIME-HELPER-CONTRACTS.md §8.6–§8.8
+  - PHASE-3-STRUCTURED-UNWINDING-ALGORITHM.md §2, §5–§8
+  - PHASE-3-RUNTIME-ERROR-REGISTRY.md §4
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_runtime helpers::dispatch PASS — 38 tests (H1–H3 + H4 control + undispatched id 28)
+  - cargo test -p vm_runtime helpers:: PASS — 79 helper tests
+  - cargo test -p vm_eval interpreter:: PASS — 11 tests
+  - cargo test --workspace PASS (2 runs) — unit-test total: 243 (1+38+3+11+6+180+4)
+Summary:
+  Implemented Milestone H4 helpers over existing error/unwind substrate: raise (3), attach_suppressed (4), assert_fail (5), register_defer (30), execute_defer (31), register_resource (32), close_resource (33). perform_unwind (29) already shipped in H1. Non-Error raise materializes TypeError; double close → ResourceStateError; defer/resource registration requires active region. Undispatched negative remains id 28 (match_pattern). No frozen-spec edits.
+Next:
+  Milestone H5 module helpers, or Stage 13 / WP-18 conformance first matrix row.
+
+## 2026-07-09 19:30 · Remediation pass 8: WP-07 Milestone H5 module helpers
+
+Work Package: WP-07
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/helpers/h5.rs (new)
+  - crates/vm_runtime/src/helpers/dispatch.rs
+  - crates/vm_runtime/src/helpers/mod.rs
+  - crates/vm_runtime/src/module/runtime.rs
+  - crates/vm_runtime/src/module/resolver.rs
+  - crates/vm_eval/src/interpreter/helpers.rs
+  - PROGRESS.md
+  - ISSUE.md
+Spec References:
+  - PHASE-3-RUNTIME-HELPER-IMPLEMENTATION-PLAN.md §20.6
+  - PHASE-3-RUNTIME-HELPER-CONTRACTS.md §8.9
+  - PHASE-3-MODULE-RUNTIME-CONTRACT.md §2–§10, §12, §14
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_runtime helpers:: PASS — 88 helper tests
+  - cargo test -p vm_eval interpreter:: PASS — 11 tests
+  - cargo test --workspace PASS (2 runs) — unit-test total: 252 (1+38+3+11+6+189+4)
+Summary:
+  Implemented Milestone H5 helpers over ModuleRuntime: resolve_module (34), initialize_module (35), import_named (36), import_module (37), seal_exports (38). Dispatch env gains optional module_runtime + module_resolver. Capability-gated resolve, ImportCycleError for uninitialized circular exports, optional interface_id mismatch → ImportError. Initialize advances Unloaded→Loading→Initializing only (init EIR body deferred: ISSUE-20260709-002). Undispatched remains id 28.
+Next:
+  Milestone H6 capability/host helpers, or Stage 13 / WP-18 conformance first matrix row.

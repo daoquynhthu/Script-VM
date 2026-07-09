@@ -56,7 +56,7 @@ impl ModuleRuntime {
         self.registry.insert(instance)
     }
 
-    pub fn resolve_module<R: HostModuleResolver>(
+    pub fn resolve_module<R: HostModuleResolver + ?Sized>(
         &self,
         resolver: &R,
         request: &ModuleResolverRequest,

@@ -80,6 +80,11 @@ impl Heap {
         Ok(self.alloc_object(HeapObject::RecordInstance { fields, readonly }))
     }
 
+    /// Allocate a function/callable shell object (identity for registry binding).
+    pub fn alloc_function(&mut self) -> RuntimeResult<ObjRef<()>> {
+        Ok(self.alloc_object(HeapObject::Function))
+    }
+
     pub fn get(&self, id: ObjectId) -> RuntimeResult<&HeapObject> {
         let slot = self.resolve_slot(id, 0)?;
         Ok(&slot.object)

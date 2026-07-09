@@ -17,8 +17,8 @@ use vm_core::value::Value;
 use vm_diag::source_span::SourceSpanId;
 use vm_runtime::helpers::dispatch::{HELPER_ALLOC_OBJECT_ID, HELPER_PERFORM_UNWIND_ID};
 
-/// Helper id that remains undispatched after Milestone H1 (Access family).
-pub const UNDISPATCHED_HELPER_ID: RuntimeHelperId = RuntimeHelperId::new(15);
+/// Helper id that remains undispatched after Milestone H3 (pattern family).
+pub const UNDISPATCHED_HELPER_ID: RuntimeHelperId = RuntimeHelperId::new(28);
 
 fn const_op(dest: SlotId, id: u32, span: SourceSpanId) -> EirOp {
     EirOp {

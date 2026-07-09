@@ -712,3 +712,50 @@ Gate Impact:
 Resolution Notes:
   LoadCell/StoreCell interpreter op wiring deferred to WP-17 per remediation plan non-goals.
 
+
+## ISSUE-20260709-001 · H3 generic/builtin call omits frame body execution
+
+Severity: INFO
+Status: OPEN
+Work Package: WP-07
+Detected By: Main Agent (remediation pass 6 / H3)
+Spec References:
+  - PHASE-3-RUNTIME-HELPER-IMPLEMENTATION-PLAN.md §12.2, §20.4
+  - PHASE-3-CALL-EXECUTION-PROTOCOL.md §3, §9–§11
+  - PHASE-3-RUNTIME-HELPER-CONTRACTS.md §8.1.1
+Affected Files:
+  - crates/vm_runtime/src/helpers/h3.rs
+  - crates/vm_runtime/src/helpers/dispatch.rs
+Finding:
+  Milestone H3 ships prepare/bind/contract/capability validation and call-site feedback update for helper_generic_call / helper_call_builtin, returning VmControl::Normal after successful prepare. Frozen §12.2 also requires frame push, body execution through interpreter, return contract, and frame pop. Those steps are not implemented in the helper boundary to avoid inventing a second interpreter call stack outside existing vm_eval activation records.
+Evidence:
+  helper_generic_call and helper_call_builtin return VmControl::Normal(Some(callee)) after prepare/validate without pushing InterpreterFrame or running EIR body; dispatch tests assert prepare outcomes only.
+Required Action:
+  Wire prepared calls into interpreter frame enter/exit (call-engine integration) in a later pass; do not fake body results in helper unit tests.
+Gate Impact:
+  G6 PASS_WITH_NOTES for full call-engine integration; G4/G5 PASS for shipped prepare/validate subset
+Resolution Notes:
+  Deferred per H3 plan risk note (largest spec-faithful prepare/bind/contract/capability subset).
+
+## ISSUE-20260709-002 · H5 initialize_module omits init EIR body execution
+
+Severity: INFO
+Status: OPEN
+Work Package: WP-07
+Detected By: Main Agent (remediation pass 8 / H5)
+Spec References:
+  - PHASE-3-RUNTIME-HELPER-IMPLEMENTATION-PLAN.md §20.6
+  - PHASE-3-MODULE-RUNTIME-CONTRACT.md §3–§4
+  - PHASE-3-RUNTIME-HELPER-CONTRACTS.md §8.9.2
+Affected Files:
+  - crates/vm_runtime/src/helpers/h5.rs
+Finding:
+  helper_initialize_module advances the module lifecycle state machine to Initializing but does not execute the module initialization EIR function body through the interpreter.
+Evidence:
+  Dispatch/unit tests assert ModuleState::Initializing after helper call without running initialization_function; VmControl::Normal returned as prepare-style outcome.
+Required Action:
+  Wire initialize_module to interpreter module top-level execution and finish_module_init (seal + Initialized / Failed) in a later pass.
+Gate Impact:
+  G6 PASS_WITH_NOTES for full module init integration; G4/G5 PASS for shipped state-machine subset
+Resolution Notes:
+  Deferred; cycle handling and seal/import paths use existing ModuleRuntime APIs.

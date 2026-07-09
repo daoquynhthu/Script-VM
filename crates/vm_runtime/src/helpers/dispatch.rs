@@ -196,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn h1_helpers_dispatch_through_central_boundary() {
+    fn dispatch_alloc_object_returns_heap_handle() {
         let mut heap = Heap::new();
         let mut store = ErrorStore::new();
         let checker = StubTypeContractChecker::new();
@@ -213,24 +213,207 @@ mod tests {
             &mut ctx,
             &mut executor,
         );
+        let outcome = dispatch_helper(HELPER_ALLOC_OBJECT_ID, &[], &mut env).expect("alloc");
+        assert!(matches!(outcome, HelperDispatchOutcome::Value(Value::ObjectRef(_))));
+    }
 
-        assert!(matches!(
-            dispatch_helper(HELPER_ALLOC_OBJECT_ID, &[], &mut env).expect("alloc"),
-            HelperDispatchOutcome::Value(Value::ObjectRef(_))
-        ));
-        assert_eq!(
-            dispatch_helper(HELPER_WRITE_BARRIER_ID, &[Value::Int(1)], &mut env).expect("barrier"),
-            HelperDispatchOutcome::Unit
+    #[test]
+    fn dispatch_write_barrier_returns_unit() {
+        let mut heap = Heap::new();
+        let mut store = ErrorStore::new();
+        let checker = StubTypeContractChecker::new();
+        let registry = CallableRegistry::new();
+        let mut barrier = NoopWriteBarrierHook;
+        let mut ctx = UnwindContext::with_pending(PendingControl::Return(None));
+        let mut executor = NoopExecutor;
+        let mut env = test_env(
+            &mut heap,
+            &mut store,
+            &checker,
+            &registry,
+            &mut barrier,
+            &mut ctx,
+            &mut executor,
         );
-        assert!(matches!(
-            dispatch_helper(
-                HELPER_CONSTRUCT_ERROR_ID,
-                &[Value::Int(0), Value::String("e".into())],
-                &mut env
-            )
-            .expect("construct"),
-            HelperDispatchOutcome::Value(Value::Error(_))
-        ));
+        let outcome =
+            dispatch_helper(HELPER_WRITE_BARRIER_ID, &[Value::Int(1)], &mut env).expect("barrier");
+        assert_eq!(outcome, HelperDispatchOutcome::Unit);
+    }
+
+    #[test]
+    fn dispatch_construct_error_returns_error_value() {
+        let mut heap = Heap::new();
+        let mut store = ErrorStore::new();
+        let checker = StubTypeContractChecker::new();
+        let registry = CallableRegistry::new();
+        let mut barrier = NoopWriteBarrierHook;
+        let mut ctx = UnwindContext::with_pending(PendingControl::Return(None));
+        let mut executor = NoopExecutor;
+        let mut env = test_env(
+            &mut heap,
+            &mut store,
+            &checker,
+            &registry,
+            &mut barrier,
+            &mut ctx,
+            &mut executor,
+        );
+        let outcome = dispatch_helper(
+            HELPER_CONSTRUCT_ERROR_ID,
+            &[Value::Int(0), Value::String("e".into())],
+            &mut env,
+        )
+        .expect("construct");
+        assert!(matches!(outcome, HelperDispatchOutcome::Value(Value::Error(_))));
+    }
+
+    #[test]
+    fn dispatch_check_type_contract_returns_value_on_match() {
+        let mut heap = Heap::new();
+        let mut store = ErrorStore::new();
+        let mut checker = StubTypeContractChecker::new();
+        checker.declare_int_type(vm_core::id::TypeId::new(1));
+        let registry = CallableRegistry::new();
+        let mut barrier = NoopWriteBarrierHook;
+        let mut ctx = UnwindContext::with_pending(PendingControl::Return(None));
+        let mut executor = NoopExecutor;
+        let mut env = test_env(
+            &mut heap,
+            &mut store,
+            &checker,
+            &registry,
+            &mut barrier,
+            &mut ctx,
+            &mut executor,
+        );
+        let outcome = dispatch_helper(
+            HELPER_CHECK_TYPE_CONTRACT_ID,
+            &[Value::Int(7), Value::Int(1)],
+            &mut env,
+        )
+        .expect("type contract");
+        assert_eq!(outcome, HelperDispatchOutcome::Value(Value::Int(7)));
+    }
+
+    #[test]
+    fn dispatch_check_type_contract_rejects_mismatch() {
+        let mut heap = Heap::new();
+        let mut store = ErrorStore::new();
+        let checker = StubTypeContractChecker::new();
+        let registry = CallableRegistry::new();
+        let mut barrier = NoopWriteBarrierHook;
+        let mut ctx = UnwindContext::with_pending(PendingControl::Return(None));
+        let mut executor = NoopExecutor;
+        let mut env = test_env(
+            &mut heap,
+            &mut store,
+            &checker,
+            &registry,
+            &mut barrier,
+            &mut ctx,
+            &mut executor,
+        );
+        let err = dispatch_helper(
+            HELPER_CHECK_TYPE_CONTRACT_ID,
+            &[Value::Int(7), Value::Int(1)],
+            &mut env,
+        )
+        .expect_err("reject");
+        assert_eq!(
+            err,
+            RuntimeFailure::language(vm_core::error::registry::RuntimeErrorCode::TypeContractError)
+        );
+    }
+
+    #[test]
+    fn dispatch_check_callable_returns_callee_on_success() {
+        let mut heap = Heap::new();
+        let mut store = ErrorStore::new();
+        let checker = StubTypeContractChecker::new();
+        let mut registry = CallableRegistry::new();
+        let object_id = vm_core::id::ObjectId::new(1);
+        registry.register(
+            object_id,
+            crate::call::callable::CallableTarget::UserFunction(
+                crate::call::callable::UserFunctionTarget {
+                    function_id: vm_core::id::FunctionId::new(0),
+                    module_id: vm_core::id::ModuleId::new(0),
+                    entry_eir_function: vm_core::id::EirFunctionId::new(0),
+                    return_type: None,
+                    object_id,
+                },
+            ),
+        );
+        let mut barrier = NoopWriteBarrierHook;
+        let mut ctx = UnwindContext::with_pending(PendingControl::Return(None));
+        let mut executor = NoopExecutor;
+        let mut env = test_env(
+            &mut heap,
+            &mut store,
+            &checker,
+            &registry,
+            &mut barrier,
+            &mut ctx,
+            &mut executor,
+        );
+        let callee = Value::ObjectRef(object_id);
+        let outcome =
+            dispatch_helper(HELPER_CHECK_CALLABLE_ID, &[callee.clone()], &mut env).expect("callable");
+        assert_eq!(outcome, HelperDispatchOutcome::Value(callee));
+    }
+
+    #[test]
+    fn dispatch_check_hashable_returns_value_on_success() {
+        let mut heap = Heap::new();
+        let mut store = ErrorStore::new();
+        let checker = StubTypeContractChecker::new();
+        let registry = CallableRegistry::new();
+        let mut barrier = NoopWriteBarrierHook;
+        let mut ctx = UnwindContext::with_pending(PendingControl::Return(None));
+        let mut executor = NoopExecutor;
+        let mut env = test_env(
+            &mut heap,
+            &mut store,
+            &checker,
+            &registry,
+            &mut barrier,
+            &mut ctx,
+            &mut executor,
+        );
+        let outcome =
+            dispatch_helper(HELPER_CHECK_HASHABLE_ID, &[Value::Int(3)], &mut env).expect("hashable");
+        assert_eq!(outcome, HelperDispatchOutcome::Value(Value::Int(3)));
+    }
+
+    #[test]
+    fn dispatch_check_hashable_rejects_non_hashable_object() {
+        let mut heap = Heap::new();
+        let mut store = ErrorStore::new();
+        let checker = StubTypeContractChecker::new();
+        let registry = CallableRegistry::new();
+        let mut barrier = NoopWriteBarrierHook;
+        let mut ctx = UnwindContext::with_pending(PendingControl::Return(None));
+        let mut executor = NoopExecutor;
+        let list = heap.alloc_list(vec![], false).expect("list");
+        let mut env = test_env(
+            &mut heap,
+            &mut store,
+            &checker,
+            &registry,
+            &mut barrier,
+            &mut ctx,
+            &mut executor,
+        );
+        let err = dispatch_helper(
+            HELPER_CHECK_HASHABLE_ID,
+            &[Value::ObjectRef(list.id())],
+            &mut env,
+        )
+        .expect_err("reject");
+        assert_eq!(
+            err,
+            RuntimeFailure::language(vm_core::error::registry::RuntimeErrorCode::TypeError)
+        );
     }
 
     #[test]

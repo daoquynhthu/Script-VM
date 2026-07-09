@@ -963,3 +963,23 @@ Summary:
 Next:
   Milestone H2 access/construction helpers (Pass 5).
 
+## 2026-07-07 02:30 · Remediation pass 4b: H1 dispatch-API test coverage
+
+Work Package: WP-07
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/helpers/dispatch.rs
+  - PROGRESS.md
+Spec References:
+  - PHASE-3-RUNTIME-HELPER-IMPLEMENTATION-PLAN.md §20.2
+  - AGENT.md §13
+Gates:
+  - G5 PASS
+Tests:
+  - cargo test -p vm_runtime helpers::dispatch PASS — 10 tests via dispatch_helper for all six H1 ids (alloc_object, write_barrier, construct_error, check_type_contract, check_callable, check_hashable) plus perform_unwind and undispatched rejection
+  - cargo test --workspace PASS (2 runs) — unit-test total: 195 (1+38+3+11+6+132+4)
+Summary:
+  Replaced partial h1_helpers_dispatch_through_central_boundary with per-family dispatch_helper tests including type/callable/hashable positive and negative paths; h1-helper-tests.log now captures helpers::dispatch output only.
+Next:
+  Milestone H2 access/construction helpers (Pass 5).
+

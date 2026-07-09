@@ -40,6 +40,9 @@ use super::h5::{
     helper_import_module, helper_import_named, helper_initialize_module, helper_resolve_module,
     helper_seal_exports,
 };
+use super::h6::{
+    helper_check_capability, helper_enter_host_call, helper_exit_host_call, HostBoundarySession,
+};
 
 /// Canonical helper id for `helper_alloc_object` (registry §3 table order).
 pub const HELPER_ALLOC_OBJECT_ID: RuntimeHelperId = RuntimeHelperId::new(0);
@@ -107,6 +110,12 @@ pub const HELPER_IMPORT_NAMED_ID: RuntimeHelperId = RuntimeHelperId::new(36);
 pub const HELPER_IMPORT_MODULE_ID: RuntimeHelperId = RuntimeHelperId::new(37);
 /// Canonical helper id for `helper_seal_exports`.
 pub const HELPER_SEAL_EXPORTS_ID: RuntimeHelperId = RuntimeHelperId::new(38);
+/// Canonical helper id for `helper_check_capability`.
+pub const HELPER_CHECK_CAPABILITY_ID: RuntimeHelperId = RuntimeHelperId::new(39);
+/// Canonical helper id for `helper_enter_host_call`.
+pub const HELPER_ENTER_HOST_CALL_ID: RuntimeHelperId = RuntimeHelperId::new(40);
+/// Canonical helper id for `helper_exit_host_call`.
+pub const HELPER_EXIT_HOST_CALL_ID: RuntimeHelperId = RuntimeHelperId::new(41);
 /// Canonical helper id for `helper_display`.
 pub const HELPER_DISPLAY_ID: RuntimeHelperId = RuntimeHelperId::new(42);
 
@@ -133,6 +142,7 @@ pub struct HelperDispatchEnv<'a, E> {
     pub max_call_depth: u32,
     pub module_runtime: Option<&'a mut ModuleRuntime>,
     pub module_resolver: Option<&'a dyn HostModuleResolver>,
+    pub host_session: Option<&'a mut HostBoundarySession>,
     pub write_barrier: &'a mut dyn WriteBarrierHook,
     pub source_span: Option<SourceSpanId>,
     pub unwind_ctx: &'a mut UnwindContext,
@@ -297,6 +307,20 @@ pub fn dispatch_helper<E: UnwindExecutor>(
         return Ok(HelperDispatchOutcome::Unit);
     }
 
+    // H6 capability / host boundary
+    if helper_id == HELPER_CHECK_CAPABILITY_ID {
+        helper_check_capability(args, env.capabilities)?;
+        return Ok(HelperDispatchOutcome::Unit);
+    }
+    if helper_id == HELPER_ENTER_HOST_CALL_ID {
+        helper_enter_host_call(args, env.host_session.as_deref_mut())?;
+        return Ok(HelperDispatchOutcome::Unit);
+    }
+    if helper_id == HELPER_EXIT_HOST_CALL_ID {
+        return helper_exit_host_call(args, env.host_session.as_deref_mut(), env.error_store)
+            .map(HelperDispatchOutcome::VmControl);
+    }
+
     Err(RuntimeFailure::structural(
         VmStructuralErrorCode::InvalidHelperError,
         format!("helper {} is not dispatched", helper_id.raw()),
@@ -372,6 +396,7 @@ mod tests {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             module_runtime: None,
             module_resolver: None,
+            host_session: None,
             write_barrier: barrier,
             source_span: None,
             unwind_ctx,
@@ -1439,6 +1464,7 @@ mod tests {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             module_runtime: Some(&mut module_rt),
             module_resolver: Some(&resolver),
+            host_session: None,
             write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
@@ -1583,6 +1609,7 @@ mod tests {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             module_runtime: Some(&mut module_rt),
             module_resolver: None,
+            host_session: None,
             write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
@@ -1605,9 +1632,152 @@ mod tests {
         );
     }
 
+    // --- H6 capability / host boundary ---
+
+    #[test]
+    fn dispatch_check_capability_and_host_enter_exit() {
+        use crate::helpers::h6::HostBoundarySession;
+        use vm_core::id::{CapabilityId, ObjectId};
+
+        let mut heap = Heap::new();
+        let mut store = ErrorStore::new();
+        let checker = StubTypeContractChecker::new();
+        let mut registry = CallableRegistry::new();
+        let mut capabilities = CapabilitySet::new();
+        let mut barrier = NoopWriteBarrierHook;
+        let mut ctx = UnwindContext::with_pending(PendingControl::Return(None));
+        let mut executor = NoopExecutor;
+        let mut host_session = HostBoundarySession::new();
+
+        let mut env = HelperDispatchEnv {
+            heap: &mut heap,
+            error_store: &mut store,
+            type_checker: &checker,
+            callable_registry: &mut registry,
+            capabilities: &capabilities,
+            call_site_feedback: None,
+            call_depth: 0,
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+            module_runtime: None,
+            module_resolver: None,
+            host_session: Some(&mut host_session),
+            write_barrier: &mut barrier,
+            source_span: None,
+            unwind_ctx: &mut ctx,
+            executor: &mut executor,
+        };
+
+        let miss = dispatch_helper(HELPER_CHECK_CAPABILITY_ID, &[Value::Int(4)], &mut env)
+            .expect_err("miss");
+        assert_eq!(
+            miss,
+            RuntimeFailure::language(RuntimeErrorCode::CapabilityError)
+        );
+
+        // grant via separate mutable capabilities is awkward with shared ref;
+        // rebuild env with granted capability
+        drop(env);
+        capabilities.grant(CapabilityId::new(4));
+        let mut env = HelperDispatchEnv {
+            heap: &mut heap,
+            error_store: &mut store,
+            type_checker: &checker,
+            callable_registry: &mut registry,
+            capabilities: &capabilities,
+            call_site_feedback: None,
+            call_depth: 0,
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+            module_runtime: None,
+            module_resolver: None,
+            host_session: Some(&mut host_session),
+            write_barrier: &mut barrier,
+            source_span: None,
+            unwind_ctx: &mut ctx,
+            executor: &mut executor,
+        };
+        let ok = dispatch_helper(HELPER_CHECK_CAPABILITY_ID, &[Value::Int(4)], &mut env)
+            .expect("cap");
+        assert_eq!(ok, HelperDispatchOutcome::Unit);
+
+        let enter = dispatch_helper(
+            HELPER_ENTER_HOST_CALL_ID,
+            &[Value::Int(1), Value::ObjectRef(ObjectId::new(9))],
+            &mut env,
+        )
+        .expect("enter");
+        assert_eq!(enter, HelperDispatchOutcome::Unit);
+        assert!(env.host_session.as_ref().unwrap().active);
+        assert_eq!(env.host_session.as_ref().unwrap().call_scoped_roots.len(), 1);
+
+        let exit = dispatch_helper(
+            HELPER_EXIT_HOST_CALL_ID,
+            &[Value::Int(0), Value::String("ok".into())],
+            &mut env,
+        )
+        .expect("exit");
+        assert_eq!(
+            exit,
+            HelperDispatchOutcome::VmControl(VmControl::Normal(Some(Value::String("ok".into()))))
+        );
+        assert!(!env.host_session.as_ref().unwrap().active);
+        assert!(env.host_session.as_ref().unwrap().call_scoped_roots.is_empty());
+    }
+
+    #[test]
+    fn dispatch_exit_host_error_paths() {
+        use crate::helpers::h6::HostBoundarySession;
+
+        let mut heap = Heap::new();
+        let mut store = ErrorStore::new();
+        let checker = StubTypeContractChecker::new();
+        let mut registry = CallableRegistry::new();
+        let capabilities = CapabilitySet::new();
+        let mut barrier = NoopWriteBarrierHook;
+        let mut ctx = UnwindContext::with_pending(PendingControl::Return(None));
+        let mut executor = NoopExecutor;
+        let mut host_session = HostBoundarySession::new();
+        let mut env = HelperDispatchEnv {
+            heap: &mut heap,
+            error_store: &mut store,
+            type_checker: &checker,
+            callable_registry: &mut registry,
+            capabilities: &capabilities,
+            call_site_feedback: None,
+            call_depth: 0,
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+            module_runtime: None,
+            module_resolver: None,
+            host_session: Some(&mut host_session),
+            write_barrier: &mut barrier,
+            source_span: None,
+            unwind_ctx: &mut ctx,
+            executor: &mut executor,
+        };
+        dispatch_helper(HELPER_ENTER_HOST_CALL_ID, &[], &mut env).expect("enter");
+        let raise = dispatch_helper(
+            HELPER_EXIT_HOST_CALL_ID,
+            &[Value::Int(1), Value::String("boom".into())],
+            &mut env,
+        )
+        .expect("lang err");
+        assert!(matches!(
+            raise,
+            HelperDispatchOutcome::VmControl(VmControl::Raise(_))
+        ));
+
+        dispatch_helper(HELPER_ENTER_HOST_CALL_ID, &[], &mut env).expect("enter2");
+        let structural = dispatch_helper(
+            HELPER_EXIT_HOST_CALL_ID,
+            &[Value::Int(2), Value::String("structural:x".into())],
+            &mut env,
+        )
+        .expect_err("struct");
+        assert!(matches!(structural, RuntimeFailure::Structural(_)));
+    }
+
     #[test]
     fn undispatched_helper_returns_invalid_helper_error() {
-        // id 28 = helper_match_pattern remains outside H1–H5 milestones.
+        // id 28 = helper_match_pattern remains outside H1–H6 milestones.
         with_env(|env| {
             let err = dispatch_helper(RuntimeHelperId::new(28), &[], env).expect_err("reject");
             assert!(matches!(err, RuntimeFailure::Structural(_)));

@@ -1130,3 +1130,32 @@ Summary:
   Implemented Milestone H5 helpers over ModuleRuntime: resolve_module (34), initialize_module (35), import_named (36), import_module (37), seal_exports (38). Dispatch env gains optional module_runtime + module_resolver. Capability-gated resolve, ImportCycleError for uninitialized circular exports, optional interface_id mismatch → ImportError. Initialize advances Unloaded→Loading→Initializing only (init EIR body deferred: ISSUE-20260709-002). Undispatched remains id 28.
 Next:
   Milestone H6 capability/host helpers, or Stage 13 / WP-18 conformance first matrix row.
+
+## 2026-07-09 20:30 · Remediation pass 9: WP-07 Milestone H6 capability/host helpers
+
+Work Package: WP-07
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/helpers/h6.rs (new)
+  - crates/vm_runtime/src/helpers/dispatch.rs
+  - crates/vm_runtime/src/helpers/mod.rs
+  - crates/vm_eval/src/interpreter/helpers.rs
+  - PROGRESS.md
+Spec References:
+  - PHASE-3-RUNTIME-HELPER-IMPLEMENTATION-PLAN.md §20.7
+  - PHASE-3-RUNTIME-HELPER-CONTRACTS.md §8.10
+  - PHASE-3-HOST-BOUNDARY-CONTRACT.md §5–§8
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_runtime helpers:: PASS — 95 helper tests
+  - cargo test -p vm_eval interpreter:: PASS — 11 tests
+  - cargo test --workspace PASS — unit-test total: 259 (1+38+3+11+6+196+4)
+Summary:
+  Implemented Milestone H6 helpers in vm_runtime bootstrap (no vm_host dependency cycle): check_capability (39), enter_host_call (40), exit_host_call (41) with call-scoped host roots and host error normalization to Raise/Structural. HelperDispatchEnv gains optional HostBoundarySession. Undispatched remains id 28.
+Next:
+  Milestone H7 optimization readiness, or Stage 13 / WP-18 conformance first matrix row.

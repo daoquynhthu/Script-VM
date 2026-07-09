@@ -68,6 +68,7 @@ pub fn dispatch_runtime_helper(
         max_call_depth: DEFAULT_MAX_CALL_DEPTH,
         module_runtime: None,
         module_resolver: None,
+        host_session: None,
         write_barrier: &mut state.write_barrier,
         source_span,
         unwind_ctx: &mut state.unwind_ctx,

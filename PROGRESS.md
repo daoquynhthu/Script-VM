@@ -1212,3 +1212,43 @@ Summary:
   Milestone H7: helper_check_shape (id 9) via ShapeRegistry + dispatch; JIT readiness matrix (47 rows) with HelperJitCallDescriptor and optional deopt links; safepoint/root policy validation for descriptors and matrix. Undispatched remains id 28. Helper milestones H1–H7 complete for WP-07 bootstrap path.
 Next:
   Stage 13 / WP-18 conformance first matrix row, or remaining non-dispatched helpers (pattern/membership/string_concat/load_cell).
+
+## 2026-07-09 23:00 · Stage 13 / WP-18 conformance matrix scaffold + remaining helpers
+
+Work Package: WP-18, WP-07
+Agent Mode: main-only
+Changed Files:
+  - tests/MATRIX.md (new)
+  - tests/conformance/README.md (new)
+  - tests/negative/README.md (new)
+  - tests/diagnostics/README.md (new)
+  - tests/regression/README.md (new)
+  - crates/vm_tests/src/conformance.rs (new)
+  - crates/vm_tests/src/negative.rs (new)
+  - crates/vm_tests/src/diagnostics.rs (new)
+  - crates/vm_tests/src/regression.rs (new)
+  - crates/vm_tests/src/lib.rs
+  - crates/vm_runtime/src/helpers/remainder.rs (new)
+  - crates/vm_runtime/src/helpers/dispatch.rs
+  - crates/vm_runtime/src/helpers/mod.rs
+  - crates/vm_runtime/src/helpers/h7.rs
+  - crates/vm_runtime/src/frame.rs
+  - crates/vm_eval/src/interpreter/helpers.rs
+  - PROGRESS.md
+Spec References:
+  - IMPLEMENTATION-CODING-PLAN.md Stage 13
+  - WORK-PACKAGE-INDEX.md WP-18
+  - PHASE-3-VALIDATION-MATRIX.md
+  - PHASE-3-RUNTIME-HELPER-REGISTRY.md §3
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_tests PASS — 19 tests (CF/NG/DG/RG + smoke)
+  - cargo test --workspace PASS with RUSTFLAGS=-D warnings — unit-test total: 289 (1+38+3+11+6+211+19)
+Summary:
+  Stage 13/WP-18: MATRIX.md inventory with CF-01..07, NG-01..05, DG-01, RG-01..02 driving shipped APIs via vm_tests modules. Dispatched remaining helpers: numeric_unary, membership, construct_list/function, string_concat, load_cell/store_cell (via cell_slots env). Undispatched: match_pattern (28), load_module_slot (46).
+Next:
+  Stage 14 integration review (G6), or helper_match_pattern / load_module_slot, or deepen conformance coverage.

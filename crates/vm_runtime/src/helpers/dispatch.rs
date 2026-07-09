@@ -44,6 +44,11 @@ use super::h6::{
     helper_check_capability, helper_enter_host_call, helper_exit_host_call, HostBoundarySession,
 };
 use super::h7::{helper_check_shape, ShapeRegistry};
+use super::remainder::{
+    helper_construct_function, helper_construct_list, helper_load_cell, helper_membership,
+    helper_numeric_unary, helper_store_cell, helper_string_concat,
+};
+use crate::frame::SlotArray;
 
 /// Canonical helper id for `helper_alloc_object` (registry §3 table order).
 pub const HELPER_ALLOC_OBJECT_ID: RuntimeHelperId = RuntimeHelperId::new(0);
@@ -65,6 +70,8 @@ pub const HELPER_CHECK_CALLABLE_ID: RuntimeHelperId = RuntimeHelperId::new(7);
 pub const HELPER_CHECK_HASHABLE_ID: RuntimeHelperId = RuntimeHelperId::new(8);
 /// Canonical helper id for `helper_check_shape`.
 pub const HELPER_CHECK_SHAPE_ID: RuntimeHelperId = RuntimeHelperId::new(9);
+/// Canonical helper id for `helper_numeric_unary`.
+pub const HELPER_NUMERIC_UNARY_ID: RuntimeHelperId = RuntimeHelperId::new(10);
 /// Canonical helper id for `helper_numeric_binary`.
 pub const HELPER_NUMERIC_BINARY_ID: RuntimeHelperId = RuntimeHelperId::new(11);
 /// Canonical helper id for `helper_compare`.
@@ -79,12 +86,18 @@ pub const HELPER_INDEX_READ_ID: RuntimeHelperId = RuntimeHelperId::new(16);
 pub const HELPER_INDEX_WRITE_ID: RuntimeHelperId = RuntimeHelperId::new(17);
 /// Canonical helper id for `helper_slice_read`.
 pub const HELPER_SLICE_READ_ID: RuntimeHelperId = RuntimeHelperId::new(18);
+/// Canonical helper id for `helper_membership`.
+pub const HELPER_MEMBERSHIP_ID: RuntimeHelperId = RuntimeHelperId::new(19);
+/// Canonical helper id for `helper_construct_list`.
+pub const HELPER_CONSTRUCT_LIST_ID: RuntimeHelperId = RuntimeHelperId::new(20);
 /// Canonical helper id for `helper_construct_map`.
 pub const HELPER_CONSTRUCT_MAP_ID: RuntimeHelperId = RuntimeHelperId::new(21);
 /// Canonical helper id for `helper_construct_record`.
 pub const HELPER_CONSTRUCT_RECORD_ID: RuntimeHelperId = RuntimeHelperId::new(22);
 /// Canonical helper id for `helper_construct_enum`.
 pub const HELPER_CONSTRUCT_ENUM_ID: RuntimeHelperId = RuntimeHelperId::new(23);
+/// Canonical helper id for `helper_construct_function`.
+pub const HELPER_CONSTRUCT_FUNCTION_ID: RuntimeHelperId = RuntimeHelperId::new(24);
 /// Canonical helper id for `helper_generic_call`.
 pub const HELPER_GENERIC_CALL_ID: RuntimeHelperId = RuntimeHelperId::new(25);
 /// Canonical helper id for `helper_call_builtin`.
@@ -121,6 +134,12 @@ pub const HELPER_ENTER_HOST_CALL_ID: RuntimeHelperId = RuntimeHelperId::new(40);
 pub const HELPER_EXIT_HOST_CALL_ID: RuntimeHelperId = RuntimeHelperId::new(41);
 /// Canonical helper id for `helper_display`.
 pub const HELPER_DISPLAY_ID: RuntimeHelperId = RuntimeHelperId::new(42);
+/// Canonical helper id for `helper_string_concat`.
+pub const HELPER_STRING_CONCAT_ID: RuntimeHelperId = RuntimeHelperId::new(43);
+/// Canonical helper id for `helper_load_cell`.
+pub const HELPER_LOAD_CELL_ID: RuntimeHelperId = RuntimeHelperId::new(44);
+/// Canonical helper id for `helper_store_cell`.
+pub const HELPER_STORE_CELL_ID: RuntimeHelperId = RuntimeHelperId::new(45);
 
 /// Default max logical call depth for bootstrap stack-overflow checks.
 pub const DEFAULT_MAX_CALL_DEPTH: u32 = 64;
@@ -147,6 +166,8 @@ pub struct HelperDispatchEnv<'a, E> {
     pub module_resolver: Option<&'a dyn HostModuleResolver>,
     pub host_session: Option<&'a mut HostBoundarySession>,
     pub shape_registry: Option<&'a ShapeRegistry>,
+    /// Optional frame slots for load_cell/store_cell helpers.
+    pub cell_slots: Option<&'a mut SlotArray>,
     pub write_barrier: &'a mut dyn WriteBarrierHook,
     pub source_span: Option<SourceSpanId>,
     pub unwind_ctx: &'a mut UnwindContext,
@@ -202,6 +223,9 @@ pub fn dispatch_helper<E: UnwindExecutor>(
         })?;
         return helper_check_shape(args, env.heap, shapes).map(HelperDispatchOutcome::Value);
     }
+    if helper_id == HELPER_NUMERIC_UNARY_ID {
+        return helper_numeric_unary(args).map(HelperDispatchOutcome::Value);
+    }
 
     // H2
     if helper_id == HELPER_NUMERIC_BINARY_ID {
@@ -227,6 +251,12 @@ pub fn dispatch_helper<E: UnwindExecutor>(
     if helper_id == HELPER_SLICE_READ_ID {
         return helper_slice_read(args, env.heap).map(HelperDispatchOutcome::Value);
     }
+    if helper_id == HELPER_MEMBERSHIP_ID {
+        return helper_membership(args, env.heap).map(HelperDispatchOutcome::Value);
+    }
+    if helper_id == HELPER_CONSTRUCT_LIST_ID {
+        return helper_construct_list(args, env.heap).map(HelperDispatchOutcome::Value);
+    }
     if helper_id == HELPER_CONSTRUCT_MAP_ID {
         return helper_construct_map(args, env.heap).map(HelperDispatchOutcome::Value);
     }
@@ -236,8 +266,33 @@ pub fn dispatch_helper<E: UnwindExecutor>(
     if helper_id == HELPER_CONSTRUCT_ENUM_ID {
         return helper_construct_enum(args, env.heap).map(HelperDispatchOutcome::Value);
     }
+    if helper_id == HELPER_CONSTRUCT_FUNCTION_ID {
+        return helper_construct_function(args, env.heap).map(HelperDispatchOutcome::Value);
+    }
     if helper_id == HELPER_DISPLAY_ID {
         return helper_display(args, env.heap).map(HelperDispatchOutcome::Value);
+    }
+    if helper_id == HELPER_STRING_CONCAT_ID {
+        return helper_string_concat(args).map(HelperDispatchOutcome::Value);
+    }
+    if helper_id == HELPER_LOAD_CELL_ID {
+        let slots = env.cell_slots.as_deref().ok_or_else(|| {
+            RuntimeFailure::structural(
+                VmStructuralErrorCode::InvalidFrameStateError,
+                "load_cell requires cell_slots in dispatch env",
+            )
+        })?;
+        return helper_load_cell(args, slots).map(HelperDispatchOutcome::Value);
+    }
+    if helper_id == HELPER_STORE_CELL_ID {
+        let slots = env.cell_slots.as_deref_mut().ok_or_else(|| {
+            RuntimeFailure::structural(
+                VmStructuralErrorCode::InvalidFrameStateError,
+                "store_cell requires cell_slots in dispatch env",
+            )
+        })?;
+        helper_store_cell(args, slots, env.type_checker, env.write_barrier)?;
+        return Ok(HelperDispatchOutcome::Unit);
     }
 
     // H3 call engine
@@ -411,6 +466,7 @@ mod tests {
             module_resolver: None,
             host_session: None,
             shape_registry: None,
+            cell_slots: None,
             write_barrier: barrier,
             source_span: None,
             unwind_ctx,
@@ -1479,8 +1535,7 @@ mod tests {
             module_runtime: Some(&mut module_rt),
             module_resolver: Some(&resolver),
             host_session: None,
-            shape_registry: None,
-            write_barrier: &mut barrier,
+            shape_registry: None,            cell_slots: None,            write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
             executor: &mut executor,
@@ -1625,8 +1680,7 @@ mod tests {
             module_runtime: Some(&mut module_rt),
             module_resolver: None,
             host_session: None,
-            shape_registry: None,
-            write_barrier: &mut barrier,
+            shape_registry: None,            cell_slots: None,            write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
             executor: &mut executor,
@@ -1677,8 +1731,7 @@ mod tests {
             module_runtime: None,
             module_resolver: None,
             host_session: Some(&mut host_session),
-            shape_registry: None,
-            write_barrier: &mut barrier,
+            shape_registry: None,            cell_slots: None,            write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
             executor: &mut executor,
@@ -1707,8 +1760,7 @@ mod tests {
             module_runtime: None,
             module_resolver: None,
             host_session: Some(&mut host_session),
-            shape_registry: None,
-            write_barrier: &mut barrier,
+            shape_registry: None,            cell_slots: None,            write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
             executor: &mut executor,
@@ -1766,8 +1818,7 @@ mod tests {
             module_runtime: None,
             module_resolver: None,
             host_session: Some(&mut host_session),
-            shape_registry: None,
-            write_barrier: &mut barrier,
+            shape_registry: None,            cell_slots: None,            write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
             executor: &mut executor,
@@ -1829,8 +1880,7 @@ mod tests {
             module_runtime: None,
             module_resolver: None,
             host_session: None,
-            shape_registry: Some(&shapes),
-            write_barrier: &mut barrier,
+            shape_registry: Some(&shapes),            cell_slots: None,            write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
             executor: &mut executor,
@@ -1880,10 +1930,51 @@ mod tests {
     }
 
     #[test]
+    fn dispatch_remainder_helpers_list_membership_concat() {
+        with_env(|env| {
+            let list = dispatch_helper(
+                HELPER_CONSTRUCT_LIST_ID,
+                &[Value::Int(1), Value::Int(2)],
+                env,
+            )
+            .expect("list");
+            let HelperDispatchOutcome::Value(Value::ObjectRef(id)) = list else {
+                panic!("list ref");
+            };
+            let mem = dispatch_helper(
+                HELPER_MEMBERSHIP_ID,
+                &[Value::ObjectRef(id), Value::Int(2)],
+                env,
+            )
+            .expect("in");
+            assert_eq!(mem, HelperDispatchOutcome::Value(Value::Bool(true)));
+            let cat = dispatch_helper(
+                HELPER_STRING_CONCAT_ID,
+                &[Value::String("x".into()), Value::String("y".into())],
+                env,
+            )
+            .expect("cat");
+            assert_eq!(
+                cat,
+                HelperDispatchOutcome::Value(Value::String("xy".into()))
+            );
+            let unary = dispatch_helper(
+                HELPER_NUMERIC_UNARY_ID,
+                &[Value::Int(0), Value::Int(5)],
+                env,
+            )
+            .expect("neg");
+            assert_eq!(unary, HelperDispatchOutcome::Value(Value::Int(-5)));
+        });
+    }
+
+    #[test]
     fn undispatched_helper_returns_invalid_helper_error() {
-        // id 28 = helper_match_pattern remains outside H1–H7 milestones.
+        // id 28 = helper_match_pattern; id 46 = load_module_slot still undispatched.
         with_env(|env| {
             let err = dispatch_helper(RuntimeHelperId::new(28), &[], env).expect_err("reject");
+            assert!(matches!(err, RuntimeFailure::Structural(_)));
+            let err = dispatch_helper(RuntimeHelperId::new(46), &[], env).expect_err("reject");
             assert!(matches!(err, RuntimeFailure::Structural(_)));
         });
     }

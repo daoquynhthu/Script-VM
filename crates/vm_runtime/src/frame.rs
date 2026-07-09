@@ -155,8 +155,8 @@ impl SlotArray {
         &mut self,
         cell_slot: SlotId,
         value: Value,
-        checker: &impl TypeContractChecker,
-        barrier: &mut impl WriteBarrierHook,
+        checker: &(impl TypeContractChecker + ?Sized),
+        barrier: &mut (impl WriteBarrierHook + ?Sized),
     ) -> RuntimeResult<()> {
         let index = slot_index(cell_slot, self.slots.len())?;
         let cell_id = match &self.slots[index] {

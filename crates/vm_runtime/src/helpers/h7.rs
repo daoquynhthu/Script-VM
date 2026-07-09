@@ -252,13 +252,13 @@ pub fn validate_jit_readiness_matrix(
 #[must_use]
 pub fn dispatched_helper_ids() -> &'static [u32] {
     &[
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, // H1 type + H4 error + H7 shape
-        11, 12, 13, 14, 15, 16, 17, 18, // H2/H3 access + bind
-        21, 22, 23, 25, 26, 27, // construct + call
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, // H1 + shape + unary
+        11, 12, 13, 14, 15, 16, 17, 18, 19, 20, // access + membership + list
+        21, 22, 23, 24, 25, 26, 27, // construct + call
         29, 30, 31, 32, 33, // control/resource
         34, 35, 36, 37, 38, // module
         39, 40, 41, // host
-        42, // display
+        42, 43, 44, 45, // display + string + cell
     ]
 }
 

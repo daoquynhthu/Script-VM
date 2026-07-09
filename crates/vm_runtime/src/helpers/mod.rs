@@ -11,6 +11,7 @@ pub mod h4;
 pub mod h5;
 pub mod h6;
 pub mod h7;
+pub mod remainder;
 pub mod registry;
 pub mod schema;
 pub mod validate;

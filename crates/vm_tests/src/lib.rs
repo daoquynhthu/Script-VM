@@ -1,6 +1,16 @@
 //! VM integration tests
 //!
 //! This crate contains integration tests for the Script VM.
+//! Stage 13 / WP-18 matrix modules: conformance, negative, diagnostics, regression.
+
+#[cfg(test)]
+mod conformance;
+#[cfg(test)]
+mod negative;
+#[cfg(test)]
+mod diagnostics;
+#[cfg(test)]
+mod regression;
 
 #[cfg(test)]
 mod smoke {

@@ -80,7 +80,7 @@ mod tests {
             unwind_ctx: &mut ctx,
             executor: &mut executor,
         };
-        let err = dispatch_helper(RuntimeHelperId::new(28), &[], &mut env).expect_err("NG-02");
+        let err = dispatch_helper(RuntimeHelperId::new(99), &[], &mut env).expect_err("NG-02");
         assert!(matches!(err, RuntimeFailure::Structural(_)));
     }
 

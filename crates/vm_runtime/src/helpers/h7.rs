@@ -251,14 +251,11 @@ pub fn validate_jit_readiness_matrix(
 /// Helper ids currently dispatched through `dispatch_helper` (H1–H7 subset).
 #[must_use]
 pub fn dispatched_helper_ids() -> &'static [u32] {
+    // All 47 canonical helper ids (0..46) are dispatched.
     &[
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, // H1 + shape + unary
-        11, 12, 13, 14, 15, 16, 17, 18, 19, 20, // access + membership + list
-        21, 22, 23, 24, 25, 26, 27, // construct + call
-        29, 30, 31, 32, 33, // control/resource
-        34, 35, 36, 37, 38, // module
-        39, 40, 41, // host
-        42, 43, 44, 45, // display + string + cell
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+        24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
+        46,
     ]
 }
 

@@ -1252,3 +1252,31 @@ Summary:
   Stage 13/WP-18: MATRIX.md inventory with CF-01..07, NG-01..05, DG-01, RG-01..02 driving shipped APIs via vm_tests modules. Dispatched remaining helpers: numeric_unary, membership, construct_list/function, string_concat, load_cell/store_cell (via cell_slots env). Undispatched: match_pattern (28), load_module_slot (46).
 Next:
   Stage 14 integration review (G6), or helper_match_pattern / load_module_slot, or deepen conformance coverage.
+
+## 2026-07-09 23:30 · Full helper dispatch coverage + Stage 14 integration scan
+
+Work Package: WP-07, WP-19
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/helpers/remainder.rs
+  - crates/vm_runtime/src/helpers/dispatch.rs
+  - crates/vm_runtime/src/helpers/h7.rs
+  - crates/vm_eval/src/interpreter/fixtures.rs
+  - crates/vm_tests/src/negative.rs
+  - PROGRESS.md
+  - ISSUE.md
+Spec References:
+  - IMPLEMENTATION-CODING-PLAN.md Stage 14
+  - PHASE-3-FREEZE.md
+  - PHASE-3-RUNTIME-HELPER-REGISTRY.md §3
+Gates:
+  - G0 PASS
+  - G5 PASS
+  - G6 PASS_WITH_NOTES
+  - G7 PASS
+Tests:
+  - cargo test --workspace PASS with RUSTFLAGS=-D warnings — unit-test total: 290 (1+38+3+11+6+212+19)
+Summary:
+  Dispatched final registry helpers match_pattern (28) and load_module_slot (46); all 47 canonical helpers now route through dispatch_helper. Undispatched negative retargeted to id 99. Stage 14 scan: no public bytecode/CPython ABI strings in crates; language failures use RuntimeFailure not panic. Open notes remain ISSUE-001/002 (call body / module init body).
+Next:
+  Deepen conformance matrix, wire interpreter for prepared calls and module init body, or production GC/JIT phases later.

@@ -131,6 +131,64 @@ pub fn ensure_mutable_cell(
     Ok(())
 }
 
+/// Bootstrap: `args[0]` Int module_id, `args[1]` Int slot_id → value from module slots.
+pub fn helper_load_module_slot(
+    args: &[Value],
+    runtime: Option<&crate::module::runtime::ModuleRuntime>,
+) -> RuntimeResult<Value> {
+    let runtime = runtime.ok_or_else(|| {
+        RuntimeFailure::structural(
+            vm_core::error::registry::VmStructuralErrorCode::InvalidFrameStateError,
+            "load_module_slot requires ModuleRuntime",
+        )
+    })?;
+    let module_id = match args.first() {
+        Some(Value::Int(v)) if *v >= 0 => vm_core::id::ModuleId::new(*v as u32),
+        _ => return Err(type_error()),
+    };
+    let slot = match args.get(1) {
+        Some(Value::Int(v)) if *v >= 0 => CoreSlotId::new(*v as u32),
+        _ => return Err(type_error()),
+    };
+    let instance = runtime.registry.get(module_id).ok_or_else(|| {
+        RuntimeFailure::structural(
+            vm_core::error::registry::VmStructuralErrorCode::InvalidRuntimePlanError,
+            "unknown module",
+        )
+    })?;
+    instance.module_slots.read(slot)
+}
+
+/// Bootstrap pattern match: `args[0]` subject, `args[1]` Int tag
+/// 0=wildcard → true, 1=literal equals args[2], 2=type tag (0 none,1 bool,2 int,3 string).
+/// Returns Bool (MatchCase-style); does not implement full destructuring raise mode.
+pub fn helper_match_pattern(args: &[Value]) -> RuntimeResult<Value> {
+    let subject = args.first().ok_or_else(type_error)?;
+    let tag = match args.get(1) {
+        Some(Value::Int(v)) => *v,
+        _ => return Err(type_error()),
+    };
+    let matched = match tag {
+        0 => true, // wildcard
+        1 => args.get(2).is_some_and(|lit| lit == subject),
+        2 => {
+            let kind = match args.get(2) {
+                Some(Value::Int(k)) => *k,
+                _ => return Err(type_error()),
+            };
+            match (kind, subject) {
+                (0, Value::None) => true,
+                (1, Value::Bool(_)) => true,
+                (2, Value::Int(_)) => true,
+                (3, Value::String(_)) => true,
+                _ => false,
+            }
+        }
+        _ => return Err(type_error()),
+    };
+    Ok(Value::Bool(matched))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

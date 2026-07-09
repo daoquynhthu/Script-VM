@@ -45,8 +45,9 @@ use super::h6::{
 };
 use super::h7::{helper_check_shape, ShapeRegistry};
 use super::remainder::{
-    helper_construct_function, helper_construct_list, helper_load_cell, helper_membership,
-    helper_numeric_unary, helper_store_cell, helper_string_concat,
+    helper_construct_function, helper_construct_list, helper_load_cell, helper_load_module_slot,
+    helper_match_pattern, helper_membership, helper_numeric_unary, helper_store_cell,
+    helper_string_concat,
 };
 use crate::frame::SlotArray;
 
@@ -104,6 +105,8 @@ pub const HELPER_GENERIC_CALL_ID: RuntimeHelperId = RuntimeHelperId::new(25);
 pub const HELPER_CALL_BUILTIN_ID: RuntimeHelperId = RuntimeHelperId::new(26);
 /// Canonical helper id for `helper_check_arity`.
 pub const HELPER_CHECK_ARITY_ID: RuntimeHelperId = RuntimeHelperId::new(27);
+/// Canonical helper id for `helper_match_pattern`.
+pub const HELPER_MATCH_PATTERN_ID: RuntimeHelperId = RuntimeHelperId::new(28);
 /// Canonical helper id for `helper_bind_method`.
 pub const HELPER_BIND_METHOD_ID: RuntimeHelperId = RuntimeHelperId::new(15);
 /// Canonical helper id for `helper_perform_unwind` (registry §3 table order).
@@ -140,6 +143,8 @@ pub const HELPER_STRING_CONCAT_ID: RuntimeHelperId = RuntimeHelperId::new(43);
 pub const HELPER_LOAD_CELL_ID: RuntimeHelperId = RuntimeHelperId::new(44);
 /// Canonical helper id for `helper_store_cell`.
 pub const HELPER_STORE_CELL_ID: RuntimeHelperId = RuntimeHelperId::new(45);
+/// Canonical helper id for `helper_load_module_slot`.
+pub const HELPER_LOAD_MODULE_SLOT_ID: RuntimeHelperId = RuntimeHelperId::new(46);
 
 /// Default max logical call depth for bootstrap stack-overflow checks.
 pub const DEFAULT_MAX_CALL_DEPTH: u32 = 64;
@@ -293,6 +298,13 @@ pub fn dispatch_helper<E: UnwindExecutor>(
         })?;
         helper_store_cell(args, slots, env.type_checker, env.write_barrier)?;
         return Ok(HelperDispatchOutcome::Unit);
+    }
+    if helper_id == HELPER_MATCH_PATTERN_ID {
+        return helper_match_pattern(args).map(HelperDispatchOutcome::Value);
+    }
+    if helper_id == HELPER_LOAD_MODULE_SLOT_ID {
+        return helper_load_module_slot(args, env.module_runtime.as_deref())
+            .map(HelperDispatchOutcome::Value);
     }
 
     // H3 call engine
@@ -1969,12 +1981,37 @@ mod tests {
     }
 
     #[test]
-    fn undispatched_helper_returns_invalid_helper_error() {
-        // id 28 = helper_match_pattern; id 46 = load_module_slot still undispatched.
+    fn dispatch_match_pattern_wildcard_and_literal() {
         with_env(|env| {
-            let err = dispatch_helper(RuntimeHelperId::new(28), &[], env).expect_err("reject");
-            assert!(matches!(err, RuntimeFailure::Structural(_)));
-            let err = dispatch_helper(RuntimeHelperId::new(46), &[], env).expect_err("reject");
+            let wild = dispatch_helper(
+                HELPER_MATCH_PATTERN_ID,
+                &[Value::Int(1), Value::Int(0)],
+                env,
+            )
+            .expect("wild");
+            assert_eq!(wild, HelperDispatchOutcome::Value(Value::Bool(true)));
+            let lit = dispatch_helper(
+                HELPER_MATCH_PATTERN_ID,
+                &[Value::Int(3), Value::Int(1), Value::Int(3)],
+                env,
+            )
+            .expect("lit");
+            assert_eq!(lit, HelperDispatchOutcome::Value(Value::Bool(true)));
+            let miss = dispatch_helper(
+                HELPER_MATCH_PATTERN_ID,
+                &[Value::Int(3), Value::Int(1), Value::Int(4)],
+                env,
+            )
+            .expect("miss");
+            assert_eq!(miss, HelperDispatchOutcome::Value(Value::Bool(false)));
+        });
+    }
+
+    #[test]
+    fn undispatched_helper_returns_invalid_helper_error() {
+        // All 47 registry helpers are dispatched; out-of-range id stays InvalidHelperError.
+        with_env(|env| {
+            let err = dispatch_helper(RuntimeHelperId::new(99), &[], env).expect_err("reject");
             assert!(matches!(err, RuntimeFailure::Structural(_)));
         });
     }

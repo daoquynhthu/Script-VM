@@ -759,3 +759,27 @@ Gate Impact:
   G6 PASS_WITH_NOTES for full module init integration; G4/G5 PASS for shipped state-machine subset
 Resolution Notes:
   Deferred; cycle handling and seal/import paths use existing ModuleRuntime APIs.
+
+## ISSUE-20260709-003 · Stage 14 G6 notes on deferred body paths
+
+Severity: INFO
+Status: OPEN
+Work Package: WP-19
+Detected By: Main Agent (Stage 14 integration scan)
+Spec References:
+  - IMPLEMENTATION-CODING-PLAN.md Stage 14
+  - ISSUE-20260709-001
+  - ISSUE-20260709-002
+Affected Files:
+  - crates/vm_runtime/src/helpers/h3.rs
+  - crates/vm_runtime/src/helpers/h5.rs
+Finding:
+  Integration scan confirms no public bytecode / CPython ABI exposure in crates. Remaining G6 notes are deferred call-body and module-init-body execution already tracked as ISSUE-001/002; pattern match is bootstrap Bool tags only.
+Evidence:
+  cargo test --workspace green (290 unit tests); ripgrep of crates found no public bytecode/CPython ABI identifiers; all 47 helper ids dispatch.
+Required Action:
+  Close via interpreter frame enter for generic_call and module init EIR body; expand pattern match as needed.
+Gate Impact:
+  G6 PASS_WITH_NOTES
+Resolution Notes:
+  Pending later integration passes.

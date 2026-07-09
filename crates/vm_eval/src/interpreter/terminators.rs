@@ -22,7 +22,8 @@ pub enum TerminatorOutcome {
     Return(Option<Value>),
     /// Source-level raise.
     Raise(vm_core::id::ErrorHandle),
-    /// Frame stack exhausted; execution complete.
+    /// Frame stack exhausted; execution complete (reserved for multi-frame exit).
+    #[allow(dead_code)]
     Halt,
 }
 

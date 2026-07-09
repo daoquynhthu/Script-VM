@@ -1159,3 +1159,27 @@ Summary:
   Implemented Milestone H6 helpers in vm_runtime bootstrap (no vm_host dependency cycle): check_capability (39), enter_host_call (40), exit_host_call (41) with call-scoped host roots and host error normalization to Raise/Structural. HelperDispatchEnv gains optional HostBoundarySession. Undispatched remains id 28.
 Next:
   Milestone H7 optimization readiness, or Stage 13 / WP-18 conformance first matrix row.
+
+## 2026-07-09 21:00 · Add GitHub Actions CI for workspace check/test
+
+Work Package: WP-00
+Agent Mode: main-only
+Changed Files:
+  - .github/workflows/ci.yml (new)
+  - crates/vm_eval/src/interpreter/terminators.rs
+  - PROGRESS.md
+Spec References:
+  - AGENT.md
+  - REPOSITORY-PROCESS.md
+  - scripts/check/workspace.ps1
+  - scripts/test/workspace.ps1
+Gates:
+  - G0 PASS
+  - G7 PASS
+Tests:
+  - cargo check --workspace PASS with RUSTFLAGS=-D warnings
+  - cargo test --workspace PASS — unit-test total: 259 (1+38+3+11+6+196+4)
+Summary:
+  Added GitHub Actions CI on push/PR to main: stable Rust, cargo check --workspace, cargo test --workspace twice (flake guard), rust-cache. Fixed vm_eval TerminatorOutcome::Halt dead_code under -D warnings. CI mirrors local scripts/check and scripts/test.
+Next:
+  Push main to origin (fast-forward after rebase); then H7 or Stage 13.

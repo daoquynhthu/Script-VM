@@ -1183,3 +1183,32 @@ Summary:
   Added GitHub Actions CI on push/PR to main: stable Rust, cargo check --workspace, cargo test --workspace twice (flake guard), rust-cache. Fixed vm_eval TerminatorOutcome::Halt dead_code under -D warnings. CI mirrors local scripts/check and scripts/test.
 Next:
   Push main to origin (fast-forward after rebase); then H7 or Stage 13.
+
+## 2026-07-09 22:00 · Remediation pass 10: WP-07 Milestone H7 optimization readiness
+
+Work Package: WP-07
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/helpers/h7.rs (new)
+  - crates/vm_runtime/src/helpers/dispatch.rs
+  - crates/vm_runtime/src/helpers/mod.rs
+  - crates/vm_eval/src/interpreter/helpers.rs
+  - PROGRESS.md
+Spec References:
+  - PHASE-3-RUNTIME-HELPER-IMPLEMENTATION-PLAN.md §20.8
+  - PHASE-3-RUNTIME-HELPER-CONTRACTS.md §6, §8.4.4
+  - PHASE-3-RUNTIME-HELPER-REGISTRY.md §4–§6
+  - PHASE-3-GC-METADATA-OWNERSHIP.md §8
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_runtime helpers:: PASS — 106 helper tests
+  - cargo test --workspace PASS with RUSTFLAGS=-D warnings — unit-test total: 270 (1+38+3+11+6+207+4)
+Summary:
+  Milestone H7: helper_check_shape (id 9) via ShapeRegistry + dispatch; JIT readiness matrix (47 rows) with HelperJitCallDescriptor and optional deopt links; safepoint/root policy validation for descriptors and matrix. Undispatched remains id 28. Helper milestones H1–H7 complete for WP-07 bootstrap path.
+Next:
+  Stage 13 / WP-18 conformance first matrix row, or remaining non-dispatched helpers (pattern/membership/string_concat/load_cell).

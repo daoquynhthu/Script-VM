@@ -69,6 +69,7 @@ pub fn dispatch_runtime_helper(
         module_runtime: None,
         module_resolver: None,
         host_session: None,
+        shape_registry: None,
         write_barrier: &mut state.write_barrier,
         source_span,
         unwind_ctx: &mut state.unwind_ctx,

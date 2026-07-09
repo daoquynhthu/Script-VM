@@ -43,6 +43,7 @@ use super::h5::{
 use super::h6::{
     helper_check_capability, helper_enter_host_call, helper_exit_host_call, HostBoundarySession,
 };
+use super::h7::{helper_check_shape, ShapeRegistry};
 
 /// Canonical helper id for `helper_alloc_object` (registry §3 table order).
 pub const HELPER_ALLOC_OBJECT_ID: RuntimeHelperId = RuntimeHelperId::new(0);
@@ -62,6 +63,8 @@ pub const HELPER_CHECK_TYPE_CONTRACT_ID: RuntimeHelperId = RuntimeHelperId::new(
 pub const HELPER_CHECK_CALLABLE_ID: RuntimeHelperId = RuntimeHelperId::new(7);
 /// Canonical helper id for `helper_check_hashable`.
 pub const HELPER_CHECK_HASHABLE_ID: RuntimeHelperId = RuntimeHelperId::new(8);
+/// Canonical helper id for `helper_check_shape`.
+pub const HELPER_CHECK_SHAPE_ID: RuntimeHelperId = RuntimeHelperId::new(9);
 /// Canonical helper id for `helper_numeric_binary`.
 pub const HELPER_NUMERIC_BINARY_ID: RuntimeHelperId = RuntimeHelperId::new(11);
 /// Canonical helper id for `helper_compare`.
@@ -143,6 +146,7 @@ pub struct HelperDispatchEnv<'a, E> {
     pub module_runtime: Option<&'a mut ModuleRuntime>,
     pub module_resolver: Option<&'a dyn HostModuleResolver>,
     pub host_session: Option<&'a mut HostBoundarySession>,
+    pub shape_registry: Option<&'a ShapeRegistry>,
     pub write_barrier: &'a mut dyn WriteBarrierHook,
     pub source_span: Option<SourceSpanId>,
     pub unwind_ctx: &'a mut UnwindContext,
@@ -188,6 +192,15 @@ pub fn dispatch_helper<E: UnwindExecutor>(
     }
     if helper_id == HELPER_CHECK_HASHABLE_ID {
         return helper_check_hashable(args, env.heap).map(HelperDispatchOutcome::Value);
+    }
+    if helper_id == HELPER_CHECK_SHAPE_ID {
+        let shapes = env.shape_registry.ok_or_else(|| {
+            RuntimeFailure::structural(
+                VmStructuralErrorCode::InvalidFrameStateError,
+                "check_shape requires ShapeRegistry in dispatch env",
+            )
+        })?;
+        return helper_check_shape(args, env.heap, shapes).map(HelperDispatchOutcome::Value);
     }
 
     // H2
@@ -397,6 +410,7 @@ mod tests {
             module_runtime: None,
             module_resolver: None,
             host_session: None,
+            shape_registry: None,
             write_barrier: barrier,
             source_span: None,
             unwind_ctx,
@@ -1465,6 +1479,7 @@ mod tests {
             module_runtime: Some(&mut module_rt),
             module_resolver: Some(&resolver),
             host_session: None,
+            shape_registry: None,
             write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
@@ -1610,6 +1625,7 @@ mod tests {
             module_runtime: Some(&mut module_rt),
             module_resolver: None,
             host_session: None,
+            shape_registry: None,
             write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
@@ -1661,6 +1677,7 @@ mod tests {
             module_runtime: None,
             module_resolver: None,
             host_session: Some(&mut host_session),
+            shape_registry: None,
             write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
@@ -1690,6 +1707,7 @@ mod tests {
             module_runtime: None,
             module_resolver: None,
             host_session: Some(&mut host_session),
+            shape_registry: None,
             write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
@@ -1748,6 +1766,7 @@ mod tests {
             module_runtime: None,
             module_resolver: None,
             host_session: Some(&mut host_session),
+            shape_registry: None,
             write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
@@ -1775,9 +1794,94 @@ mod tests {
         assert!(matches!(structural, RuntimeFailure::Structural(_)));
     }
 
+    // --- H7 optimization readiness ---
+
+    #[test]
+    fn dispatch_check_shape_match_and_mismatch() {
+        use crate::helpers::h7::{ShapeKind, ShapeRegistry};
+
+        let mut heap = Heap::new();
+        let mut store = ErrorStore::new();
+        let checker = StubTypeContractChecker::new();
+        let mut registry = CallableRegistry::new();
+        let capabilities = CapabilitySet::new();
+        let mut barrier = NoopWriteBarrierHook;
+        let mut ctx = UnwindContext::with_pending(PendingControl::Return(None));
+        let mut executor = NoopExecutor;
+        let mut shapes = ShapeRegistry::new();
+        shapes.register(
+            vm_core::id::ShapeId::new(1),
+            ShapeKind::Record { field_count: 1 },
+        );
+        let rec = heap
+            .alloc_record_instance(vec![Value::Int(9)], false)
+            .expect("rec");
+
+        let mut env = HelperDispatchEnv {
+            heap: &mut heap,
+            error_store: &mut store,
+            type_checker: &checker,
+            callable_registry: &mut registry,
+            capabilities: &capabilities,
+            call_site_feedback: None,
+            call_depth: 0,
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+            module_runtime: None,
+            module_resolver: None,
+            host_session: None,
+            shape_registry: Some(&shapes),
+            write_barrier: &mut barrier,
+            source_span: None,
+            unwind_ctx: &mut ctx,
+            executor: &mut executor,
+        };
+        let ok = dispatch_helper(
+            HELPER_CHECK_SHAPE_ID,
+            &[Value::ObjectRef(rec.id()), Value::Int(1)],
+            &mut env,
+        )
+        .expect("match");
+        assert_eq!(ok, HelperDispatchOutcome::Value(Value::Bool(true)));
+        let miss = dispatch_helper(
+            HELPER_CHECK_SHAPE_ID,
+            &[Value::ObjectRef(rec.id()), Value::Int(99)],
+            &mut env,
+        )
+        .expect("unknown shape");
+        assert_eq!(miss, HelperDispatchOutcome::Value(Value::Bool(false)));
+    }
+
+    #[test]
+    fn dispatch_check_shape_requires_registry() {
+        with_env(|env| {
+            let err = dispatch_helper(
+                HELPER_CHECK_SHAPE_ID,
+                &[Value::Int(1), Value::Int(0)],
+                env,
+            )
+            .expect_err("no shapes");
+            assert!(matches!(err, RuntimeFailure::Structural(_)));
+        });
+    }
+
+    #[test]
+    fn jit_readiness_matrix_validates_canonical() {
+        use crate::helpers::h7::{
+            build_jit_readiness_matrix, validate_jit_readiness_matrix, HelperDeoptLinkTable,
+        };
+        use crate::helpers::registry::RuntimeHelperRegistry;
+        let registry = RuntimeHelperRegistry::canonical().expect("reg");
+        let links = HelperDeoptLinkTable::new();
+        let matrix = build_jit_readiness_matrix(&registry, &links);
+        assert_eq!(matrix.len(), 47);
+        validate_jit_readiness_matrix(&matrix).expect("ok");
+        let jit_callable: usize = matrix.iter().filter(|r| r.is_jit_callable).count();
+        assert!(jit_callable > 0);
+    }
+
     #[test]
     fn undispatched_helper_returns_invalid_helper_error() {
-        // id 28 = helper_match_pattern remains outside H1–H6 milestones.
+        // id 28 = helper_match_pattern remains outside H1–H7 milestones.
         with_env(|env| {
             let err = dispatch_helper(RuntimeHelperId::new(28), &[], env).expect_err("reject");
             assert!(matches!(err, RuntimeFailure::Structural(_)));

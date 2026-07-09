@@ -10,6 +10,7 @@ pub mod h3;
 pub mod h4;
 pub mod h5;
 pub mod h6;
+pub mod h7;
 pub mod registry;
 pub mod schema;
 pub mod validate;
@@ -28,7 +29,8 @@ pub use dispatch::{
     DEFAULT_MAX_CALL_DEPTH, HELPER_ALLOC_OBJECT_ID, HELPER_ASSERT_FAIL_ID,
     HELPER_ATTACH_SUPPRESSED_ID, HELPER_BIND_METHOD_ID, HELPER_CALL_BUILTIN_ID,
     HELPER_CHECK_ARITY_ID, HELPER_CHECK_CALLABLE_ID, HELPER_CHECK_CAPABILITY_ID,
-    HELPER_CHECK_HASHABLE_ID, HELPER_CHECK_TYPE_CONTRACT_ID, HELPER_CLOSE_RESOURCE_ID,
+    HELPER_CHECK_HASHABLE_ID, HELPER_CHECK_SHAPE_ID, HELPER_CHECK_TYPE_CONTRACT_ID,
+    HELPER_CLOSE_RESOURCE_ID,
     HELPER_COMPARE_ID, HELPER_CONSTRUCT_ENUM_ID, HELPER_CONSTRUCT_ERROR_ID,
     HELPER_CONSTRUCT_MAP_ID, HELPER_CONSTRUCT_RECORD_ID, HELPER_DISPLAY_ID,
     HELPER_ENTER_HOST_CALL_ID, HELPER_EXECUTE_DEFER_ID, HELPER_EXIT_HOST_CALL_ID,
@@ -41,6 +43,10 @@ pub use dispatch::{
 };
 pub use h3::CallSiteFeedback;
 pub use h6::HostBoundarySession;
+pub use h7::{
+    build_jit_readiness_matrix, validate_jit_readiness_matrix, HelperDeoptLinkTable,
+    HelperJitCallDescriptor, ShapeKind, ShapeRegistry,
+};
 pub use validate::{
     eir_validation_view, validate_helper_reference, validate_registry, RegistryBuildError,
     RegistryValidationError,

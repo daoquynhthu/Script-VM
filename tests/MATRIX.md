@@ -62,9 +62,12 @@ Live stage/WP snapshot: `docs/IMPLEMENTATION-STATUS.md`.
 | NG-11 | negative | SPEC-P3-CACHE TR-014, WP-16 | public bytecode cache claim rejected |
 | NG-12 | negative | SPEC-P3-CACHE TR-014, WP-16 | helper registry digest mismatch rejected |
 | NG-13 | negative | SPEC-P3-EIR TR-015, WP-17 | branch non-bool raises |
+| NG-14 | negative | SPEC-P3-MODULE TR-010, WP-11 | duplicate export name rejected |
 | DG-01 | diagnostics | SPEC-P3-ERRORS, WP-04 | construct_error stores code/message/span |
 | RG-01 | regression | SPEC-P3-UNWIND, WP-10 | nested region LIFO defer order |
 | RG-02 | regression | SPEC-P3-VALUES, WP-08/09 | immutable cell ReadOnlyError |
 | RG-03 | regression | SPEC-P3-CALL / WP-17 | interpreter minimal module still returns |
+| RG-04 | regression | SPEC-P3-UNWIND TR-009, WP-10 | finally raise overrides pending return |
+| RG-05 | regression | SPEC-P3-UNWIND TR-009, WP-10 | finally raise suppresses prior raise |
 
 Note: CF-08/CF-09 and mid-block resume live under `cargo test -p vm_eval interpreter::` rather than `vm_tests`.

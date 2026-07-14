@@ -1424,3 +1424,62 @@ Summary:
   InterpreterFrame.next_op_index tracks resume point after nested generic_call; Jump resets index. Mid-block fixture loads call result into another slot after return.
 Next:
   Expand WP-18 matrix; optional Map equality via readonly view.
+
+## 2026-07-14 12:00 · WP-18 TRACEABILITY matrix expansion (TR-006..015)
+
+Work Package: WP-18, WP-19
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_tests/src/conformance.rs
+  - crates/vm_tests/src/negative.rs
+  - crates/vm_tests/src/regression.rs
+  - tests/MATRIX.md
+  - docs/IMPLEMENTATION-STATUS.md
+  - agent/gate-records/G6-20260714-integration-notes.md (new)
+  - PROGRESS.md
+Spec References:
+  - TRACEABILITY-MATRIX.md TR-006 TR-007 TR-008 TR-011 TR-014 TR-015
+  - PHASE-3-VALUE-KEY-STRING-SEMANTICS.md
+  - PHASE-3-READONLY-VIEW-SEMANTICS.md
+  - PHASE-3-CALL-EXECUTION-PROTOCOL.md
+  - PHASE-3-CACHE-COMPATIBILITY-MATRIX.md
+  - PHASE-3-FAST-INTERPRETER-DATA-STRUCTURES.md (interpreter fixtures)
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G5 PASS
+  - G6 PASS_WITH_NOTES
+  - G7 PASS
+Tests:
+  - cargo test -p vm_tests PASS · 40 tests
+  - cargo test --workspace PASS with RUSTFLAGS=-D warnings · ~320 unit tests
+Summary:
+  Expanded Stage 13 / WP-18 matrix: CF-13..21, NG-06..13, RG-03 covering values/keys, readonly, slots, call bind, cache boundary, and interpreter TR-015 positive/negative paths. Refreshed IMPLEMENTATION-STATUS and G6 gate notes. No new OPEN audit items.
+Next:
+  Further TRACEABILITY rows (TR-009 finally override, TR-010 duplicate export, TR-013 RootMap); keep G6 evidence current.
+
+## 2026-07-14 12:20 · WP-18 TR-009/010 matrix + status/G6 sync
+
+Work Package: WP-18, WP-19
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_tests/src/negative.rs
+  - crates/vm_tests/src/regression.rs
+  - tests/MATRIX.md
+  - docs/IMPLEMENTATION-STATUS.md
+  - agent/gate-records/G6-20260714-integration-notes.md
+  - PROGRESS.md
+Spec References:
+  - TRACEABILITY-MATRIX.md TR-009 TR-010
+  - PHASE-3-STRUCTURED-UNWINDING-ALGORITHM.md
+  - PHASE-3-MODULE-RUNTIME-CONTRACT.md
+Gates:
+  - G5 PASS
+  - G6 PASS_WITH_NOTES
+  - G7 PASS
+Tests:
+  - cargo test -p vm_tests PASS · 43 tests
+Summary:
+  Added NG-14 duplicate export and RG-04/05 finally override/suppress rows. Synced IMPLEMENTATION-STATUS and G6 notes to ~323 unit tests.
+Next:
+  TR-013 RootMap / host residual matrix rows; keep commits frequent.

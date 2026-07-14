@@ -103,4 +103,42 @@ mod tests {
         let state = interpreter.run_module(&minimal_valid_eir_module(), EirFunctionId::new(0));
         assert_eq!(state, ControlState::Return(Some(Value::Int(0))));
     }
+
+    /// RG-04: finally raise overrides pending return (TR-009).
+    #[test]
+    fn rg04_finally_raise_overrides_pending_return() {
+        use vm_core::error::language::ErrorObj;
+        use vm_runtime::control::PendingControl;
+        use vm_runtime::unwind::combine::{finally_override, CleanupStepResult};
+        let mut store = ErrorStore::new();
+        let finally_err =
+            store.allocate(ErrorObj::new(RuntimeErrorCode::AssertionError, "finally"));
+        let pending = finally_override(
+            PendingControl::Return(Some(Value::Int(1))),
+            CleanupStepResult::Raise(finally_err),
+            &mut store,
+        );
+        assert_eq!(pending, PendingControl::Raise(finally_err));
+    }
+
+    /// RG-05: finally raise replaces pending raise and suppresses old (TR-009).
+    #[test]
+    fn rg05_finally_raise_suppresses_prior_raise() {
+        use vm_core::error::language::ErrorObj;
+        use vm_runtime::control::PendingControl;
+        use vm_runtime::unwind::combine::{finally_override, CleanupStepResult};
+        let mut store = ErrorStore::new();
+        let old = store.allocate(ErrorObj::new(RuntimeErrorCode::KeyError, "old"));
+        let finally_err = store.allocate(ErrorObj::new(RuntimeErrorCode::TypeError, "finally"));
+        let pending = finally_override(
+            PendingControl::Raise(old),
+            CleanupStepResult::Raise(finally_err),
+            &mut store,
+        );
+        assert_eq!(pending, PendingControl::Raise(finally_err));
+        assert_eq!(
+            store.get(finally_err).expect("f").suppressed,
+            vec![old]
+        );
+    }
 }

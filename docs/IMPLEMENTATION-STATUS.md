@@ -5,9 +5,9 @@ Authority: Subordinate to frozen specs, `AGENT.md`, and plan package
 Rule: This file **may be rewritten** as a snapshot. It is **not** a substitute for append-only `PROGRESS.md` / `ISSUE.md`.  
 **Do not use `HANDOVER.md` as live status** (update only at session handoff).
 
-Updated: 2026-07-10  
-Baseline commit: `f8343d0`  
-Workspace unit tests (approx.): **292** (sir 1 + vm_core 38 + vm_diag 3 + vm_eval 13 + vm_host 6 + vm_runtime 212 + vm_tests 19)
+Updated: 2026-07-14  
+Baseline commit: $sha  
+Workspace unit tests (approx.): **323** (sir 1 + vm_core 38 + vm_diag 3 + vm_eval 14 + vm_host 6 + vm_runtime 218 + vm_tests 43)
 
 ---
 
@@ -52,9 +52,9 @@ Frozen Phase 1–3 specs
 | 9 | Module runtime | **COMPLETE** (bootstrap) |
 | 10 | Call and host boundary | **COMPLETE** (bootstrap) |
 | 11 | GC metadata and cache hooks | **COMPLETE** (hooks, not production GC) |
-| 12 | Fast interpreter minimal execution | **COMPLETE** (+ nested user-call body, module init API) |
-| 13 | Conformance and regression | **IN_PROGRESS** (matrix scaffold + first rows) |
-| 14 | Integration review | **IN_PROGRESS** (CI + scans; not final sign-off) |
+| 12 | Fast interpreter minimal execution | **COMPLETE** (+ nested user-call body, module init, mid-block resume) |
+| 13 | Conformance and regression | **IN_PROGRESS** (matrix CF-01..21, NG-01..14, DG/RG-01..05) |
+| 14 | Integration review | **IN_PROGRESS** (CI + G6 notes; not final sign-off) |
 
 Plan completion definition (coding plan §24) is **not fully met**: full source→AST→IR→VM product pipeline and exhaustive conformance remain later.
 
@@ -75,24 +75,24 @@ Statuses use values from `WORK-PACKAGE-INDEX.md` §2.
 | WP-05 | RuntimePlan model/validation | COMPLETE | |
 | WP-06 | EIR model/validation | COMPLETE | Negative ID tests remediated |
 | WP-07 | Helper registry and dispatch | COMPLETE | All **47** registry helpers via `dispatch_helper` (bootstrap semantics) |
-| WP-08 | Value / heap / object refs | COMPLETE | |
+| WP-08 | Value / heap / object refs | COMPLETE | Map structural equality; NaN key rules |
 | WP-09 | Frame / slot / control | COMPLETE | Four SlotState modes |
 | WP-10 | Structured unwinding | COMPLETE | Nested region tests |
 | WP-11 | Module runtime | COMPLETE | Bootstrap; init body via interpreter API |
 | WP-12 | Call execution protocol | COMPLETE | Prepare + nested user EIR body for generic_call |
-| WP-13 | ReadOnlyView | COMPLETE | Identity semantics still lightly tested (ISSUE-009) |
+| WP-13 | ReadOnlyView | COMPLETE | Identity/equality + mutation reflection matrixed |
 | WP-14 | Host boundary skeleton | COMPLETE | vm_host + H6 helpers |
 | WP-15 | GC metadata structures | COMPLETE | Metadata/hooks only |
-| WP-16 | Cache compatibility checks | COMPLETE | |
-| WP-17 | Fast interpreter core | COMPLETE | Stage 12 goals + nested call/init; not full language |
-| WP-18 | Conformance test matrix | **IN_PROGRESS** | `tests/MATRIX.md` + `vm_tests` CF/NG/DG/RG |
-| WP-19 | Integration and regression gates | **IN_PROGRESS** | GitHub Actions CI; deeper G6 still ongoing |
+| WP-16 | Cache compatibility checks | COMPLETE | Matrix NG-11/12, CF-18 |
+| WP-17 | Fast interpreter core | COMPLETE | Stage 12 + nested call/init + mid-block resume |
+| WP-18 | Conformance test matrix | **IN_PROGRESS** | `tests/MATRIX.md` + `vm_tests` (43); TRACEABILITY-aligned |
+| WP-19 | Integration and regression gates | **IN_PROGRESS** | CI + `agent/gate-records/`; deeper G6 ongoing |
 
 ---
 
 ## 4. Effective open audit items
 
-Computed by **last** `Status:` for each `ISSUE-YYYYMMDD-NNN` in `ISSUE.md` (2026-07-10):
+Computed by **last** `Status:` for each `ISSUE-YYYYMMDD-NNN` in `ISSUE.md` (2026-07-14):
 
 | ID | Effective status | Topic |
 |----|------------------|--------|
@@ -102,6 +102,7 @@ Computed by **last** `Status:` for each `ISSUE-YYYYMMDD-NNN` in `ISSUE.md` (2026
 | ISSUE-20260709-001..003 | RESOLVED | Call body / module init / Stage 14 notes |
 | Most 20260630 / 20260701 / 20260706-001..008 | RESOLVED | See ISSUE.md trailing entries |
 
+**No effective OPEN blockers** for bootstrap Phase 3 substrate.  
 **Do not** treat earlier OPEN lines for the same ID as current.
 
 ---
@@ -114,7 +115,9 @@ Computed by **last** `Status:` for each `ISSUE-YYYYMMDD-NNN` in `ISSUE.md` (2026
 - EIR / RuntimePlan validation with negatives  
 - Runtime: heap, frames/cells, unwind, modules, call substrate, host boundary hooks  
 - Helper central dispatch for full canonical table  
-- Interpreter: literals, slots, branch, loop safepoint, helpers, nested user call, module init entry  
+- Value equality: immediates, lists/records, maps (order-independent), ReadOnlyView unwrap  
+- Interpreter: literals, slots, branch, binary, loop safepoint, helpers, nested user call, mid-block resume, module init entry  
+- WP-18 matrix rows mapped to TR-006..008, TR-011, TR-014, TR-015 (subset)  
 - CI: `.github/workflows/ci.yml` (`check` + `test` ×2, `-D warnings`)
 
 **Not in place / bootstrap only**
@@ -128,10 +131,9 @@ Computed by **last** `Status:` for each `ISSUE-YYYYMMDD-NNN` in `ISSUE.md` (2026
 
 ## 6. Recommended next work (from plan)
 
-1. WP-18: expand conformance matrix rows mapped to TRACEABILITY-MATRIX  
-2. WP-19: formal G6 checklist evidence under `agent/gate-records/`  
-3. ISSUE-009: ReadOnlyView identity tests (WP-13 residual)  
-4. Deeper interpreter (mid-block resume after nested call if needed)
+1. WP-18: continue TRACEABILITY rows (TR-013 safepoint RootMap, deeper TR-012 host roots, remaining validation matrix cells)  
+2. WP-19: keep G6 evidence current under `agent/gate-records/` after baseline moves  
+3. Optional interpreter depth only when a residual substrate gap is identified  
 
 ---
 

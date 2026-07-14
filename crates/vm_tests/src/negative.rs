@@ -329,4 +329,33 @@ mod tests {
         let state = interpreter.run_module(&branch_non_bool_module(), EirFunctionId::new(0));
         assert!(matches!(state, ControlState::Raise(_)));
     }
+
+    /// NG-14: duplicate export name rejected (TR-010).
+    #[test]
+    fn ng14_duplicate_export_name_rejected() {
+        use vm_core::id::{BindingId, SlotId};
+        use vm_core::runtime_plan::schema::{ExportPlan, ExportPlanEntry};
+        use vm_runtime::module::validate::validate_export_plan;
+        let plan = ExportPlan {
+            exports: vec![
+                ExportPlanEntry {
+                    exported_name: "dup".into(),
+                    binding_id: BindingId::new(0),
+                    slot_id: SlotId::new(0),
+                    interface_type: None,
+                    source_span: SourceSpanId::new(0),
+                },
+                ExportPlanEntry {
+                    exported_name: "dup".into(),
+                    binding_id: BindingId::new(1),
+                    slot_id: SlotId::new(1),
+                    interface_type: None,
+                    source_span: SourceSpanId::new(1),
+                },
+            ],
+            seal_after_init: true,
+        };
+        let err = validate_export_plan(&plan).expect_err("NG-14");
+        assert!(matches!(err, RuntimeFailure::Structural(_)));
+    }
 }

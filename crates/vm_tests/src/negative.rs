@@ -318,4 +318,15 @@ mod tests {
             reject_helper_registry_mismatch(Digest(0xDEAD), expected).expect_err("NG-12");
         assert!(matches!(err, RuntimeFailure::Structural(_)));
     }
+
+    /// NG-13: branch condition must be Bool (TR-015).
+    #[test]
+    fn ng13_interpreter_branch_non_bool_raises() {
+        use vm_core::control::ControlState;
+        use vm_core::id::EirFunctionId;
+        use vm_eval::interpreter::{branch_non_bool_module, Interpreter};
+        let mut interpreter = Interpreter::new();
+        let state = interpreter.run_module(&branch_non_bool_module(), EirFunctionId::new(0));
+        assert!(matches!(state, ControlState::Raise(_)));
+    }
 }

@@ -46,6 +46,9 @@ Live stage/WP snapshot: `docs/IMPLEMENTATION-STATUS.md`.
 | CF-16 | conformance | SPEC-P3-VALUES, WP-08 | float NaN `==` true under values_equal |
 | CF-17 | conformance | SPEC-P3-CALL TR-011, WP-12 | bind_arguments positional + pending default |
 | CF-18 | conformance | SPEC-P3-CACHE TR-014, WP-16 | digest includes helper registry; internal cache ok |
+| CF-19 | conformance | SPEC-P3-EIR TR-015, WP-17 | interpreter branch true path |
+| CF-20 | conformance | SPEC-P3-EIR TR-015, WP-17 | interpreter binary add |
+| CF-21 | conformance | SPEC-P3-EIR TR-015, WP-17 | interpreter raise terminator |
 | NG-01 | negative | SPEC-P3-VALID, WP-06 | unknown shape id rejected |
 | NG-02 | negative | SPEC-P3-HELPERS, WP-07 | out-of-range helper id → InvalidHelperError (id 99) |
 | NG-03 | negative | SPEC-P3-HOST, WP-12 | missing capability CapabilityError |
@@ -58,6 +61,7 @@ Live stage/WP snapshot: `docs/IMPLEMENTATION-STATUS.md`.
 | NG-10 | negative | SPEC-P3-CALL TR-011, WP-12 | duplicate named argument ArityError |
 | NG-11 | negative | SPEC-P3-CACHE TR-014, WP-16 | public bytecode cache claim rejected |
 | NG-12 | negative | SPEC-P3-CACHE TR-014, WP-16 | helper registry digest mismatch rejected |
+| NG-13 | negative | SPEC-P3-EIR TR-015, WP-17 | branch non-bool raises |
 | DG-01 | diagnostics | SPEC-P3-ERRORS, WP-04 | construct_error stores code/message/span |
 | RG-01 | regression | SPEC-P3-UNWIND, WP-10 | nested region LIFO defer order |
 | RG-02 | regression | SPEC-P3-VALUES, WP-08/09 | immutable cell ReadOnlyError |

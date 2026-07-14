@@ -424,4 +424,40 @@ mod tests {
         assert_eq!(inputs.helper_registry_digest, reg.digest());
         reject_public_bytecode_cache_claim(false).expect("internal ok");
     }
+
+    /// CF-19: interpreter branch then-path (TR-015).
+    #[test]
+    fn cf19_interpreter_branch_true() {
+        use vm_core::control::ControlState;
+        use vm_eval::interpreter::branch_true_module;
+        let mut interpreter = Interpreter::new();
+        let state = interpreter.run_module(&branch_true_module(), EirFunctionId::new(0));
+        assert_eq!(state, ControlState::Return(Some(Value::Int(1))));
+    }
+
+    /// CF-20: interpreter binary add (TR-015).
+    #[test]
+    fn cf20_interpreter_binary_add() {
+        use vm_core::control::ControlState;
+        use vm_eval::interpreter::binary_add_module;
+        let mut interpreter = Interpreter::new();
+        let state = interpreter.run_module(&binary_add_module(), EirFunctionId::new(0));
+        assert_eq!(state, ControlState::Return(Some(Value::Int(7))));
+    }
+
+    /// CF-21: interpreter raise terminator (TR-015).
+    #[test]
+    fn cf21_interpreter_raise_terminator() {
+        use vm_core::control::ControlState;
+        use vm_core::error::language::ErrorObj;
+        use vm_core::error::registry::RuntimeErrorCode;
+        use vm_eval::interpreter::raise_error_module;
+        let mut interpreter = Interpreter::new();
+        let handle = interpreter.seed_error(ErrorObj::new(RuntimeErrorCode::AssertionError, "x"));
+        let state = interpreter.run_module(
+            &raise_error_module(Value::Error(handle)),
+            EirFunctionId::new(0),
+        );
+        assert_eq!(state, ControlState::Raise(handle));
+    }
 }

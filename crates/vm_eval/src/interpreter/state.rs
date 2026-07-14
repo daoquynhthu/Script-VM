@@ -26,6 +26,8 @@ pub struct InterpreterFrame {
     pub blocks: BTreeMap<u32, EirBlock>,
     /// Where a nested call's return value should be written in the parent frame.
     pub return_dest: Option<vm_core::id::SlotId>,
+    /// Next op index within the current block (for mid-block resume after nested calls).
+    pub next_op_index: usize,
 }
 
 impl InterpreterFrame {
@@ -41,6 +43,7 @@ impl InterpreterFrame {
             current_block: function.entry_block,
             blocks,
             return_dest: None,
+            next_op_index: 0,
         }
     }
 

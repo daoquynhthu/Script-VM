@@ -565,6 +565,97 @@ pub fn generic_call_nested_module(callee_object: Value) -> EirModule {
     }
 }
 
+/// Mid-block nested call: after generic_call writes slot2, copy slot2 → slot3, return slot3.
+/// Proves resume continues ops after the call site.
+#[must_use]
+pub fn generic_call_mid_block_module(callee_object: Value) -> EirModule {
+    let span = SourceSpanId::new(12);
+    let caller = EirFunction {
+        eir_function_id: EirFunctionId::new(0),
+        function_id: Some(FunctionId::new(0)),
+        module_id: ModuleId::new(0),
+        entry_block: EirBlockId::new(0),
+        blocks: vec![EirBlock {
+            block_id: EirBlockId::new(0),
+            parameters: vec![],
+            ops: vec![
+                const_op(SlotId::new(0), 0, span), // callee
+                const_op(SlotId::new(1), 1, span), // arg 11
+                EirOp {
+                    metadata: OpMetadata::default(),
+                    kind: EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                        dest: Some(SlotId::new(2)),
+                        helper_id: HELPER_GENERIC_CALL_ID,
+                        args: vec![SlotId::new(0), SlotId::new(1)],
+                        call_site: None,
+                        access_site: None,
+                        safepoint_id: None,
+                        deopt_id: None,
+                    }),
+                },
+                // post-call op: copy result to slot3
+                EirOp {
+                    metadata: OpMetadata {
+                        source_span: Some(span),
+                        ..OpMetadata::default()
+                    },
+                    kind: EirOpKind::Load(LoadOp::Slot(LoadSlot {
+                        dest: SlotId::new(3),
+                        source: SlotId::new(2),
+                        require_initialized: true,
+                    })),
+                },
+            ],
+            terminator: return_slot(SlotId::new(3)),
+            source_span: Some(span),
+        }],
+        slot_layout: SlotLayoutId::new(0),
+        frame_map: FrameMapId::new(0),
+        source_span: Some(span),
+    };
+    let callee = EirFunction {
+        eir_function_id: EirFunctionId::new(1),
+        function_id: Some(FunctionId::new(1)),
+        module_id: ModuleId::new(0),
+        entry_block: EirBlockId::new(0),
+        blocks: vec![EirBlock {
+            block_id: EirBlockId::new(0),
+            parameters: vec![],
+            ops: vec![],
+            terminator: return_slot(SlotId::new(0)),
+            source_span: Some(span),
+        }],
+        slot_layout: SlotLayoutId::new(0),
+        frame_map: FrameMapId::new(0),
+        source_span: Some(span),
+    };
+    let mut constants = vm_core::eir::schema::ConstantPool::default();
+    constants.constants.insert(
+        0,
+        ConstantEntry {
+            constant_id: ConstantId::new(0),
+            value: callee_object,
+        },
+    );
+    constants.constants.insert(
+        1,
+        ConstantEntry {
+            constant_id: ConstantId::new(1),
+            value: Value::Int(11),
+        },
+    );
+    EirModule {
+        eir_version: Version::new(1, 0, 0),
+        source_runtime_plan_digest: Digest(0xCA11_B002),
+        functions: vec![caller, callee],
+        constants,
+        source_map: Default::default(),
+        root_maps: Default::default(),
+        safepoints: Default::default(),
+        deopt_points: Default::default(),
+    }
+}
+
 /// Module init body fixture: returns constant 99.
 #[must_use]
 pub fn module_init_body_module() -> EirModule {

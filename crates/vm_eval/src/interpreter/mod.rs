@@ -13,10 +13,10 @@ mod terminators;
 
 pub use error::InterpreterError;
 pub use fixtures::{
-    binary_add_module, branch_non_bool_module, branch_true_module, generic_call_nested_module,
-    helper_alloc_object_module, helper_perform_unwind_module, literal_return_module,
-    loop_backedge_module, module_init_body_module, raise_error_module, slot_copy_module,
-    undispatched_helper_module,
+    binary_add_module, branch_non_bool_module, branch_true_module, generic_call_mid_block_module,
+    generic_call_nested_module, helper_alloc_object_module, helper_perform_unwind_module,
+    literal_return_module, loop_backedge_module, module_init_body_module, raise_error_module,
+    slot_copy_module, undispatched_helper_module,
 };
 pub use helpers::BootstrapUnwindExecutor;
 pub use state::{InterpreterFrame, InterpreterState, SafepointPollState};
@@ -133,10 +133,10 @@ impl Interpreter {
                 ));
             }
 
-            let block = {
+            let (block, start_op) = {
                 let frame = self.state.current_frame().expect("frame");
                 match frame.current_block() {
-                    Some(b) => b.clone(),
+                    Some(b) => (b.clone(), frame.next_op_index),
                     None => {
                         return Err(InterpreterError::structural(
                             VmStructuralErrorCode::InvalidEirError,
@@ -146,7 +146,11 @@ impl Interpreter {
                 }
             };
 
-            for op in &block.ops {
+            for (idx, op) in block.ops.iter().enumerate().skip(start_op) {
+                // Advance resume point before execute so nested call resumes after this op.
+                if let Some(frame) = self.state.current_frame_mut() {
+                    frame.next_op_index = idx + 1;
+                }
                 match execute_op(op, &mut self.state, &mut self.executor)? {
                     OpOutcome::Continue => {}
                     OpOutcome::Control(control) => {
@@ -154,7 +158,7 @@ impl Interpreter {
                     }
                     OpOutcome::EnterUserCall { prepared, dest } => {
                         self.enter_user_call(prepared, dest)?;
-                        // Nested call runs to return; continue remaining ops after helper.
+                        // Nested call finished; continue remaining ops from next_op_index.
                     }
                 }
             }
@@ -163,11 +167,11 @@ impl Interpreter {
                 TerminatorOutcome::JumpTo(target) => {
                     let frame = self.state.current_frame_mut().expect("frame");
                     frame.current_block = target;
+                    frame.next_op_index = 0;
                 }
                 TerminatorOutcome::Return(value) => {
                     let returning = self.state.pop_frame();
                     if let Some(parent) = self.state.current_frame_mut() {
-                        // Nested return: write to parent dest and resume parent.
                         if let Some(frame) = returning {
                             if let Some(dest) = frame.return_dest {
                                 if let Some(v) = value {
@@ -178,15 +182,7 @@ impl Interpreter {
                                 }
                             }
                         }
-                        // Parent continues from after the call site (next loop iteration
-                        // would re-run block from start — use return-to-parent continuation).
-                        // Resume by continuing the outer loop only if parent block still
-                        // needs terminators; simplest bootstrap: re-fetch parent block from
-                        // current_block and skip already-executed ops is complex.
-                        // We mark that nested call completed by continuing to parent's terminator
-                        // only when return was the only remaining work — for full correctness
-                        // track op index. Bootstrap: if parent has more ops after call, tests
-                        // place the call as last op before terminator.
+                        // Resume parent at next_op_index (already advanced past call site).
                         continue;
                     }
                     self.state.halted = true;
@@ -267,10 +263,10 @@ impl Interpreter {
                     "nested call step limit exceeded",
                 ));
             }
-            let block = {
+            let (block, start_op) = {
                 let frame = self.state.current_frame().expect("frame");
                 match frame.current_block() {
-                    Some(b) => b.clone(),
+                    Some(b) => (b.clone(), frame.next_op_index),
                     None => {
                         return Err(InterpreterError::structural(
                             VmStructuralErrorCode::InvalidEirError,
@@ -279,7 +275,10 @@ impl Interpreter {
                     }
                 }
             };
-            for op in &block.ops {
+            for (idx, op) in block.ops.iter().enumerate().skip(start_op) {
+                if let Some(frame) = self.state.current_frame_mut() {
+                    frame.next_op_index = idx + 1;
+                }
                 match execute_op(op, &mut self.state, &mut self.executor)? {
                     OpOutcome::Continue => {}
                     OpOutcome::Control(control) => {
@@ -312,6 +311,7 @@ impl Interpreter {
                 TerminatorOutcome::JumpTo(target) => {
                     let frame = self.state.current_frame_mut().expect("frame");
                     frame.current_block = target;
+                    frame.next_op_index = 0;
                 }
                 TerminatorOutcome::Return(value) => {
                     let returning = self.state.pop_frame().expect("frame");
@@ -514,5 +514,25 @@ mod tests {
         let mut interp = Interpreter::new();
         let result = interp.run_module_init_function(&module, EirFunctionId::new(0));
         assert_eq!(result, ControlState::Return(Some(Value::Int(99))));
+    }
+
+    /// Mid-block resume: ops after generic_call still run (copy result then return).
+    #[test]
+    fn generic_call_resumes_ops_after_call_site() {
+        let callee_id = ObjectId::new(2);
+        let module = generic_call_mid_block_module(Value::ObjectRef(callee_id));
+        let mut interp = Interpreter::new();
+        interp.state_mut().callable_registry.register(
+            callee_id,
+            CallableTarget::UserFunction(UserFunctionTarget {
+                function_id: FunctionId::new(1),
+                module_id: ModuleId::new(0),
+                entry_eir_function: EirFunctionId::new(1),
+                return_type: None,
+                object_id: callee_id,
+            }),
+        );
+        let result = interp.run_module(&module, EirFunctionId::new(0));
+        assert_eq!(result, ControlState::Return(Some(Value::Int(11))));
     }
 }

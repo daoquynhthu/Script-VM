@@ -1400,3 +1400,27 @@ Summary:
   values_equal compares Map entries order-independently by key multiset; CF-12 matrix row added.
 Next:
   Mid-block nested-call resume polish (commit 2 of session).
+
+## 2026-07-10 14:30 · Mid-block nested-call resume (WP-17)
+
+Work Package: WP-17
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_eval/src/interpreter/state.rs
+  - crates/vm_eval/src/interpreter/mod.rs
+  - crates/vm_eval/src/interpreter/fixtures.rs
+  - PROGRESS.md
+Spec References:
+  - PHASE-3-CALL-EXECUTION-PROTOCOL.md
+  - PHASE-3-FAST-INTERPRETER-DATA-STRUCTURES.md
+Gates:
+  - G0 PASS
+  - G4 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_eval PASS — 14 tests incl generic_call_resumes_ops_after_call_site
+Summary:
+  InterpreterFrame.next_op_index tracks resume point after nested generic_call; Jump resets index. Mid-block fixture loads call result into another slot after return.
+Next:
+  Expand WP-18 matrix; optional Map equality via readonly view.

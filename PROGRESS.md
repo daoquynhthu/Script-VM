@@ -1483,3 +1483,27 @@ Summary:
   Added NG-14 duplicate export and RG-04/05 finally override/suppress rows. Synced IMPLEMENTATION-STATUS and G6 notes to ~323 unit tests.
 Next:
   TR-013 RootMap / host residual matrix rows; keep commits frequent.
+
+## 2026-07-14 12:30 · TR-013 NG-15 + push main
+
+Work Package: WP-18, WP-19
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_tests/src/negative.rs
+  - tests/MATRIX.md
+  - docs/IMPLEMENTATION-STATUS.md
+  - PROGRESS.md
+Spec References:
+  - TRACEABILITY-MATRIX.md TR-013
+  - PHASE-3-GC-METADATA-OWNERSHIP.md
+  - PHASE-3-VALIDATION-MATRIX.md
+Gates:
+  - G5 PASS
+  - G6 PASS_WITH_NOTES
+  - G7 PASS
+Tests:
+  - cargo test -p vm_tests ng15 PASS
+Summary:
+  NG-15 may-collect without RootMap matrixed. Status baseline e1ff43c; main pushed (5849835..e1ff43c matrix session).
+Next:
+  Host root / TR-012 residual matrix; keep expanding WP-18 without blocking.

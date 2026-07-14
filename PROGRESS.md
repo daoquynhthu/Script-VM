@@ -1376,3 +1376,27 @@ Summary:
   Implemented values_identical / values_equal with ReadOnlyView unwrap for equality; enforced readonly(x) is x false for heap aggregates (ISSUE-009). Expanded WP-18 matrix CF-10/CF-11. Added agent/gate-records G6 notes. Effective open audits: none remaining from prior OPEN list after 009 resolve.
 Next:
   Further WP-18 rows; optional deeper equality for Map; mid-block nested-call resume polish.
+
+## 2026-07-10 14:00 · Map structural equality (WP-08/18)
+
+Work Package: WP-08, WP-18
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/value/mod.rs
+  - crates/vm_tests/src/conformance.rs
+  - tests/MATRIX.md
+  - PROGRESS.md
+Spec References:
+  - PHASE-3-VALUE-KEY-STRING-SEMANTICS.md
+  - PHASE-3-READONLY-VIEW-SEMANTICS.md §5
+Gates:
+  - G0 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_runtime map_equality map_inequality PASS
+  - cargo test -p vm_tests cf12 PASS
+Summary:
+  values_equal compares Map entries order-independently by key multiset; CF-12 matrix row added.
+Next:
+  Mid-block nested-call resume polish (commit 2 of session).

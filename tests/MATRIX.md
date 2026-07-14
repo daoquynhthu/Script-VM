@@ -39,6 +39,7 @@ Live stage/WP snapshot: `docs/IMPLEMENTATION-STATUS.md`.
 | CF-09 | conformance | SPEC-P3-MODULE, WP-17 | `run_module_init_function` (`vm_eval` unit) |
 | CF-10 | conformance | SPEC-P3-READONLY, WP-13 | `readonly(x) is x` false; `==` may true |
 | CF-11 | conformance | SPEC-P3-HELPERS, WP-07 | registry size 47; id 99 rejected |
+| CF-12 | conformance | SPEC-P3-VALUES, WP-08 | map structural equality (order-independent) |
 | NG-01 | negative | SPEC-P3-VALID, WP-06 | unknown shape id rejected |
 | NG-02 | negative | SPEC-P3-HELPERS, WP-07 | out-of-range helper id → InvalidHelperError (id 99) |
 | NG-03 | negative | SPEC-P3-HOST, WP-12 | missing capability CapabilityError |

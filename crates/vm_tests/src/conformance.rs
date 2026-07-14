@@ -263,6 +263,23 @@ mod tests {
         assert!(values_equal(&view_val, &target, &heap).expect("eq"));
     }
 
+    /// CF-12: distinct maps with same entries are equal, not identical.
+    #[test]
+    fn cf12_map_structural_equality() {
+        use vm_runtime::value::{values_equal, values_identical};
+        let mut heap = Heap::new();
+        let m1 = heap.alloc_map(false).expect("m1");
+        heap.map_insert(m1, Value::String("k".into()), Value::Int(1))
+            .expect("ins");
+        let m2 = heap.alloc_map(false).expect("m2");
+        heap.map_insert(m2, Value::String("k".into()), Value::Int(1))
+            .expect("ins");
+        let a = Value::ObjectRef(m1.id());
+        let b = Value::ObjectRef(m2.id());
+        assert!(values_equal(&a, &b, &heap).expect("eq"));
+        assert!(!values_identical(&a, &b));
+    }
+
     /// CF-11: all 47 helpers resolve through registry + central dispatch negative for id 99.
     #[test]
     fn cf11_helper_registry_has_47_and_out_of_range_rejected() {

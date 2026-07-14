@@ -60,6 +60,14 @@ pub fn values_equal(a: &Value, b: &Value, heap: &Heap) -> RuntimeResult<bool> {
                         list_equal(fa, fb, heap)?
                     }
                     (
+                        HeapObject::Map {
+                            entries: ea, ..
+                        },
+                        HeapObject::Map {
+                            entries: eb, ..
+                        },
+                    ) => map_equal(ea, eb, heap)?,
+                    (
                         HeapObject::EnumValue {
                             enum_id: e1,
                             case_index: c1,
@@ -110,6 +118,33 @@ fn list_equal(a: &[Value], b: &[Value], heap: &Heap) -> RuntimeResult<bool> {
     Ok(true)
 }
 
+/// Map equality: same multiset of (key, value) pairs (order-independent).
+fn map_equal(
+    a: &[(crate::value::ValueKey, Value)],
+    b: &[(crate::value::ValueKey, Value)],
+    heap: &Heap,
+) -> RuntimeResult<bool> {
+    if a.len() != b.len() {
+        return Ok(false);
+    }
+    for (ka, va) in a {
+        let mut found = false;
+        for (kb, vb) in b {
+            if ka == kb {
+                if !values_equal(va, vb, heap)? {
+                    return Ok(false);
+                }
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -125,5 +160,46 @@ mod tests {
             &Value::ObjectRef(ObjectId::new(1)),
             &Value::ObjectRef(ObjectId::new(2))
         ));
+    }
+
+    #[test]
+    fn map_equality_is_order_independent() {
+        let mut heap = Heap::new();
+        let m1 = heap.alloc_map(false).expect("m1");
+        heap.map_insert(m1, Value::String("a".into()), Value::Int(1))
+            .expect("a");
+        heap.map_insert(m1, Value::String("b".into()), Value::Int(2))
+            .expect("b");
+        let m2 = heap.alloc_map(false).expect("m2");
+        // reverse insertion order
+        heap.map_insert(m2, Value::String("b".into()), Value::Int(2))
+            .expect("b");
+        heap.map_insert(m2, Value::String("a".into()), Value::Int(1))
+            .expect("a");
+        assert!(values_equal(
+            &Value::ObjectRef(m1.id()),
+            &Value::ObjectRef(m2.id()),
+            &heap
+        )
+        .expect("eq"));
+        assert!(!values_identical(
+            &Value::ObjectRef(m1.id()),
+            &Value::ObjectRef(m2.id())
+        ));
+    }
+
+    #[test]
+    fn map_inequality_on_value_mismatch() {
+        let mut heap = Heap::new();
+        let m1 = heap.alloc_map(false).expect("m1");
+        heap.map_insert(m1, Value::Int(1), Value::Int(10)).expect("i");
+        let m2 = heap.alloc_map(false).expect("m2");
+        heap.map_insert(m2, Value::Int(1), Value::Int(11)).expect("i");
+        assert!(!values_equal(
+            &Value::ObjectRef(m1.id()),
+            &Value::ObjectRef(m2.id()),
+            &heap
+        )
+        .expect("eq"));
     }
 }

@@ -1507,3 +1507,25 @@ Summary:
   NG-15 may-collect without RootMap matrixed. Status baseline e1ff43c; main pushed (5849835..e1ff43c matrix session).
 Next:
   Host root / TR-012 residual matrix; keep expanding WP-18 without blocking.
+
+## 2026-07-14 12:40 · TR-012 host root matrix
+
+Work Package: WP-18
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_tests/src/conformance.rs
+  - crates/vm_tests/src/negative.rs
+  - tests/MATRIX.md
+  - PROGRESS.md
+Spec References:
+  - TRACEABILITY-MATRIX.md TR-012
+  - PHASE-3-HOST-BOUNDARY-CONTRACT.md
+Gates:
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_tests cf22_ ng16_ PASS
+Summary:
+  CF-22/NG-16 cover host root registry retention policy in the Stage 13 matrix.
+Next:
+  Residual WP-18 validation cells; keep G6 notes on major baselines.

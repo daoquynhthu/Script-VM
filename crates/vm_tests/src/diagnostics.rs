@@ -75,4 +75,20 @@ mod tests {
         assert_eq!(err.message, "diagnostic");
         assert_eq!(err.source_span, Some(SourceSpanId::new(42)));
     }
+
+    /// DG-02: interpreter records last source span from constant op metadata.
+    #[test]
+    fn dg02_interpreter_records_op_source_span() {
+        use vm_core::control::ControlState;
+        use vm_core::id::EirFunctionId;
+        use vm_core::value::Value;
+        use vm_eval::interpreter::{literal_return_module, Interpreter};
+        let mut interpreter = Interpreter::new();
+        let state = interpreter.run_module(&literal_return_module(), EirFunctionId::new(0));
+        assert_eq!(state, ControlState::Return(Some(Value::Int(42))));
+        assert_eq!(
+            interpreter.state().last_source_span,
+            Some(SourceSpanId::new(1))
+        );
+    }
 }

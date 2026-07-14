@@ -50,6 +50,7 @@ Live stage/WP snapshot: `docs/IMPLEMENTATION-STATUS.md`.
 | CF-20 | conformance | SPEC-P3-EIR TR-015, WP-17 | interpreter binary add |
 | CF-21 | conformance | SPEC-P3-EIR TR-015, WP-17 | interpreter raise terminator |
 | CF-22 | conformance | SPEC-P3-HOST TR-012, WP-14 | call-scoped host roots cleared |
+| CF-23 | conformance | SPEC-P3-EIR / GC-META TR-015, WP-17 | loop backedge safepoint poll count |
 | NG-01 | negative | SPEC-P3-VALID, WP-06 | unknown shape id rejected |
 | NG-02 | negative | SPEC-P3-HELPERS, WP-07 | out-of-range helper id → InvalidHelperError (id 99) |
 | NG-03 | negative | SPEC-P3-HOST, WP-12 | missing capability CapabilityError |
@@ -67,6 +68,7 @@ Live stage/WP snapshot: `docs/IMPLEMENTATION-STATUS.md`.
 | NG-15 | negative | SPEC-P3-GC-META TR-013, WP-15 | may-collect without RootMap rejected |
 | NG-16 | negative | SPEC-P3-HOST TR-012, WP-14 | retained VM value without host root rejected |
 | DG-01 | diagnostics | SPEC-P3-ERRORS, WP-04 | construct_error stores code/message/span |
+| DG-02 | diagnostics | SPEC-P3-EIR TR-015, WP-17 | interpreter last_source_span from op metadata |
 | RG-01 | regression | SPEC-P3-UNWIND, WP-10 | nested region LIFO defer order |
 | RG-02 | regression | SPEC-P3-VALUES, WP-08/09 | immutable cell ReadOnlyError |
 | RG-03 | regression | SPEC-P3-CALL / WP-17 | interpreter minimal module still returns |

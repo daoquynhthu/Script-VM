@@ -1529,3 +1529,26 @@ Summary:
   CF-22/NG-16 cover host root registry retention policy in the Stage 13 matrix.
 Next:
   Residual WP-18 validation cells; keep G6 notes on major baselines.
+
+## 2026-07-14 12:55 · WP-18 CF-23/DG-02 + status refresh
+
+Work Package: WP-18, WP-19
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_tests/src/conformance.rs
+  - crates/vm_tests/src/diagnostics.rs
+  - tests/MATRIX.md
+  - docs/IMPLEMENTATION-STATUS.md
+  - PROGRESS.md
+Spec References:
+  - TRACEABILITY-MATRIX.md TR-015
+  - PHASE-3-GC-METADATA-OWNERSHIP.md (safepoint poll)
+Gates:
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_tests PASS · 48 tests
+Summary:
+  CF-23 loop backedge safepoint poll and DG-02 interpreter source-span diagnostics added to matrix. Snapshot test count ~328.
+Next:
+  Continue residual TRACEABILITY cells when needed; WP-19 G6 remain PASS_WITH_NOTES.

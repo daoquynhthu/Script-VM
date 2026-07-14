@@ -6,8 +6,8 @@ Rule: This file **may be rewritten** as a snapshot. It is **not** a substitute f
 **Do not use `HANDOVER.md` as live status** (update only at session handoff).
 
 Updated: 2026-07-14  
-Baseline commit: `e1ff43c`  
-Workspace unit tests (approx.): **324** (sir 1 + vm_core 38 + vm_diag 3 + vm_eval 14 + vm_host 6 + vm_runtime 218 + vm_tests 44)
+Baseline commit: `146a99b`  
+Workspace unit tests (approx.): **328** (sir 1 + vm_core 38 + vm_diag 3 + vm_eval 14 + vm_host 6 + vm_runtime 218 + vm_tests 48)
 
 ---
 
@@ -53,7 +53,7 @@ Frozen Phase 1–3 specs
 | 10 | Call and host boundary | **COMPLETE** (bootstrap) |
 | 11 | GC metadata and cache hooks | **COMPLETE** (hooks, not production GC) |
 | 12 | Fast interpreter minimal execution | **COMPLETE** (+ nested user-call body, module init, mid-block resume) |
-| 13 | Conformance and regression | **IN_PROGRESS** (matrix CF-01..21, NG-01..15, DG/RG-01..05) |
+| 13 | Conformance and regression | **IN_PROGRESS** (matrix CF-01..23, NG-01..16, DG-01..02, RG-01..05) |
 | 14 | Integration review | **IN_PROGRESS** (CI + G6 notes; not final sign-off) |
 
 Plan completion definition (coding plan §24) is **not fully met**: full source→AST→IR→VM product pipeline and exhaustive conformance remain later.
@@ -85,7 +85,7 @@ Statuses use values from `WORK-PACKAGE-INDEX.md` §2.
 | WP-15 | GC metadata structures | COMPLETE | Metadata/hooks only |
 | WP-16 | Cache compatibility checks | COMPLETE | Matrix NG-11/12, CF-18 |
 | WP-17 | Fast interpreter core | COMPLETE | Stage 12 + nested call/init + mid-block resume |
-| WP-18 | Conformance test matrix | **IN_PROGRESS** | `tests/MATRIX.md` + `vm_tests` (44); TRACEABILITY-aligned |
+| WP-18 | Conformance test matrix | **IN_PROGRESS** | `tests/MATRIX.md` + `vm_tests` (48); TRACEABILITY-aligned subset |
 | WP-19 | Integration and regression gates | **IN_PROGRESS** | CI + `agent/gate-records/`; deeper G6 ongoing |
 
 ---

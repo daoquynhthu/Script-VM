@@ -476,4 +476,15 @@ mod tests {
         registry.unregister_call_scoped();
         assert!(registry.get(id).is_none());
     }
+
+    /// CF-23: loop backedge records safepoint poll (TR-015 / GC-META).
+    #[test]
+    fn cf23_interpreter_loop_backedge_safepoint_poll() {
+        use vm_core::control::ControlState;
+        use vm_eval::interpreter::loop_backedge_module;
+        let mut interpreter = Interpreter::new();
+        let state = interpreter.run_module(&loop_backedge_module(), EirFunctionId::new(0));
+        assert_eq!(state, ControlState::Return(Some(Value::Int(99))));
+        assert_eq!(interpreter.state().safepoint_polls.loop_backedge_count, 1);
+    }
 }

@@ -42,7 +42,7 @@ pub use dispatch::{
     HELPER_RESOLVE_MODULE_ID, HELPER_SEAL_EXPORTS_ID, HELPER_SET_ATTRIBUTE_ID,
     HELPER_SLICE_READ_ID, HELPER_WRITE_BARRIER_ID,
 };
-pub use h3::CallSiteFeedback;
+pub use h3::{CallSiteFeedback, PreparedUserCall};
 pub use h6::HostBoundarySession;
 pub use h7::{
     build_jit_readiness_matrix, validate_jit_readiness_matrix, HelperDeoptLinkTable,

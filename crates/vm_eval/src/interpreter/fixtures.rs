@@ -15,7 +15,9 @@ use vm_core::profile::Version;
 use vm_core::runtime_plan::schema::SafepointKind;
 use vm_core::value::Value;
 use vm_diag::source_span::SourceSpanId;
-use vm_runtime::helpers::dispatch::{HELPER_ALLOC_OBJECT_ID, HELPER_PERFORM_UNWIND_ID};
+use vm_runtime::helpers::dispatch::{
+    HELPER_ALLOC_OBJECT_ID, HELPER_GENERIC_CALL_ID, HELPER_PERFORM_UNWIND_ID,
+};
 
 /// Out-of-range helper id (all 47 registry helpers are dispatched).
 pub const UNDISPATCHED_HELPER_ID: RuntimeHelperId = RuntimeHelperId::new(99);
@@ -481,6 +483,117 @@ pub fn helper_perform_unwind_module() -> EirModule {
         source_span: Some(span),
     };
     base_module(function, Default::default())
+}
+
+/// Nested generic_call: caller invokes callee that returns its first arg.
+/// Caller: const 7 → slot1, const ObjectRef callee → slot0, generic_call(slot0, slot1) → slot2, return slot2.
+/// Callee (eir id 1): return slot0.
+#[must_use]
+pub fn generic_call_nested_module(callee_object: Value) -> EirModule {
+    let span = SourceSpanId::new(10);
+    let caller = EirFunction {
+        eir_function_id: EirFunctionId::new(0),
+        function_id: Some(FunctionId::new(0)),
+        module_id: ModuleId::new(0),
+        entry_block: EirBlockId::new(0),
+        blocks: vec![EirBlock {
+            block_id: EirBlockId::new(0),
+            parameters: vec![],
+            ops: vec![
+                const_op(SlotId::new(0), 0, span), // callee
+                const_op(SlotId::new(1), 1, span), // arg 7
+                EirOp {
+                    metadata: OpMetadata::default(),
+                    kind: EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                        dest: Some(SlotId::new(2)),
+                        helper_id: HELPER_GENERIC_CALL_ID,
+                        args: vec![SlotId::new(0), SlotId::new(1)],
+                        call_site: None,
+                        access_site: None,
+                        safepoint_id: None,
+                        deopt_id: None,
+                    }),
+                },
+            ],
+            terminator: return_slot(SlotId::new(2)),
+            source_span: Some(span),
+        }],
+        slot_layout: SlotLayoutId::new(0),
+        frame_map: FrameMapId::new(0),
+        source_span: Some(span),
+    };
+    let callee = EirFunction {
+        eir_function_id: EirFunctionId::new(1),
+        function_id: Some(FunctionId::new(1)),
+        module_id: ModuleId::new(0),
+        entry_block: EirBlockId::new(0),
+        blocks: vec![EirBlock {
+            block_id: EirBlockId::new(0),
+            parameters: vec![],
+            ops: vec![],
+            terminator: return_slot(SlotId::new(0)),
+            source_span: Some(span),
+        }],
+        slot_layout: SlotLayoutId::new(0),
+        frame_map: FrameMapId::new(0),
+        source_span: Some(span),
+    };
+    let mut constants = vm_core::eir::schema::ConstantPool::default();
+    constants.constants.insert(
+        0,
+        ConstantEntry {
+            constant_id: ConstantId::new(0),
+            value: callee_object,
+        },
+    );
+    constants.constants.insert(
+        1,
+        ConstantEntry {
+            constant_id: ConstantId::new(1),
+            value: Value::Int(7),
+        },
+    );
+    EirModule {
+        eir_version: Version::new(1, 0, 0),
+        source_runtime_plan_digest: Digest(0xCA11_B0D1),
+        functions: vec![caller, callee],
+        constants,
+        source_map: Default::default(),
+        root_maps: Default::default(),
+        safepoints: Default::default(),
+        deopt_points: Default::default(),
+    }
+}
+
+/// Module init body fixture: returns constant 99.
+#[must_use]
+pub fn module_init_body_module() -> EirModule {
+    let span = SourceSpanId::new(11);
+    let function = EirFunction {
+        eir_function_id: EirFunctionId::new(0),
+        function_id: Some(FunctionId::new(0)),
+        module_id: ModuleId::new(0),
+        entry_block: EirBlockId::new(0),
+        blocks: vec![EirBlock {
+            block_id: EirBlockId::new(0),
+            parameters: vec![],
+            ops: vec![const_op(SlotId::new(0), 0, span)],
+            terminator: return_slot(SlotId::new(0)),
+            source_span: Some(span),
+        }],
+        slot_layout: SlotLayoutId::new(0),
+        frame_map: FrameMapId::new(0),
+        source_span: Some(span),
+    };
+    let mut constants = vm_core::eir::schema::ConstantPool::default();
+    constants.constants.insert(
+        0,
+        ConstantEntry {
+            constant_id: ConstantId::new(0),
+            value: Value::Int(99),
+        },
+    );
+    base_module(function, constants)
 }
 
 fn base_module(function: EirFunction, constants: vm_core::eir::schema::ConstantPool) -> EirModule {

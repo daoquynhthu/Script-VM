@@ -198,11 +198,19 @@ fn declared_arity(target: &CallableTarget) -> Option<u32> {
     }
 }
 
+/// Result of a successful generic-call prepare, for interpreter body execution.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PreparedUserCall {
+    pub target: CallableTarget,
+    pub bound: Vec<(vm_core::id::SlotId, Value)>,
+    pub callee: Value,
+}
+
 /// Bootstrap generic call prepare path (protocol steps 4–8).
 ///
 /// Args: `args[0]` callee, `args[1..]` positional arguments.
 /// Returns `VmControl::Normal(Some(callee))` after successful prepare.
-/// Does **not** execute callee body (interpreter-owned); updates feedback when provided.
+/// When `prepared_out` is provided, stores bound slots + target for interpreter frame enter.
 pub fn helper_generic_call(
     args: &[Value],
     registry: &CallableRegistry,
@@ -211,6 +219,7 @@ pub fn helper_generic_call(
     feedback: Option<&mut CallSiteFeedback>,
     call_depth: u32,
     max_call_depth: u32,
+    prepared_out: Option<&mut Option<PreparedUserCall>>,
 ) -> RuntimeResult<VmControl> {
     if call_depth >= max_call_depth {
         if let Some(fb) = feedback {
@@ -283,7 +292,15 @@ pub fn helper_generic_call(
         );
     }
 
-    // Body execution / frame push-pop: delegated to interpreter call engine.
+    if let Some(out) = prepared_out {
+        *out = Some(PreparedUserCall {
+            target: target.clone(),
+            bound: binding.bound.clone(),
+            callee: callee.clone(),
+        });
+    }
+
+    // Body execution: interpreter consumes PreparedUserCall when present.
     Ok(VmControl::Normal(Some(callee)))
 }
 
@@ -429,6 +446,7 @@ mod tests {
             Some(&mut feedback),
             0,
             64,
+            None,
         )
         .expect("call");
         assert_eq!(control, VmControl::Normal(Some(Value::ObjectRef(object_id))));

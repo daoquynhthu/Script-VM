@@ -44,6 +44,11 @@ pub fn execute_op(
 pub enum OpOutcome {
     Continue,
     Control(vm_runtime::control::VmControl),
+    /// Nested user-function call after generic_call prepare.
+    EnterUserCall {
+        prepared: vm_runtime::helpers::h3::PreparedUserCall,
+        dest: Option<SlotId>,
+    },
 }
 
 fn execute_constant(state: &mut InterpreterState, op: &ConstantOp) -> Result<OpOutcome, InterpreterError> {
@@ -196,6 +201,9 @@ fn execute_runtime_helper(
         }
         HelperBridgeOutcome::Unit => Ok(OpOutcome::Continue),
         HelperBridgeOutcome::Control(control) => Ok(OpOutcome::Control(control)),
+        HelperBridgeOutcome::EnterUserCall { prepared, dest } => {
+            Ok(OpOutcome::EnterUserCall { prepared, dest })
+        }
     }
 }
 

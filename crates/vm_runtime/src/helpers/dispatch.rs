@@ -30,7 +30,7 @@ use super::h2::{
 };
 use super::h3::{
     helper_bind_method, helper_call_builtin, helper_check_arity, helper_generic_call,
-    CallSiteFeedback,
+    CallSiteFeedback, PreparedUserCall,
 };
 use super::h4::{
     helper_assert_fail, helper_attach_suppressed, helper_close_resource, helper_execute_defer,
@@ -173,6 +173,8 @@ pub struct HelperDispatchEnv<'a, E> {
     pub shape_registry: Option<&'a ShapeRegistry>,
     /// Optional frame slots for load_cell/store_cell helpers.
     pub cell_slots: Option<&'a mut SlotArray>,
+    /// Filled by `helper_generic_call` for interpreter nested-frame enter.
+    pub prepared_call: Option<&'a mut Option<PreparedUserCall>>,
     pub write_barrier: &'a mut dyn WriteBarrierHook,
     pub source_span: Option<SourceSpanId>,
     pub unwind_ctx: &'a mut UnwindContext,
@@ -325,6 +327,7 @@ pub fn dispatch_helper<E: UnwindExecutor>(
             env.call_site_feedback.as_deref_mut(),
             env.call_depth,
             env.max_call_depth,
+            env.prepared_call.as_deref_mut(),
         )?;
         return Ok(HelperDispatchOutcome::VmControl(control));
     }
@@ -479,6 +482,7 @@ mod tests {
             host_session: None,
             shape_registry: None,
             cell_slots: None,
+            prepared_call: None,
             write_barrier: barrier,
             source_span: None,
             unwind_ctx,
@@ -1547,7 +1551,7 @@ mod tests {
             module_runtime: Some(&mut module_rt),
             module_resolver: Some(&resolver),
             host_session: None,
-            shape_registry: None,            cell_slots: None,            write_barrier: &mut barrier,
+            shape_registry: None,            cell_slots: None, prepared_call: None, write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
             executor: &mut executor,
@@ -1692,7 +1696,7 @@ mod tests {
             module_runtime: Some(&mut module_rt),
             module_resolver: None,
             host_session: None,
-            shape_registry: None,            cell_slots: None,            write_barrier: &mut barrier,
+            shape_registry: None,            cell_slots: None, prepared_call: None, write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
             executor: &mut executor,
@@ -1743,7 +1747,7 @@ mod tests {
             module_runtime: None,
             module_resolver: None,
             host_session: Some(&mut host_session),
-            shape_registry: None,            cell_slots: None,            write_barrier: &mut barrier,
+            shape_registry: None,            cell_slots: None, prepared_call: None, write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
             executor: &mut executor,
@@ -1772,7 +1776,7 @@ mod tests {
             module_runtime: None,
             module_resolver: None,
             host_session: Some(&mut host_session),
-            shape_registry: None,            cell_slots: None,            write_barrier: &mut barrier,
+            shape_registry: None,            cell_slots: None, prepared_call: None, write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
             executor: &mut executor,
@@ -1830,7 +1834,7 @@ mod tests {
             module_runtime: None,
             module_resolver: None,
             host_session: Some(&mut host_session),
-            shape_registry: None,            cell_slots: None,            write_barrier: &mut barrier,
+            shape_registry: None,            cell_slots: None, prepared_call: None, write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
             executor: &mut executor,
@@ -1892,7 +1896,7 @@ mod tests {
             module_runtime: None,
             module_resolver: None,
             host_session: None,
-            shape_registry: Some(&shapes),            cell_slots: None,            write_barrier: &mut barrier,
+            shape_registry: Some(&shapes),            cell_slots: None, prepared_call: None, write_barrier: &mut barrier,
             source_span: None,
             unwind_ctx: &mut ctx,
             executor: &mut executor,

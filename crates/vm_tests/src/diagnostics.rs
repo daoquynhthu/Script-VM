@@ -56,7 +56,7 @@ mod tests {
             module_runtime: None,
             module_resolver: None,
             host_session: None,
-            shape_registry: None,            cell_slots: None,            write_barrier: &mut barrier,
+            shape_registry: None,            cell_slots: None, prepared_call: None, write_barrier: &mut barrier,
             source_span: Some(SourceSpanId::new(42)),
             unwind_ctx: &mut ctx,
             executor: &mut executor,

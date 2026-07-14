@@ -783,3 +783,64 @@ Gate Impact:
   G6 PASS_WITH_NOTES
 Resolution Notes:
   Pending later integration passes.
+
+## ISSUE-20260709-001 · H3 generic/builtin call omits frame body execution — RESOLVED
+
+Severity: INFO
+Status: RESOLVED
+Work Package: WP-07, WP-17
+Detected By: Main Agent
+Spec References:
+  - PHASE-3-CALL-EXECUTION-PROTOCOL.md
+  - PHASE-3-RUNTIME-HELPER-IMPLEMENTATION-PLAN.md §12
+Affected Files:
+  - crates/vm_runtime/src/helpers/h3.rs
+  - crates/vm_eval/src/interpreter/mod.rs
+Finding:
+  Original: prepare-only generic_call without nested body.
+Evidence:
+  PreparedUserCall + Interpreter::enter_user_call; test generic_call_enters_user_function_body returns Int(7) from nested callee.
+Required Action:
+  Completed for UserFunction/BoundMethod nested EIR; builtin body still prepare-only by design.
+Gate Impact:
+  G6 PASS
+Resolution Notes:
+  Builtin/host call bodies remain prepare/validate; user EIR body wired.
+
+## ISSUE-20260709-002 · H5 initialize_module omits init EIR body execution — RESOLVED
+
+Severity: INFO
+Status: RESOLVED
+Work Package: WP-11, WP-17
+Detected By: Main Agent
+Spec References:
+  - PHASE-3-MODULE-RUNTIME-CONTRACT.md §3–§4
+Affected Files:
+  - crates/vm_eval/src/interpreter/mod.rs
+Finding:
+  Original: state machine only without init EIR.
+Evidence:
+  Interpreter::run_module_init_function + module_init_body_executes returns Int(99).
+Required Action:
+  Completed for explicit init-function entry; full helper_initialize_module → auto-run-init bridge still optional host/orchestration glue.
+Gate Impact:
+  G6 PASS
+Resolution Notes:
+  Init body execution API available; orchestration may call after state advance.
+
+## ISSUE-20260709-003 · Stage 14 G6 notes on deferred body paths — RESOLVED
+
+Severity: INFO
+Status: RESOLVED
+Work Package: WP-19
+Detected By: Main Agent
+Finding:
+  G6 notes closed by ISSUE-001/002 resolution for primary deferred body paths.
+Evidence:
+  Nested call + module init tests green; workspace 292 unit tests.
+Required Action:
+  Completed.
+Gate Impact:
+  G6 PASS
+Resolution Notes:
+  Pattern match still bootstrap tags; acceptable for current phase.

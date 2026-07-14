@@ -1280,3 +1280,39 @@ Summary:
   Dispatched final registry helpers match_pattern (28) and load_module_slot (46); all 47 canonical helpers now route through dispatch_helper. Undispatched negative retargeted to id 99. Stage 14 scan: no public bytecode/CPython ABI strings in crates; language failures use RuntimeFailure not panic. Open notes remain ISSUE-001/002 (call body / module init body).
 Next:
   Deepen conformance matrix, wire interpreter for prepared calls and module init body, or production GC/JIT phases later.
+
+## 2026-07-10 00:30 · Interpreter nested call + module init body (ISSUE-001/002)
+
+Work Package: WP-17, WP-07, WP-11
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/helpers/h3.rs
+  - crates/vm_runtime/src/helpers/dispatch.rs
+  - crates/vm_runtime/src/helpers/mod.rs
+  - crates/vm_eval/src/interpreter/state.rs
+  - crates/vm_eval/src/interpreter/helpers.rs
+  - crates/vm_eval/src/interpreter/ops.rs
+  - crates/vm_eval/src/interpreter/mod.rs
+  - crates/vm_eval/src/interpreter/fixtures.rs
+  - crates/vm_tests (env field prepared_call)
+  - PROGRESS.md
+  - ISSUE.md
+Spec References:
+  - PHASE-3-CALL-EXECUTION-PROTOCOL.md §3–§11
+  - PHASE-3-RUNTIME-HELPER-IMPLEMENTATION-PLAN.md §12, §20.4
+  - PHASE-3-MODULE-RUNTIME-CONTRACT.md §3–§4
+  - PHASE-3-FAST-INTERPRETER-DATA-STRUCTURES.md
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+  - G6 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p vm_eval PASS — 13 tests incl generic_call_enters_user_function_body + module_init_body_executes
+  - cargo test --workspace PASS with RUSTFLAGS=-D warnings — unit-test total: 292 (1+38+3+13+6+212+19)
+Summary:
+  generic_call now stores PreparedUserCall; interpreter EnterUserCall pushes nested frame, binds args, runs callee EIR to return, writes parent dest. run_module_init_function executes module init EIR body. Functions table loaded from EirModule. ISSUE-001/002 resolved.
+Next:
+  Expand nested-call mid-block resume, deepen conformance, or later-phase GC/JIT.

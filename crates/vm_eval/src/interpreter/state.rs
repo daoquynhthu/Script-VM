@@ -5,15 +5,15 @@
 use std::collections::BTreeMap;
 
 use vm_core::eir::schema::{ConstantPool, EirBlock, EirFunction};
-use vm_core::id::{EirBlockId, EirFunctionId};
 use vm_core::error::language::ErrorStore;
-use vm_core::id::SafepointId;
+use vm_core::id::{EirBlockId, EirFunctionId, FunctionId, SafepointId};
 use vm_diag::source_span::SourceSpanId;
 use vm_runtime::call::callable::CallableRegistry;
 use vm_runtime::call::contract::StubTypeContractChecker;
 use vm_runtime::control::PendingControl;
 use vm_runtime::frame::SlotArray;
 use vm_runtime::heap::Heap;
+use vm_runtime::module::runtime::ModuleRuntime;
 use vm_runtime::unwind::UnwindContext;
 use vm_runtime::write_barrier::NoopWriteBarrierHook;
 
@@ -24,6 +24,8 @@ pub struct InterpreterFrame {
     pub slots: SlotArray,
     pub current_block: EirBlockId,
     pub blocks: BTreeMap<u32, EirBlock>,
+    /// Where a nested call's return value should be written in the parent frame.
+    pub return_dest: Option<vm_core::id::SlotId>,
 }
 
 impl InterpreterFrame {
@@ -38,6 +40,7 @@ impl InterpreterFrame {
             slots: SlotArray::with_capacity(slot_count),
             current_block: function.entry_block,
             blocks,
+            return_dest: None,
         }
     }
 
@@ -69,6 +72,8 @@ impl SafepointPollState {
 pub struct InterpreterState {
     pub frames: Vec<InterpreterFrame>,
     pub constants: ConstantPool,
+    /// Loaded EIR functions for nested call resolution (keyed by eir_function_id).
+    pub functions: BTreeMap<u32, EirFunction>,
     pub error_store: ErrorStore,
     pub heap: Heap,
     pub callable_registry: CallableRegistry,
@@ -77,6 +82,7 @@ pub struct InterpreterState {
     pub unwind_ctx: UnwindContext,
     pub safepoint_polls: SafepointPollState,
     pub last_source_span: Option<SourceSpanId>,
+    pub module_runtime: Option<ModuleRuntime>,
     pub halted: bool,
 }
 
@@ -86,6 +92,7 @@ impl InterpreterState {
         Self {
             frames: Vec::new(),
             constants,
+            functions: BTreeMap::new(),
             error_store: ErrorStore::new(),
             heap: Heap::new(),
             callable_registry: CallableRegistry::new(),
@@ -94,7 +101,15 @@ impl InterpreterState {
             unwind_ctx: UnwindContext::with_pending(PendingControl::Return(None)),
             safepoint_polls: SafepointPollState::default(),
             last_source_span: None,
+            module_runtime: None,
             halted: false,
+        }
+    }
+
+    pub fn load_functions(&mut self, functions: &[EirFunction]) {
+        self.functions.clear();
+        for f in functions {
+            self.functions.insert(f.eir_function_id.raw(), f.clone());
         }
     }
 
@@ -114,5 +129,23 @@ impl InterpreterState {
 
     pub fn current_frame_mut(&mut self) -> Option<&mut InterpreterFrame> {
         self.frames.last_mut()
+    }
+
+    /// Resolve a user-function target to an EIR function body.
+    pub fn resolve_user_function(
+        &self,
+        entry: EirFunctionId,
+        function_id: Option<FunctionId>,
+    ) -> Option<&EirFunction> {
+        if let Some(f) = self.functions.get(&entry.raw()) {
+            return Some(f);
+        }
+        if let Some(fid) = function_id {
+            return self
+                .functions
+                .values()
+                .find(|f| f.function_id == Some(fid));
+        }
+        None
     }
 }

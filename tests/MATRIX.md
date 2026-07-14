@@ -63,6 +63,7 @@ Live stage/WP snapshot: `docs/IMPLEMENTATION-STATUS.md`.
 | NG-12 | negative | SPEC-P3-CACHE TR-014, WP-16 | helper registry digest mismatch rejected |
 | NG-13 | negative | SPEC-P3-EIR TR-015, WP-17 | branch non-bool raises |
 | NG-14 | negative | SPEC-P3-MODULE TR-010, WP-11 | duplicate export name rejected |
+| NG-15 | negative | SPEC-P3-GC-META TR-013, WP-15 | may-collect without RootMap rejected |
 | DG-01 | diagnostics | SPEC-P3-ERRORS, WP-04 | construct_error stores code/message/span |
 | RG-01 | regression | SPEC-P3-UNWIND, WP-10 | nested region LIFO defer order |
 | RG-02 | regression | SPEC-P3-VALUES, WP-08/09 | immutable cell ReadOnlyError |

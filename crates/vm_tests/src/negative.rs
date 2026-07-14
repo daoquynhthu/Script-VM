@@ -358,4 +358,24 @@ mod tests {
         let err = validate_export_plan(&plan).expect_err("NG-14");
         assert!(matches!(err, RuntimeFailure::Structural(_)));
     }
+
+    /// NG-15: may-collect helper at safepoint without RootMap rejected (TR-013).
+    #[test]
+    fn ng15_may_collect_without_root_map_rejected() {
+        use vm_core::eir::fixtures::{
+            eir_module_with_may_collect_without_root_map, minimal_eir_validation_context,
+        };
+        use vm_core::eir::validate::{validate_eir_module, EirModuleInput, EirValidationError};
+        use vm_core::id::SafepointId;
+        use vm_runtime::helpers::eir_validation_view;
+        use vm_runtime::helpers::RuntimeHelperRegistry;
+        let registry = RuntimeHelperRegistry::canonical().expect("reg");
+        let mut ctx = minimal_eir_validation_context();
+        ctx.gc_may_run = true;
+        ctx.safepoint_ids.insert(SafepointId::new(0));
+        ctx.helper_registry = eir_validation_view(&registry);
+        let module = eir_module_with_may_collect_without_root_map();
+        let err = validate_eir_module(EirModuleInput::Resolved(&module), &ctx).unwrap_err();
+        assert_eq!(err, EirValidationError::MayCollectWithoutRootMap);
+    }
 }

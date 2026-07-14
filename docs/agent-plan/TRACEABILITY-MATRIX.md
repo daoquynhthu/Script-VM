@@ -449,7 +449,7 @@ Validation Gates:
   - G7
 Test Requirement:
   Positive, negative, diagnostic, and regression matrix.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3 — see tests/MATRIX.md; not full language product suite)
 ```
 
 ### TR-018 · Integration and Regression

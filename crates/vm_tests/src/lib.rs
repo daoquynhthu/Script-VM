@@ -11,6 +11,8 @@ mod negative;
 mod diagnostics;
 #[cfg(test)]
 mod regression;
+#[cfg(test)]
+mod gap_closure;
 
 #[cfg(test)]
 mod smoke {

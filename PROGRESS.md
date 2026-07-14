@@ -1552,3 +1552,38 @@ Summary:
   CF-23 loop backedge safepoint poll and DG-02 interpreter source-span diagnostics added to matrix. Snapshot test count ~328.
 Next:
   Continue residual TRACEABILITY cells when needed; WP-19 G6 remain PASS_WITH_NOTES.
+
+## 2026-07-14 14:00 · WP-18 complete: TRACEABILITY gap closure
+
+Work Package: WP-18
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_tests/src/gap_closure.rs (new)
+  - crates/vm_tests/src/lib.rs
+  - tests/MATRIX.md
+  - docs/IMPLEMENTATION-STATUS.md
+  - docs/agent-plan/WORK-PACKAGE-INDEX.md
+  - docs/agent-plan/TRACEABILITY-MATRIX.md
+  - PROGRESS.md
+Spec References:
+  - TRACEABILITY-MATRIX.md TR-002 through TR-017
+  - WORK-PACKAGE-INDEX.md WP-18 completion criteria
+  - PHASE-3-VALIDATION-MATRIX.md
+  - IMPLEMENTATION-CODING-PLAN Stage 13
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G5 PASS
+  - G6 PASS_WITH_NOTES
+  - G7 PASS
+Tests:
+  - cargo test -p vm_tests PASS · 78 tests
+  - cargo test --workspace PASS with RUSTFLAGS=-D warnings
+Summary:
+  Closed WP-18 bootstrap completion criteria: every implemented subsystem has
+  traceable positive and negative matrix rows (TR-002..017). Added gap_closure
+  module (CF-08/09/24..32, NG-17..33, RG-06/07, DG-03). Marked WP-18 COMPLETE,
+  Stage 13 COMPLETE, TR-017 COMPLETE (bootstrap). Exhaustive product-language
+  conformance remains out of scope (TR-GAP / WP-19 residual).
+Next:
+  WP-19 Stage 14 integration sign-off.

@@ -96,7 +96,7 @@ Computed by **last** `Status:` for each `ISSUE-YYYYMMDD-NNN` in `ISSUE.md` (2026
 
 | ID | Effective status | Topic |
 |----|------------------|--------|
-| ISSUE-20260706-009 | **OPEN** | ReadOnlyView identity semantics not exercised |
+| ISSUE-20260706-009 | RESOLVED | ReadOnlyView identity semantics exercised |
 | ISSUE-20260706-010 | ACCEPTED | Dual region-stack bootstrap |
 | ISSUE-20260701-007 | ACCEPTED | Harness MCP tree |
 | ISSUE-20260709-001..003 | RESOLVED | Call body / module init / Stage 14 notes |

@@ -1344,3 +1344,35 @@ Summary:
   Unified live status without editing HANDOVER.md. Added docs/IMPLEMENTATION-STATUS.md as rewritable Stage/WP snapshot (baseline f8343d0). Set WP-00–WP-17 COMPLETE and WP-18/19 IN_PROGRESS in both plan indexes. Updated ARCHITECTURE STATUS, REPOSITORY-PROCESS, agent-plan README, MATRIX inventory, AGENT routing table + ISSUE last-status rule. Effective open audit: ISSUE-20260706-009 only.
 Next:
   WP-18 matrix expansion or ISSUE-009; refresh IMPLEMENTATION-STATUS when baseline moves.
+
+## 2026-07-10 12:00 · ISSUE-009 ReadOnlyView identity + WP-18 matrix expansion
+
+Work Package: WP-13, WP-18, WP-19
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime/src/value/mod.rs
+  - crates/vm_runtime/src/readonly.rs
+  - crates/vm_tests/src/conformance.rs
+  - tests/MATRIX.md
+  - agent/gate-records/G6-20260710-integration-notes.md (new)
+  - docs/IMPLEMENTATION-STATUS.md
+  - PROGRESS.md
+  - ISSUE.md
+Spec References:
+  - PHASE-3-READONLY-VIEW-SEMANTICS.md §4–§5
+  - PHASE-3-VALUE-KEY-STRING-SEMANTICS.md
+  - TRACEABILITY-MATRIX.md TR-007
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G5 PASS
+  - G6 PASS_WITH_NOTES
+  - G7 PASS
+Tests:
+  - cargo test -p vm_runtime readonly::tests PASS
+  - cargo test -p vm_tests PASS — 21 tests (CF-10, CF-11 added)
+  - cargo test --workspace PASS with RUSTFLAGS=-D warnings — unit-test total: 298 (1+38+3+13+6+216+21)
+Summary:
+  Implemented values_identical / values_equal with ReadOnlyView unwrap for equality; enforced readonly(x) is x false for heap aggregates (ISSUE-009). Expanded WP-18 matrix CF-10/CF-11. Added agent/gate-records G6 notes. Effective open audits: none remaining from prior OPEN list after 009 resolve.
+Next:
+  Further WP-18 rows; optional deeper equality for Map; mid-block nested-call resume polish.

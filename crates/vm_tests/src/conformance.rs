@@ -249,4 +249,58 @@ mod tests {
             )
         ));
     }
+
+    /// CF-10: `readonly(x) is x` is false; `readonly(x) == x` may be true (ISSUE-009).
+    #[test]
+    fn cf10_readonly_identity_and_equality() {
+        use vm_runtime::value::{values_equal, values_identical};
+        let mut heap = Heap::new();
+        let list = heap.alloc_list(vec![Value::Int(5)], false).expect("list");
+        let target = Value::ObjectRef(list.id());
+        let view = readonly_view(&mut heap, target.clone(), None).expect("view");
+        let view_val = Value::ObjectRef(view.id());
+        assert!(!values_identical(&view_val, &target));
+        assert!(values_equal(&view_val, &target, &heap).expect("eq"));
+    }
+
+    /// CF-11: all 47 helpers resolve through registry + central dispatch negative for id 99.
+    #[test]
+    fn cf11_helper_registry_has_47_and_out_of_range_rejected() {
+        use vm_core::id::RuntimeHelperId;
+        use vm_runtime::helpers::dispatch::{dispatch_helper, DEFAULT_MAX_CALL_DEPTH};
+        use vm_runtime::helpers::RuntimeHelperRegistry;
+        use vm_runtime::runtime_error::RuntimeFailure;
+        let registry = RuntimeHelperRegistry::canonical().expect("reg");
+        assert_eq!(registry.helper_ids().count(), 47);
+        let mut heap = Heap::new();
+        let mut store = ErrorStore::new();
+        let checker = StubTypeContractChecker::new();
+        let mut callable = CallableRegistry::new();
+        let capabilities = CapabilitySet::new();
+        let mut barrier = NoopWriteBarrierHook;
+        let mut ctx = UnwindContext::with_pending(PendingControl::Return(None));
+        let mut executor = NoopExec;
+        let mut env = HelperDispatchEnv {
+            heap: &mut heap,
+            error_store: &mut store,
+            type_checker: &checker,
+            callable_registry: &mut callable,
+            capabilities: &capabilities,
+            call_site_feedback: None,
+            call_depth: 0,
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+            module_runtime: None,
+            module_resolver: None,
+            host_session: None,
+            shape_registry: None,
+            cell_slots: None,
+            prepared_call: None,
+            write_barrier: &mut barrier,
+            source_span: None,
+            unwind_ctx: &mut ctx,
+            executor: &mut executor,
+        };
+        let err = dispatch_helper(RuntimeHelperId::new(99), &[], &mut env).expect_err("oor");
+        assert!(matches!(err, RuntimeFailure::Structural(_)));
+    }
 }

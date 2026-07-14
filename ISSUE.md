@@ -844,3 +844,26 @@ Gate Impact:
   G6 PASS
 Resolution Notes:
   Pattern match still bootstrap tags; acceptable for current phase.
+
+## ISSUE-20260706-009 · ReadOnlyView identity semantics not exercised — RESOLVED
+
+Severity: INFO
+Status: RESOLVED
+Work Package: WP-13
+Detected By: Main Agent
+Spec References:
+  - PHASE-3-READONLY-VIEW-SEMANTICS.md §4–§5
+Affected Files:
+  - crates/vm_runtime/src/value/mod.rs
+  - crates/vm_runtime/src/readonly.rs
+  - crates/vm_tests/src/conformance.rs
+Finding:
+  Original: identity rules not implemented or tested.
+Evidence:
+  values_identical / values_equal added; tests readonly_view_is_not_identical_to_target, readonly_view_equals_target_by_equality, nested view, CF-10; all pass under cargo test.
+Required Action:
+  Completed.
+Gate Impact:
+  G5 PASS
+Resolution Notes:
+  Identity is handle-based; equality unwraps ReadOnlyView and may compare aggregate structure for lists/records/enums.

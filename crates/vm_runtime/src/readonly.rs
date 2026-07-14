@@ -117,9 +117,19 @@ fn reject_readonly_path(
     }
 }
 
+/// Whether `view` is a ReadOnlyView whose target is `target` (for diagnostics).
+#[must_use]
+pub fn view_targets(view: ObjRef<()>, target: &Value, heap: &Heap) -> RuntimeResult<bool> {
+    match heap.resolve(view)? {
+        HeapObject::ReadOnlyView(v) => Ok(&v.target == target),
+        _ => Ok(false),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::value::{values_equal, values_identical};
     use vm_core::id::FieldIndex;
     use vm_core::value::Value;
 
@@ -163,5 +173,55 @@ mod tests {
 
         let read = readonly_read_field(&heap, view, FieldIndex(0)).expect("read");
         assert_eq!(read, Value::Int(9));
+    }
+
+    /// ISSUE-009 / SPEC §4: `readonly(x) is x` MUST be false for heap aggregates.
+    #[test]
+    fn readonly_view_is_not_identical_to_target() {
+        let mut heap = Heap::new();
+        let list = heap.alloc_list(vec![Value::Int(1)], false).expect("list");
+        let target = Value::ObjectRef(list.id());
+        let view = readonly_view(&mut heap, target.clone(), None).expect("view");
+        let view_val = Value::ObjectRef(view.id());
+        assert!(
+            !values_identical(&view_val, &target),
+            "readonly(x) is x must be false"
+        );
+        assert!(view_targets(view, &target, &heap).expect("targets"));
+    }
+
+    /// SPEC §5: equality may hold between view and target after unwrap.
+    #[test]
+    fn readonly_view_equals_target_by_equality() {
+        let mut heap = Heap::new();
+        let list = heap
+            .alloc_list(vec![Value::Int(1), Value::Int(2)], false)
+            .expect("list");
+        let target = Value::ObjectRef(list.id());
+        let view = readonly_view(&mut heap, target.clone(), None).expect("view");
+        let view_val = Value::ObjectRef(view.id());
+        assert!(values_equal(&view_val, &target, &heap).expect("eq"));
+        // Distinct list with same content: equal but not identical.
+        let list2 = heap
+            .alloc_list(vec![Value::Int(1), Value::Int(2)], false)
+            .expect("list2");
+        assert!(values_equal(&target, &Value::ObjectRef(list2.id()), &heap).expect("struct eq"));
+        assert!(!values_identical(&target, &Value::ObjectRef(list2.id())));
+    }
+
+    #[test]
+    fn nested_readonly_view_still_not_identical_to_root_target() {
+        let mut heap = Heap::new();
+        let rec = heap
+            .alloc_record_instance(vec![Value::Int(3)], false)
+            .expect("rec");
+        let target = Value::ObjectRef(rec.id());
+        let v1 = readonly_view(&mut heap, target.clone(), None).expect("v1");
+        let v2 = readonly_view(&mut heap, Value::ObjectRef(v1.id()), None).expect("v2");
+        assert!(!values_identical(
+            &Value::ObjectRef(v2.id()),
+            &target
+        ));
+        assert!(values_equal(&Value::ObjectRef(v2.id()), &target, &heap).expect("eq"));
     }
 }

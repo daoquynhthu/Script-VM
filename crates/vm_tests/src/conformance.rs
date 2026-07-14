@@ -460,4 +460,20 @@ mod tests {
         );
         assert_eq!(state, ControlState::Raise(handle));
     }
+
+    /// CF-22: call-scoped host roots cleared after unregister (TR-012).
+    #[test]
+    fn cf22_host_call_scoped_roots_cleared() {
+        use vm_host::{HostBoundaryId, HostRootEntry, HostRootLifetime, HostRootRegistry};
+        let mut registry = HostRootRegistry::new();
+        let id = registry.register(HostRootEntry {
+            value: Value::Int(1),
+            owner: HostBoundaryId(0),
+            lifetime: HostRootLifetime::CallScoped,
+            capability: None,
+        });
+        assert!(registry.get(id).is_some());
+        registry.unregister_call_scoped();
+        assert!(registry.get(id).is_none());
+    }
 }

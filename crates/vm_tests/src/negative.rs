@@ -378,4 +378,14 @@ mod tests {
         let err = validate_eir_module(EirModuleInput::Resolved(&module), &ctx).unwrap_err();
         assert_eq!(err, EirValidationError::MayCollectWithoutRootMap);
     }
+
+    /// NG-16: host retained heap value without root rejected (TR-012).
+    #[test]
+    fn ng16_host_retained_value_without_root_rejected() {
+        use vm_core::error::registry::VmStructuralErrorCode;
+        use vm_host::HostRootRegistry;
+        let value = Value::ObjectRef(ObjectId::new(1));
+        let err = HostRootRegistry::validate_retention(&value, true).expect_err("NG-16");
+        assert_eq!(err.code, VmStructuralErrorCode::BackendViolationError);
+    }
 }

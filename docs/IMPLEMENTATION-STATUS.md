@@ -6,7 +6,7 @@ Rule: This file **may be rewritten** as a snapshot. It is **not** a substitute f
 **Do not use `HANDOVER.md` as live status** (update only at session handoff).
 
 Updated: 2026-07-14  
-Baseline commit: `0b21869`  
+Baseline commit: `a7089b9`  
 Workspace unit tests (approx.): **358** (sir 1 + vm_core 38 + vm_diag 3 + vm_eval 14 + vm_host 6 + vm_runtime 218 + vm_tests 78)
 
 ---

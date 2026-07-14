@@ -3,7 +3,7 @@
 Document class: Agent implementation plan  
 Normative status: Non-normative  
 Authority: Subordinate to the frozen Phase 1–3 specifications, `AGENT-MASTER-PLAN.md`, and `IMPLEMENTATION-CODING-PLAN.md`  
-Revised: 2026-06-29 11:00:40
+Revised: 2026-07-10 (implementation status sync)
 
 ---
 
@@ -199,7 +199,7 @@ Completion Criteria
 ```text
 WP-ID: WP-00
 Title: Agent and repository process setup
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main-only
 Parallelism Justification: none
@@ -297,7 +297,7 @@ no specification files are modified
 ```text
 WP-ID: WP-01
 Title: Frozen specification reference ingestion
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+1
 Parallelism Justification: A1 may independently verify reference aliases while main Agent prepares ingestion map.
@@ -393,7 +393,7 @@ no plan text acts as normative source
 ```text
 WP-ID: WP-02
 Title: Initial traceability matrix construction
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+2
 Parallelism Justification: A1 can verify references while A3 drafts test obligations; main Agent merges both.
@@ -493,7 +493,7 @@ gaps are recorded
 ```text
 WP-ID: WP-03
 Title: ID and schema model skeleton
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+1
 Parallelism Justification: A1 may verify ID/schema spec references while main Agent designs implementation package boundaries.
@@ -592,7 +592,7 @@ validation entry points are known
 ```text
 WP-ID: WP-04
 Title: Runtime error registry implementation
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+1
 Parallelism Justification: A3 can derive negative-test obligations independently.
@@ -681,7 +681,7 @@ negative tests are mapped
 ```text
 WP-ID: WP-05
 Title: RuntimePlan model and validation
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+2
 Parallelism Justification: A1 verifies references; A3 derives validation tests.
@@ -776,7 +776,7 @@ RuntimePlan validator plan covers P3-V2 and P3-V3
 ```text
 WP-ID: WP-06
 Title: EIR model and validation
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+2
 Parallelism Justification: A1 validates references; A3 builds op/terminator negative-test obligations.
@@ -870,7 +870,7 @@ EIR validator plan covers P3-V4 and P3-V5
 ```text
 WP-ID: WP-07
 Title: Runtime helper registry and dispatch
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+2
 Parallelism Justification: A1 checks helper references; A3 derives helper validation tests.
@@ -966,7 +966,7 @@ helper registry is implementable without new helper semantics
 ```text
 WP-ID: WP-08
 Title: Value, heap, and object reference model
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+1
 Parallelism Justification: A2 may review localized runtime structure against value/profile specs.
@@ -1064,7 +1064,7 @@ runtime value skeleton is compatible with future GC/JIT hooks
 ```text
 WP-ID: WP-09
 Title: Frame, slot, and control-state model
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+1
 Parallelism Justification: A2 may review frame/control structure against control and GC metadata specs.
@@ -1157,7 +1157,7 @@ frame/control model can support interpreter, unwind, and deopt metadata
 ```text
 WP-ID: WP-10
 Title: Structured unwinding implementation
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+2
 Parallelism Justification: A2 reviews structure while A3 derives unwinding tests.
@@ -1253,7 +1253,7 @@ structured unwinding behavior has executable implementation and tests
 ```text
 WP-ID: WP-11
 Title: Module runtime implementation
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+2
 Parallelism Justification: A1 checks spec references; A3 derives module/cycle tests.
@@ -1350,7 +1350,7 @@ module runtime can execute source-order initialization safely
 ```text
 WP-ID: WP-12
 Title: Call execution protocol implementation
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+2
 Parallelism Justification: A2 reviews call frame design; A3 derives call negative tests.
@@ -1451,7 +1451,7 @@ call protocol can execute user/builtin/constructor/host wrapper calls consistent
 ```text
 WP-ID: WP-13
 Title: ReadOnlyView implementation
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+1
 Parallelism Justification: A3 may independently derive readonly negative tests.
@@ -1546,7 +1546,7 @@ ReadOnlyView behavior is shallow, guarded, and tested
 ```text
 WP-ID: WP-14
 Title: Host boundary skeleton
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+2
 Parallelism Justification: A1 checks boundary references; A4 reviews capability and integration risks.
@@ -1645,7 +1645,7 @@ host boundary skeleton supports module resolver and builtin host hooks safely
 ```text
 WP-ID: WP-15
 Title: GC metadata structures
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+2
 Parallelism Justification: A2 reviews structures; A3 derives validation tests.
@@ -1741,7 +1741,7 @@ metadata structures satisfy interpreter and future JIT/GC hooks
 ```text
 WP-ID: WP-16
 Title: Cache compatibility checks
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+1
 Parallelism Justification: A3 may derive cache invalidation tests.
@@ -1838,7 +1838,7 @@ cache compatibility checks are explicit and testable
 ```text
 WP-ID: WP-17
 Title: Fast interpreter core
-Status: DRAFT
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+3
 Parallelism Justification: A2 can review runtime execution structure, A3 test obligations, A4 integration risks; main Agent owns final design.
@@ -1950,7 +1950,7 @@ minimal EIR execution works under frozen semantics and validation gates
 ```text
 WP-ID: WP-18
 Title: Conformance test matrix
-Status: DRAFT
+Status: IN_PROGRESS
 Owner: Main Agent
 Agent Mode: main+3
 Parallelism Justification: A1 validates spec mapping, A3 builds test categories, A4 checks integration risk.
@@ -2041,7 +2041,7 @@ every implemented subsystem has traceable positive and negative tests
 ```text
 WP-ID: WP-19
 Title: Integration and regression gates
-Status: DRAFT
+Status: IN_PROGRESS
 Owner: Main Agent
 Agent Mode: main+2
 Parallelism Justification: A3 verifies regression checks; A4 identifies integration hazards.

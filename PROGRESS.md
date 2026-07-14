@@ -1316,3 +1316,31 @@ Summary:
   generic_call now stores PreparedUserCall; interpreter EnterUserCall pushes nested frame, binds args, runs callee EIR to return, writes parent dest. run_module_init_function executes module init EIR body. Functions table loaded from EirModule. ISSUE-001/002 resolved.
 Next:
   Expand nested-call mid-block resume, deepen conformance, or later-phase GC/JIT.
+
+## 2026-07-10 10:00 · Documentation status unification (no HANDOVER)
+
+Work Package: WP-00
+Agent Mode: main-only
+Changed Files:
+  - docs/IMPLEMENTATION-STATUS.md (new)
+  - docs/agent-plan/WORK-PACKAGE-INDEX.md
+  - PLAN/WORK-PACKAGE-INDEX.md
+  - docs/agent-plan/README.md
+  - ARCHITECTURE/00-project/STATUS.md
+  - REPOSITORY-PROCESS.md
+  - tests/MATRIX.md
+  - AGENT.md
+  - PROGRESS.md
+Spec References:
+  - AGENT.md
+  - IMPLEMENTATION-CODING-PLAN.md
+  - WORK-PACKAGE-INDEX.md
+Gates:
+  - G0 PASS
+  - G7 PASS
+Tests:
+  - Not run (documentation-only; no code changes)
+Summary:
+  Unified live status without editing HANDOVER.md. Added docs/IMPLEMENTATION-STATUS.md as rewritable Stage/WP snapshot (baseline f8343d0). Set WP-00–WP-17 COMPLETE and WP-18/19 IN_PROGRESS in both plan indexes. Updated ARCHITECTURE STATUS, REPOSITORY-PROCESS, agent-plan README, MATRIX inventory, AGENT routing table + ISSUE last-status rule. Effective open audit: ISSUE-20260706-009 only.
+Next:
+  WP-18 matrix expansion or ISSUE-009; refresh IMPLEMENTATION-STATUS when baseline moves.

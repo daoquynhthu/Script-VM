@@ -1,23 +1,69 @@
 # STATUS
 
-Document class: Administrative tracking
+Document class: Administrative tracking  
 Planning status: This document records current project state. It is not itself a normative specification.
 
-Updated: 2026-06-29 09:33:23
+Updated: 2026-07-10
 
 ## Current Phase
 
-Phase 3: Minimal VM Design
+```text
+Phase 3: Minimal VM — post-freeze implementation (Rust workspace)
+```
+
+Normative Phase 1–3 documents remain **frozen**. Implementation is subordinate to those specs.
 
 ## Current Work Mode
 
 ```text
-Normative freeze candidate review
+Implementation under AGENT.md + docs/agent-plan/
+Coding stages Stage 0–12 COMPLETE (bootstrap goals)
+Stage 13 / WP-18 IN_PROGRESS (conformance matrix)
+Stage 14 / WP-19 IN_PROGRESS (integration gates / CI)
 ```
 
-Not implementation planning.
+## Live implementation status
 
-## Latest Completed Batch
+Authoritative **implementation snapshot** (rewritable):
+
+```text
+docs/IMPLEMENTATION-STATUS.md
+```
+
+Authoritative **change history**:
+
+```text
+PROGRESS.md (append-only)
+```
+
+Authoritative **audit findings** (append-only; last Status per ISSUE-ID wins):
+
+```text
+ISSUE.md
+```
+
+Session handoff (update only when handing off):
+
+```text
+HANDOVER.md
+```
+
+## Latest implementation baseline (summary)
+
+```text
+Git baseline: f8343d0 (or newer main)
+Workspace: cargo check/test --workspace green
+Helpers: all 47 registry helpers via dispatch_helper (bootstrap)
+Interpreter: minimal EIR path + nested user-call body + module init API
+CI: .github/workflows/ci.yml
+Open audit (effective): ISSUE-20260706-009 ReadOnlyView identity
+```
+
+## Historical: normative freeze track (unchanged archive)
+
+Previous freeze-candidate work (2026-06 era) remains documented below for archive continuity.
+
+### Latest Completed Normative Batch (historical)
 
 ```text
 S2-R4-S2-R5 complete
@@ -28,37 +74,19 @@ Created:
 - `PHASE-3-NORMATIVE-LANGUAGE-SWEEP.md`
 - `PHASE-3-FINAL-FREEZE-READINESS-AUDIT.md`
 
-## First-Stage Audit Repair Progress
+### First-Stage Audit Repair Progress (historical)
 
 ```text
-R1 complete
-R2 complete
-R3 complete
-R4 complete
-R5 complete
-R6 complete
-R7 complete
-R8 complete
-R9 complete
-R10 complete
-R11 complete
-R12 complete
-R13 complete
-R14 complete
-R15 complete
+R1–R15 complete
 ```
 
-## Second-Stage Consolidation Progress
+### Second-Stage Consolidation Progress (historical)
 
 ```text
-S2-R1 complete
-S2-R2 complete
-S2-R3 complete
-S2-R4 complete
-S2-R5 complete
+S2-R1–S2-R5 complete
 ```
 
-## Final Freeze-Readiness Result
+### Final Freeze-Readiness Result (historical)
 
 ```text
 Freeze candidate: yes
@@ -107,7 +135,7 @@ Requires explicit freeze declaration: yes
 ## Phase 3 Administrative Tracking Documents
 
 - `PHASE-3-CHANGELOG.md`
-- `STATUS.md`
+- `STATUS.md` (this file)
 - `PHASE-3-DOCUMENT-MANIFEST.md`
 - `PHASE-3-NORMATIVE-CONSISTENCY-AUDIT.md`
 - `PHASE-3-AUDIT-REPAIR-LOG.md`
@@ -115,22 +143,3 @@ Requires explicit freeze declaration: yes
 - `PHASE-3-NORMATIVE-LANGUAGE-SWEEP.md`
 - `PHASE-3-FINAL-FREEZE-READINESS-AUDIT.md`
 - `WORKSPACE-INDEX.md`
-
-## Workspace Organization
-
-Root directory keeps compatibility copies.
-
-Organized mirror:
-
-```text
-phase3/normative/
-phase3/plans/
-phase3/admin/
-phase3/aggregates/
-```
-
-## Next Possible Action
-
-```text
-Create PHASE-3-FREEZE.md if project owner approves freeze.
-```

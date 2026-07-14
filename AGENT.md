@@ -1094,13 +1094,19 @@ Use this table when deciding which document to open.
 | Validate gate pass/fail | `GATE-CHECKLIST.md` |
 | Record changed work | `PROGRESS.md` |
 | Record audit finding | `ISSUE.md` |
+| Read live Stage/WP snapshot | `docs/IMPLEMENTATION-STATUS.md` (rewritable; not PROGRESS) |
 | End a task | `HANDOFF-TEMPLATE.md` |
+| Session handoff only | `HANDOVER.md` (do not treat as live status between handoffs) |
+
+ISSUE.md reading rule: for a given `ISSUE-YYYYMMDD-NNN`, the **last** `Status:` line for that ID is effective.
 
 ---
 
 ## 25. Patch Record
 
 This section was added on 2026-06-29 10:48:11 to clarify how Agents must use the frozen specification documents and the Agent implementation plan document set.
+
+2026-07-10: routing table extended for `docs/IMPLEMENTATION-STATUS.md` and ISSUE last-status rule (documentation sync; no semantic change).
 
 ## 26. Compliance Summary
 

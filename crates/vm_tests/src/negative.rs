@@ -202,4 +202,46 @@ mod tests {
         let _ = field_bound_validation_context();
         let _ = minimal_eir_validation_context();
     }
+
+    /// NG-06: NaN float cannot be used as map key (TR-006).
+    #[test]
+    fn ng06_nan_map_key_rejected() {
+        let mut heap = Heap::new();
+        let map = heap.alloc_map(false).expect("map");
+        let err = heap
+            .map_insert(map, Value::Float(f64::NAN), Value::Int(1))
+            .expect_err("NG-06");
+        assert_eq!(err, RuntimeFailure::language(RuntimeErrorCode::TypeError));
+    }
+
+    /// NG-07: string slice bounds / negative start → IndexError (TR-006).
+    #[test]
+    fn ng07_string_slice_bounds_rejected() {
+        use vm_runtime::value::string_slice;
+        assert_eq!(
+            string_slice("abc", -1, 1).unwrap_err(),
+            RuntimeFailure::language(RuntimeErrorCode::IndexError)
+        );
+        assert_eq!(
+            string_slice("abc", 0, 4).unwrap_err(),
+            RuntimeFailure::language(RuntimeErrorCode::IndexError)
+        );
+        assert_eq!(
+            string_slice("abc", 2, 1).unwrap_err(),
+            RuntimeFailure::language(RuntimeErrorCode::IndexError)
+        );
+    }
+
+    /// NG-08: uninitialized slot read rejected (TR-008).
+    #[test]
+    fn ng08_uninitialized_slot_read_rejected() {
+        use vm_core::id::{FrameId, SlotId};
+        use vm_runtime::frame::Frame;
+        let frame = Frame::new(FrameId::new(0), 1);
+        let err = frame.slots.read(SlotId::new(0)).expect_err("NG-08");
+        assert_eq!(
+            err,
+            RuntimeFailure::language(RuntimeErrorCode::UninitializedBindingError)
+        );
+    }
 }

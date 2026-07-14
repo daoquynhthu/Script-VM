@@ -320,4 +320,70 @@ mod tests {
         let err = dispatch_helper(RuntimeHelperId::new(99), &[], &mut env).expect_err("oor");
         assert!(matches!(err, RuntimeFailure::Structural(_)));
     }
+
+    /// CF-13: map equality holds when one side is a ReadOnlyView of the other (TR-007 §5).
+    #[test]
+    fn cf13_map_equality_through_readonly_view() {
+        use vm_runtime::value::{values_equal, values_identical};
+        let mut heap = Heap::new();
+        let m = heap.alloc_map(false).expect("map");
+        heap.map_insert(m, Value::String("k".into()), Value::Int(1))
+            .expect("ins");
+        let target = Value::ObjectRef(m.id());
+        let view = readonly_view(&mut heap, target.clone(), None).expect("view");
+        let view_val = Value::ObjectRef(view.id());
+        assert!(values_equal(&view_val, &target, &heap).expect("eq"));
+        assert!(!values_identical(&view_val, &target));
+    }
+
+    /// CF-14: string scalar length and in-bounds slice (TR-006).
+    #[test]
+    fn cf14_string_scalar_len_and_slice() {
+        use vm_runtime::value::{string_scalar_len, string_slice};
+        assert_eq!(string_scalar_len("a🙂b"), 3);
+        assert_eq!(string_slice("a🙂b", 1, 2).expect("slice"), "🙂");
+        assert_eq!(string_slice("abc", 0, 3).expect("full"), "abc");
+    }
+
+    /// CF-15: mutating original aggregate is visible through ReadOnlyView read (TR-007).
+    #[test]
+    fn cf15_readonly_view_reflects_original_mutation() {
+        use vm_core::id::FieldIndex;
+        use vm_runtime::readonly::readonly_read_field;
+        let mut heap = Heap::new();
+        let rec = heap
+            .alloc_record_instance(vec![Value::Int(1)], false)
+            .expect("rec");
+        let view = readonly_view(&mut heap, Value::ObjectRef(rec.id()), None).expect("view");
+        assert_eq!(
+            readonly_read_field(&heap, view, FieldIndex(0)).expect("r0"),
+            Value::Int(1)
+        );
+        // Mutate original record field storage via heap resolve_mut path used by helpers.
+        {
+            use vm_runtime::heap::object::HeapObject;
+            let object = heap.resolve_mut(rec).expect("mut");
+            let HeapObject::RecordInstance { fields, .. } = object else {
+                panic!("record");
+            };
+            fields[0] = Value::Int(99);
+        }
+        assert_eq!(
+            readonly_read_field(&heap, view, FieldIndex(0)).expect("r1"),
+            Value::Int(99)
+        );
+    }
+
+    /// CF-16: float NaN equals NaN under values_equal; identity uses bit pattern.
+    #[test]
+    fn cf16_float_nan_equality() {
+        use vm_runtime::value::{values_equal, values_identical};
+        let heap = Heap::new();
+        let a = Value::Float(f64::NAN);
+        let b = Value::Float(f64::NAN);
+        assert!(values_equal(&a, &b, &heap).expect("eq"));
+        // Both NaNs share quiet-NaN bit pattern from f64::NAN on this platform path.
+        assert!(values_identical(&a, &b));
+        assert!(!values_equal(&a, &Value::Float(1.0), &heap).expect("neq"));
+    }
 }

@@ -2,8 +2,8 @@
 
 Document class: Non-normative test inventory  
 Rule: Maps in-repo tests to frozen specs and work packages. Does not redefine semantics.  
-Updated: 2026-07-10  
-WP status: **IN_PROGRESS** (scaffold + first rows; not full validation matrix)
+Updated: 2026-07-14  
+WP status: **IN_PROGRESS** (expanded TRACEABILITY rows; not full validation matrix)
 
 ## Layout
 
@@ -40,13 +40,21 @@ Live stage/WP snapshot: `docs/IMPLEMENTATION-STATUS.md`.
 | CF-10 | conformance | SPEC-P3-READONLY, WP-13 | `readonly(x) is x` false; `==` may true |
 | CF-11 | conformance | SPEC-P3-HELPERS, WP-07 | registry size 47; id 99 rejected |
 | CF-12 | conformance | SPEC-P3-VALUES, WP-08 | map structural equality (order-independent) |
+| CF-13 | conformance | SPEC-P3-READONLY / VALUES, WP-13/08 | map equality through ReadOnlyView |
+| CF-14 | conformance | SPEC-P3-VALUES TR-006, WP-08 | string scalar len + in-bounds slice |
+| CF-15 | conformance | SPEC-P3-READONLY TR-007, WP-13 | original mutation visible via view read |
+| CF-16 | conformance | SPEC-P3-VALUES, WP-08 | float NaN `==` true under values_equal |
 | NG-01 | negative | SPEC-P3-VALID, WP-06 | unknown shape id rejected |
 | NG-02 | negative | SPEC-P3-HELPERS, WP-07 | out-of-range helper id → InvalidHelperError (id 99) |
 | NG-03 | negative | SPEC-P3-HOST, WP-12 | missing capability CapabilityError |
 | NG-04 | negative | SPEC-P3-MODULE, WP-11 | import cycle ImportCycleError |
 | NG-05 | negative | SPEC-P3-VALUES, WP-08 | non-hashable map key TypeError |
+| NG-06 | negative | SPEC-P3-VALUES TR-006, WP-08 | NaN map key TypeError |
+| NG-07 | negative | SPEC-P3-VALUES TR-006, WP-08 | string slice bounds IndexError |
+| NG-08 | negative | SPEC-P3-CONTROL TR-008, WP-09 | uninitialized slot read UninitializedBindingError |
 | DG-01 | diagnostics | SPEC-P3-ERRORS, WP-04 | construct_error stores code/message/span |
 | RG-01 | regression | SPEC-P3-UNWIND, WP-10 | nested region LIFO defer order |
 | RG-02 | regression | SPEC-P3-VALUES, WP-08/09 | immutable cell ReadOnlyError |
+| RG-03 | regression | SPEC-P3-CALL / WP-17 | interpreter minimal module still returns |
 
-Note: CF-08/CF-09 live under `cargo test -p vm_eval interpreter::` rather than `vm_tests`.
+Note: CF-08/CF-09 and mid-block resume live under `cargo test -p vm_eval interpreter::` rather than `vm_tests`.

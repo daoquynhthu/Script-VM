@@ -89,4 +89,18 @@ mod tests {
             RuntimeFailure::language(RuntimeErrorCode::ReadOnlyError)
         );
     }
+
+    /// RG-03: mid-block nested call resume is covered by vm_eval unit
+    /// (`generic_call_resumes_ops_after_call_site`); smoke that interpreter still boots.
+    #[test]
+    fn rg03_interpreter_still_runs_minimal_module() {
+        use vm_core::eir::fixtures::minimal_valid_eir_module;
+        use vm_core::id::EirFunctionId;
+        use vm_core::control::ControlState;
+        use vm_core::value::Value;
+        use vm_eval::interpreter::Interpreter;
+        let mut interpreter = Interpreter::new();
+        let state = interpreter.run_module(&minimal_valid_eir_module(), EirFunctionId::new(0));
+        assert_eq!(state, ControlState::Return(Some(Value::Int(0))));
+    }
 }

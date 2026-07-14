@@ -244,4 +244,78 @@ mod tests {
             RuntimeFailure::language(RuntimeErrorCode::UninitializedBindingError)
         );
     }
+
+    /// NG-09: wrong arity rejected (TR-011).
+    #[test]
+    fn ng09_wrong_arity_rejected() {
+        use vm_core::id::SlotId;
+        use vm_runtime::call::{bind_arguments, ParameterSpec};
+        let params = [ParameterSpec {
+            name: "a".into(),
+            slot_id: SlotId::new(0),
+            required: true,
+            default_index: None,
+            type_id: None,
+        }];
+        let err = bind_arguments(&params, &[Value::Int(1), Value::Int(2)], &[])
+            .expect_err("NG-09");
+        assert_eq!(err, RuntimeFailure::language(RuntimeErrorCode::ArityError));
+    }
+
+    /// NG-10: duplicate named argument rejected (TR-011).
+    #[test]
+    fn ng10_duplicate_named_argument_rejected() {
+        use vm_core::id::SlotId;
+        use vm_runtime::call::{bind_arguments, NamedArgumentValue, ParameterSpec};
+        let params = [
+            ParameterSpec {
+                name: "a".into(),
+                slot_id: SlotId::new(0),
+                required: true,
+                default_index: None,
+                type_id: None,
+            },
+            ParameterSpec {
+                name: "b".into(),
+                slot_id: SlotId::new(1),
+                required: false,
+                default_index: Some(0),
+                type_id: None,
+            },
+        ];
+        let named = [
+            NamedArgumentValue {
+                name: "b".into(),
+                value: Value::Int(2),
+            },
+            NamedArgumentValue {
+                name: "b".into(),
+                value: Value::Int(3),
+            },
+        ];
+        let err = bind_arguments(&params, &[Value::Int(1)], &named).expect_err("NG-10");
+        assert_eq!(err, RuntimeFailure::language(RuntimeErrorCode::ArityError));
+    }
+
+    /// NG-11: public-bytecode cache claim rejected (TR-014).
+    #[test]
+    fn ng11_public_bytecode_cache_claim_rejected() {
+        use vm_runtime::cache_compat::reject_public_bytecode_cache_claim;
+        let err = reject_public_bytecode_cache_claim(true).expect_err("NG-11");
+        assert!(matches!(err, RuntimeFailure::Structural(_)));
+    }
+
+    /// NG-12: helper registry digest mismatch rejected (TR-014).
+    #[test]
+    fn ng12_helper_registry_digest_mismatch_rejected() {
+        use vm_core::digest::Digest;
+        use vm_runtime::cache_compat::{
+            reject_helper_registry_mismatch, collect_digest_inputs,
+        };
+        use vm_core::runtime_plan::fixtures::minimal_valid_plan;
+        let expected = collect_digest_inputs(&minimal_valid_plan()).helper_registry_digest;
+        let err =
+            reject_helper_registry_mismatch(Digest(0xDEAD), expected).expect_err("NG-12");
+        assert!(matches!(err, RuntimeFailure::Structural(_)));
+    }
 }

@@ -44,6 +44,8 @@ Live stage/WP snapshot: `docs/IMPLEMENTATION-STATUS.md`.
 | CF-14 | conformance | SPEC-P3-VALUES TR-006, WP-08 | string scalar len + in-bounds slice |
 | CF-15 | conformance | SPEC-P3-READONLY TR-007, WP-13 | original mutation visible via view read |
 | CF-16 | conformance | SPEC-P3-VALUES, WP-08 | float NaN `==` true under values_equal |
+| CF-17 | conformance | SPEC-P3-CALL TR-011, WP-12 | bind_arguments positional + pending default |
+| CF-18 | conformance | SPEC-P3-CACHE TR-014, WP-16 | digest includes helper registry; internal cache ok |
 | NG-01 | negative | SPEC-P3-VALID, WP-06 | unknown shape id rejected |
 | NG-02 | negative | SPEC-P3-HELPERS, WP-07 | out-of-range helper id → InvalidHelperError (id 99) |
 | NG-03 | negative | SPEC-P3-HOST, WP-12 | missing capability CapabilityError |
@@ -52,6 +54,10 @@ Live stage/WP snapshot: `docs/IMPLEMENTATION-STATUS.md`.
 | NG-06 | negative | SPEC-P3-VALUES TR-006, WP-08 | NaN map key TypeError |
 | NG-07 | negative | SPEC-P3-VALUES TR-006, WP-08 | string slice bounds IndexError |
 | NG-08 | negative | SPEC-P3-CONTROL TR-008, WP-09 | uninitialized slot read UninitializedBindingError |
+| NG-09 | negative | SPEC-P3-CALL TR-011, WP-12 | wrong arity ArityError |
+| NG-10 | negative | SPEC-P3-CALL TR-011, WP-12 | duplicate named argument ArityError |
+| NG-11 | negative | SPEC-P3-CACHE TR-014, WP-16 | public bytecode cache claim rejected |
+| NG-12 | negative | SPEC-P3-CACHE TR-014, WP-16 | helper registry digest mismatch rejected |
 | DG-01 | diagnostics | SPEC-P3-ERRORS, WP-04 | construct_error stores code/message/span |
 | RG-01 | regression | SPEC-P3-UNWIND, WP-10 | nested region LIFO defer order |
 | RG-02 | regression | SPEC-P3-VALUES, WP-08/09 | immutable cell ReadOnlyError |

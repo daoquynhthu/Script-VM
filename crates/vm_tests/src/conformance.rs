@@ -386,4 +386,42 @@ mod tests {
         assert!(values_identical(&a, &b));
         assert!(!values_equal(&a, &Value::Float(1.0), &heap).expect("neq"));
     }
+
+    /// CF-17: argument binding success path (TR-011 positive counterpart).
+    #[test]
+    fn cf17_bind_arguments_positional_and_optional_default() {
+        use vm_core::id::SlotId;
+        use vm_runtime::call::{bind_arguments, ParameterSpec};
+        let params = [
+            ParameterSpec {
+                name: "a".into(),
+                slot_id: SlotId::new(0),
+                required: true,
+                default_index: None,
+                type_id: None,
+            },
+            ParameterSpec {
+                name: "b".into(),
+                slot_id: SlotId::new(1),
+                required: false,
+                default_index: Some(0),
+                type_id: None,
+            },
+        ];
+        let binding = bind_arguments(&params, &[Value::Int(1)], &[]).expect("CF-17");
+        assert_eq!(binding.bound, vec![(SlotId::new(0), Value::Int(1))]);
+        assert_eq!(binding.pending_default_indices, vec![1]);
+    }
+
+    /// CF-18: cache digest inputs include canonical helper registry (TR-014).
+    #[test]
+    fn cf18_cache_digest_includes_helper_registry() {
+        use vm_core::runtime_plan::fixtures::minimal_valid_plan;
+        use vm_runtime::cache_compat::{collect_digest_inputs, reject_public_bytecode_cache_claim};
+        use vm_runtime::helpers::RuntimeHelperRegistry;
+        let inputs = collect_digest_inputs(&minimal_valid_plan());
+        let reg = RuntimeHelperRegistry::canonical().expect("reg");
+        assert_eq!(inputs.helper_registry_digest, reg.digest());
+        reject_public_bytecode_cache_claim(false).expect("internal ok");
+    }
 }

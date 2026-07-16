@@ -10,39 +10,32 @@ Updated: 2026-07-16
 | Item | Status |
 |------|--------|
 | Active track | **T-P1** |
-| WP-L00 | **COMPLETE** (guide + GAP matrix + WP-L* registry) |
-| WP-L01 | **COMPLETE** (lexical SPEC §3–§6 + tests) |
-| **Next** | **WP-L02** grammar/AST v0 surface |
+| WP-L00 | COMPLETE |
+| WP-L01 | COMPLETE (lexical) |
+| WP-L02 | **COMPLETE** (grammar/AST v0 expansion) |
+| **Next** | **WP-L03** semantic analysis v0 |
 | T-P3B | ARCHIVED COMPLETE |
-| T-DEMO (`script_codegen`) | QUARANTINED |
+| T-DEMO | QUARANTINED |
 
 ---
 
-## T-P1 progress
+## T-P1 stages
 
 | Stage | Status |
 |-------|--------|
-| L0 plan + gap baseline | COMPLETE |
-| L1 lexical | COMPLETE (`script_lex` 26 tests; `P1-TEST-MATRIX` LX-01..24) |
-| L2 grammar/AST | NEXT |
-| L3 sema | pending |
+| L0 | COMPLETE |
+| L1 lexical | COMPLETE |
+| L2 grammar/AST | COMPLETE (from-import, aug-assign, map, empty-block reject) |
+| L3 sema | NEXT |
 | L4 diagnostics API | pending |
 | L5 acceptance | pending |
 
 ---
 
-## Key docs
+## Docs
 
 ```text
 PLAN/UNIFIED-IMPLEMENTATION-GUIDANCE.md
 docs/phase-1/P1-GAP-MATRIX.md
 docs/phase-1/P1-TEST-MATRIX.md
 ```
-
----
-
-## Honesty
-
-- Frontend lexical layer aligned for v0 with explicit PARTIAL/DEFER in GAP matrix.  
-- Normative SIR→EIR pipeline **not** claimed complete.  
-- Demo codegen **not** used as acceptance.  

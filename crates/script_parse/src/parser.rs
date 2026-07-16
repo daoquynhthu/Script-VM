@@ -113,6 +113,7 @@ impl Parser {
                 | Keyword::Const
                 | Keyword::Def
                 | Keyword::Import
+                | Keyword::From
                 | Keyword::Export,
             ) => Ok(Item::Decl(self.parse_decl()?)),
             _ => Ok(Item::Stmt(self.parse_stmt()?)),
@@ -125,13 +126,13 @@ impl Parser {
             TokenKind::Keyword(Keyword::Const) => self.parse_let_like(true),
             TokenKind::Keyword(Keyword::Def) => self.parse_function(),
             TokenKind::Keyword(Keyword::Import) => self.parse_import(),
+            TokenKind::Keyword(Keyword::From) => self.parse_from_import(),
             TokenKind::Keyword(Keyword::Export) => self.parse_export(),
             _ => Err(ParseError::new("expected declaration", self.span_here())),
         }
     }
 
-    fn parse_import(&mut self) -> Result<Decl, ParseError> {
-        let start = self.expect_keyword(Keyword::Import)?;
+    fn parse_module_path(&mut self) -> Result<Vec<String>, ParseError> {
         let mut module_path = Vec::new();
         let (first, _) = self.expect_ident()?;
         module_path.push(first);
@@ -140,6 +141,12 @@ impl Parser {
             let (part, _) = self.expect_ident()?;
             module_path.push(part);
         }
+        Ok(module_path)
+    }
+
+    fn parse_import(&mut self) -> Result<Decl, ParseError> {
+        let start = self.expect_keyword(Keyword::Import)?;
+        let module_path = self.parse_module_path()?;
         let alias = if matches!(self.peek_kind(), TokenKind::Keyword(Keyword::As)) {
             self.bump();
             let (a, _) = self.expect_ident()?;
@@ -152,6 +159,50 @@ impl Parser {
         Ok(Decl::Import {
             module_path,
             alias,
+            span: Span::new(start.start, end.end),
+        })
+    }
+
+    fn parse_from_import(&mut self) -> Result<Decl, ParseError> {
+        // from module_path import import_list
+        let start = self.expect_keyword(Keyword::From)?;
+        let module_path = self.parse_module_path()?;
+        self.expect_keyword(Keyword::Import)?;
+        let mut items = Vec::new();
+        loop {
+            let (name, _) = self.expect_ident()?;
+            let alias = if matches!(self.peek_kind(), TokenKind::Keyword(Keyword::As)) {
+                self.bump();
+                let (a, _) = self.expect_ident()?;
+                Some(a)
+            } else {
+                None
+            };
+            items.push(crate::ast::ImportName { name, alias });
+            if matches!(self.peek_kind(), TokenKind::Comma) {
+                self.bump();
+                // trailing comma allowed before end
+                if matches!(
+                    self.peek_kind(),
+                    TokenKind::Newline | TokenKind::Dedent | TokenKind::Eof
+                ) {
+                    break;
+                }
+                continue;
+            }
+            break;
+        }
+        if items.is_empty() {
+            return Err(ParseError::new(
+                "expected import name list",
+                self.span_here(),
+            ));
+        }
+        let end = self.span_here();
+        self.expect_newline_or_end()?;
+        Ok(Decl::FromImport {
+            module_path,
+            items,
             span: Span::new(start.start, end.end),
         })
     }
@@ -173,6 +224,7 @@ impl Parser {
             | Decl::Const { span, .. }
             | Decl::Function { span, .. }
             | Decl::Import { span, .. }
+            | Decl::FromImport { span, .. }
             | Decl::Export { span, .. } => span.end,
         };
         Ok(Decl::Export {
@@ -238,6 +290,13 @@ impl Parser {
             self.skip_newlines();
         }
         let end = self.expect_kind(|k| matches!(k, TokenKind::Dedent), "expected dedent")?;
+        // SPEC-P1 §4.4: empty blocks are invalid (no `pass`).
+        if stmts.is_empty() {
+            return Err(ParseError::new(
+                "empty block is invalid",
+                Span::new(start.start, end.end),
+            ));
+        }
         Ok(Block {
             stmts,
             span: Span::new(start.start, end.end),
@@ -300,7 +359,7 @@ impl Parser {
                 Ok(Stmt::Decl(self.parse_decl()?))
             }
             TokenKind::Ident { .. } => {
-                // assign or expression statement
+                // assign, aug-assign, or expression statement
                 if self.is_assign_stmt() {
                     let (name, start) = self.expect_ident()?;
                     self.expect_kind(|k| matches!(k, TokenKind::Assign), "expected `=`")?;
@@ -309,6 +368,18 @@ impl Parser {
                     self.expect_newline_or_end()?;
                     Ok(Stmt::Assign {
                         name,
+                        value,
+                        span: Span::new(start.start, end),
+                    })
+                } else if let Some(op) = self.peek_aug_op() {
+                    let (name, start) = self.expect_ident()?;
+                    self.bump(); // aug op
+                    let value = self.parse_expr()?;
+                    let end = value.span_end();
+                    self.expect_newline_or_end()?;
+                    Ok(Stmt::AugAssign {
+                        name,
+                        op,
                         value,
                         span: Span::new(start.start, end),
                     })
@@ -334,6 +405,20 @@ impl Parser {
                 self.tokens.get(self.pos + 1).map(|t| &t.kind),
                 Some(TokenKind::Assign)
             )
+    }
+
+    fn peek_aug_op(&self) -> Option<crate::ast::AugOp> {
+        if !matches!(self.peek_kind(), TokenKind::Ident { .. }) {
+            return None;
+        }
+        match self.tokens.get(self.pos + 1).map(|t| &t.kind) {
+            Some(TokenKind::PlusAssign) => Some(crate::ast::AugOp::Add),
+            Some(TokenKind::MinusAssign) => Some(crate::ast::AugOp::Sub),
+            Some(TokenKind::StarAssign) => Some(crate::ast::AugOp::Mul),
+            Some(TokenKind::SlashAssign) => Some(crate::ast::AugOp::Div),
+            Some(TokenKind::PercentAssign) => Some(crate::ast::AugOp::Rem),
+            _ => None,
+        }
     }
 
     fn parse_if(&mut self) -> Result<Stmt, ParseError> {
@@ -663,6 +748,32 @@ impl Parser {
                     span: Span::new(start.start, end.end),
                 })
             }
+            TokenKind::LBrace => {
+                // Map literal `{ k: v, ... }` (SPEC-P1 §6.7)
+                let start = self.bump().span;
+                let mut entries = Vec::new();
+                if !matches!(self.peek_kind(), TokenKind::RBrace) {
+                    loop {
+                        let key = self.parse_expr()?;
+                        self.expect_kind(|k| matches!(k, TokenKind::Colon), "expected `:` in map")?;
+                        let value = self.parse_expr()?;
+                        entries.push((key, value));
+                        if matches!(self.peek_kind(), TokenKind::Comma) {
+                            self.bump();
+                            if matches!(self.peek_kind(), TokenKind::RBrace) {
+                                break;
+                            }
+                            continue;
+                        }
+                        break;
+                    }
+                }
+                let end = self.expect_kind(|k| matches!(k, TokenKind::RBrace), "expected `}`")?;
+                Ok(Expr::Map {
+                    entries,
+                    span: Span::new(start.start, end.end),
+                })
+            }
             _ => Err(ParseError::new("expected expression", tok.span)),
         }
     }
@@ -680,7 +791,8 @@ impl Expr {
             | Self::Call { span, .. }
             | Self::Unary { span, .. }
             | Self::Binary { span, .. }
-            | Self::List { span, .. } => *span,
+            | Self::List { span, .. }
+            | Self::Map { span, .. } => *span,
         }
     }
 
@@ -776,5 +888,50 @@ print(fib(10))
         assert!(matches!(&m.items[1], Item::Decl(Decl::Export { .. })));
         assert!(matches!(&m.items[2], Item::Stmt(Stmt::Raise { .. })));
         assert!(matches!(&m.items[3], Item::Stmt(Stmt::Assert { .. })));
+    }
+
+    #[test]
+    fn parse_from_import() {
+        let m = parse_module("from util.math import sin as s, cos\n").unwrap();
+        match &m.items[0] {
+            Item::Decl(Decl::FromImport { module_path, items, .. }) => {
+                assert_eq!(module_path, &["util".to_string(), "math".to_string()]);
+                assert_eq!(items.len(), 2);
+                assert_eq!(items[0].name, "sin");
+                assert_eq!(items[0].alias.as_deref(), Some("s"));
+                assert_eq!(items[1].name, "cos");
+            }
+            _ => panic!("expected from-import"),
+        }
+    }
+
+    #[test]
+    fn parse_aug_assign() {
+        let m = parse_module("let x = 1\nx += 2\n").unwrap();
+        assert!(matches!(
+            &m.items[1],
+            Item::Stmt(Stmt::AugAssign {
+                op: crate::ast::AugOp::Add,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn parse_map_literal() {
+        let m = parse_module("let m = {\"a\": 1, \"b\": 2}\n").unwrap();
+        match &m.items[0] {
+            Item::Decl(Decl::Let { value, .. }) => {
+                assert!(matches!(value, Expr::Map { entries, .. } if entries.len() == 2));
+            }
+            _ => panic!("expected let map"),
+        }
+    }
+
+    #[test]
+    fn reject_missing_or_empty_block() {
+        // SPEC-P1 §4.4: compound body required; no empty block / no pass.
+        assert!(parse_module("def f():\nlet x = 1\n").is_err());
+        assert!(parse_module("while true:\n").is_err());
     }
 }

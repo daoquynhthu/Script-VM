@@ -275,7 +275,7 @@ impl Codegen {
                 Ok(Some(slot))
             }
             Decl::Function { .. } => Ok(None),
-            Decl::Import { .. } => {
+            Decl::Import { .. } | Decl::FromImport { .. } => {
                 // Bootstrap: import binds a placeholder None (no multi-module runtime yet).
                 Ok(None)
             }
@@ -321,6 +321,34 @@ impl Codegen {
                 fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
                     dest,
                     value: v,
+                    check_initialized: None,
+                })));
+                Ok(Some(dest))
+            }
+            Stmt::AugAssign { name, op, value, .. } => {
+                // Expand `x += e` to `x = x + e` for demo codegen only.
+                let dest = fb
+                    .lookup(name)
+                    .ok_or_else(|| CodegenError::new(format!("unbound `{name}`")))?;
+                let rhs = self.lower_expr(fb, value)?;
+                let bin = match op {
+                    script_parse::AugOp::Add => BinaryOperator::Add,
+                    script_parse::AugOp::Sub => BinaryOperator::Subtract,
+                    script_parse::AugOp::Mul => BinaryOperator::Multiply,
+                    script_parse::AugOp::Div => BinaryOperator::Divide,
+                    script_parse::AugOp::Rem => BinaryOperator::Modulo,
+                };
+                let tmp = fb.alloc_slot();
+                fb.push_op(EirOpKind::Binary(BinaryOp {
+                    dest: tmp,
+                    op: bin,
+                    left: dest,
+                    right: rhs,
+                    overflow_policy: None,
+                }));
+                fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+                    dest,
+                    value: tmp,
                     check_initialized: None,
                 })));
                 Ok(Some(dest))
@@ -564,6 +592,7 @@ impl Codegen {
                 Ok(dest)
             }
             Expr::List { .. } => Err(CodegenError::new("list literals not yet lowered to EIR")),
+            Expr::Map { .. } => Err(CodegenError::new("map literals not yet lowered to EIR")),
         }
     }
 }

@@ -7,6 +7,6 @@ pub mod ast;
 pub mod error;
 pub mod parser;
 
-pub use ast::{BinaryOp, Block, Decl, Expr, Item, Module, Stmt, UnaryOp};
+pub use ast::{AugOp, BinaryOp, Block, Decl, Expr, ImportName, Item, Module, Stmt, UnaryOp};
 pub use error::ParseError;
 pub use parser::parse_module;

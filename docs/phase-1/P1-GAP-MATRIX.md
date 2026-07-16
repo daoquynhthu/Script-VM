@@ -53,12 +53,14 @@ DEFER    — explicitly deferred past T-P1 v0 (must not silent-skip)
 |------|---------|--------|-------|
 | §8 Module / top_level | PARTIAL | module of decl/stmt | L2 |
 | §9 let/const/def | PARTIAL | bootstrap | L2 |
-| §9.6 import | PARTIAL | `import a.b as c` only; no `from` import | L2 |
+| §9.6 import | PARTIAL | `import` + `from … import` parse/sema; no runtime load | L2 |
 | §9.7 export | PARTIAL | export let/const/def | L2 |
 | §10 if/while/for/return/break/continue | PARTIAL | for/break/continue parse; raise/assert parse | L2 |
-| §10 assignment / augmented | PARTIAL | `=` only; no `+=` stmt form | L2 |
+| §10 assignment / augmented | YES | `=` + `+= -= *= /= %=` parse; sema mutable check | L2 |
+| §4.4 empty blocks | YES | parse rejects missing/empty compound body | L2 |
 | match/try/record/enum/defer/use | DEFER or NO | not v0 required surface | L2 GAP |
-| §5 / expr full | PARTIAL | call, arith, compare, list; no map/index/attr full | L2 |
+| §6.7 map literals | PARTIAL | parse/sema; no VM lower | L2 |
+| §5 / expr full | PARTIAL | call, arith, compare, list, map; no index/attr full | L2 |
 
 ---
 

@@ -353,9 +353,36 @@ impl<'a> LowerCtx<'a> {
                     *span,
                 )
             }
+            Decl::FromImport {
+                module_path,
+                items,
+                span,
+            } => {
+                self.imports.push(module_path.join("."));
+                // Bind each imported name; node reuses Import with first name as alias text.
+                let mut last = None;
+                for item in items {
+                    let local = item.alias.clone().unwrap_or_else(|| item.name.clone());
+                    let b = self.define_local(
+                        &local,
+                        SirBindingKind::Import,
+                        SirMutability::Immutable,
+                        SirVisibility::Imported,
+                    );
+                    let alias_sym = Some(self.intern(&local));
+                    last = Some(self.emit(
+                        SirNode::Import {
+                            module_path: module_path.clone(),
+                            alias: alias_sym,
+                            binding: Some(b),
+                        },
+                        *span,
+                    ));
+                }
+                last.unwrap_or_else(|| self.emit(SirNode::LiteralNil, *span))
+            }
             Decl::Export { item, span } => {
                 let inner = self.lower_decl(item, true);
-                // lower_decl already may wrap ExportMarker
                 let _ = span;
                 inner
             }
@@ -467,6 +494,17 @@ impl<'a> LowerCtx<'a> {
                 let binding = self.resolve(name).expect("sema guarantees binding");
                 self.emit(SirNode::Assign { binding, value: v }, *span)
             }
+            Stmt::AugAssign {
+                name,
+                value,
+                span,
+                ..
+            } => {
+                // Bootstrap: treat as plain assign of RHS only (lossy); full desugar in T-P2/T-P3L.
+                let v = self.lower_expr(value);
+                let binding = self.resolve(name).expect("sema guarantees binding");
+                self.emit(SirNode::Assign { binding, value: v }, *span)
+            }
             Stmt::Raise { value, span } => {
                 let v = self.lower_expr(value);
                 self.emit(SirNode::Raise { value: v }, *span)
@@ -533,6 +571,11 @@ impl<'a> LowerCtx<'a> {
             }
             Expr::List { elements, span } => {
                 let els: Vec<_> = elements.iter().map(|e| self.lower_expr(e)).collect();
+                self.emit(SirNode::List { elements: els }, *span)
+            }
+            Expr::Map { entries, span } => {
+                // Bootstrap: lower map as list of keys only (placeholder shape).
+                let els: Vec<_> = entries.iter().map(|(k, _)| self.lower_expr(k)).collect();
                 self.emit(SirNode::List { elements: els }, *span)
             }
         }

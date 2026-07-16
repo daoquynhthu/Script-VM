@@ -42,11 +42,24 @@ pub enum Decl {
         alias: Option<String>,
         span: Span,
     },
+    /// `from path import a [as b], c`
+    FromImport {
+        module_path: Vec<String>,
+        items: Vec<ImportName>,
+        span: Span,
+    },
     /// `export` wrapping a declaration.
     Export {
         item: Box<Decl>,
         span: Span,
     },
+}
+
+/// One name in a `from … import` list.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ImportName {
+    pub name: String,
+    pub alias: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -92,6 +105,13 @@ pub enum Stmt {
     },
     Assign {
         name: String,
+        value: Expr,
+        span: Span,
+    },
+    /// Augmented assignment: `x += 1` etc. (SPEC-P1 §10.2)
+    AugAssign {
+        name: String,
+        op: AugOp,
         value: Expr,
         span: Span,
     },
@@ -153,6 +173,20 @@ pub enum Expr {
         elements: Vec<Expr>,
         span: Span,
     },
+    /// Map literal `{ k: v, ... }` (SPEC-P1 §6.7)
+    Map {
+        entries: Vec<(Expr, Expr)>,
+        span: Span,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AugOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Rem,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

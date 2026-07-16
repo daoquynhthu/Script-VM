@@ -123,6 +123,12 @@ impl Analyzer {
                     self.define(local, BindingKind::Immutable, *span);
                 }
             }
+            Decl::FromImport { items, span, .. } => {
+                for item in items {
+                    let local = item.alias.clone().unwrap_or_else(|| item.name.clone());
+                    self.define(local, BindingKind::Immutable, *span);
+                }
+            }
             Decl::Export { item, .. } => self.decl(item),
         }
     }
@@ -197,23 +203,33 @@ impl Analyzer {
             }
             Stmt::Assign { name, value, span } => {
                 self.expr(value);
-                match self.scopes.resolve(name) {
-                    None => self.err(
-                        format!(
-                            "assignment to unbound name `{name}` (use `let`/`const`/`def` to introduce a binding)"
-                        ),
-                        *span,
-                    ),
-                    Some(b) if b.kind != BindingKind::Mutable => self.err(
-                        format!("cannot assign to immutable binding `{name}`"),
-                        *span,
-                    ),
-                    Some(_) => {}
-                }
+                self.check_mutable_assign(name, *span);
+            }
+            Stmt::AugAssign {
+                name, value, span, ..
+            } => {
+                self.expr(value);
+                self.check_mutable_assign(name, *span);
             }
             Stmt::Raise { value, .. } => self.expr(value),
             Stmt::Assert { cond, .. } => self.expr(cond),
             Stmt::Decl(d) => self.decl(d),
+        }
+    }
+
+    fn check_mutable_assign(&mut self, name: &str, span: Span) {
+        match self.scopes.resolve(name) {
+            None => self.err(
+                format!(
+                    "assignment to unbound name `{name}` (use `let`/`const`/`def` to introduce a binding)"
+                ),
+                span,
+            ),
+            Some(b) if b.kind != BindingKind::Mutable => self.err(
+                format!("cannot assign to immutable binding `{name}`"),
+                span,
+            ),
+            Some(_) => {}
         }
     }
 
@@ -243,6 +259,12 @@ impl Analyzer {
             Expr::List { elements, .. } => {
                 for e in elements {
                     self.expr(e);
+                }
+            }
+            Expr::Map { entries, .. } => {
+                for (k, v) in entries {
+                    self.expr(k);
+                    self.expr(v);
                 }
             }
         }

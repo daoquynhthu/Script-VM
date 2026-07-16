@@ -1,0 +1,9 @@
+[package]
+name = "script_lex"
+version = "0.1.0"
+edition = "2021"
+description = "Phase 1 lexical analysis (source text and tokens)"
+
+[dependencies]
+unicode-ident = "1"
+unicode-normalization = "0.1"

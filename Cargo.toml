@@ -9,5 +9,7 @@ members = [
     "crates/vm_host",
     "crates/vm_tests",
     "crates/vm_cli",
+    "crates/script_lex",
+    "crates/script_parse",
 ]
 resolver = "2"

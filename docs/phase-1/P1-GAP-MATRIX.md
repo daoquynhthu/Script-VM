@@ -88,7 +88,7 @@ DEFER    — explicitly deferred past T-P1 v0 (must not silent-skip)
 | Lex errors with byte Span | YES | L1 |
 | Line/col from span | YES | line_col_at + FrontendDiagnostic | L4 |
 | Unified frontend diagnostic type | YES | FrontendDiagnostic | L4 |
-| `AnalyzedModule` stable API | NO | L4 |
+| AnalyzedModule / check_module API | YES | script_sema::check_module | L4 |
 | Parse/sema errors with span + line/col | YES | FrontendDiagnostic | L4 |
 
 ---

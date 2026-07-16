@@ -122,6 +122,8 @@ pub struct NodeEntry {
 pub struct IrUnit {
     pub header: IrHeader,
     pub module: ModuleDescriptor,
+    /// Required source table (SPEC-P2 §4.2).
+    pub sources: SourceTable,
     pub symbols: Vec<SymbolDescriptor>,
     pub scopes: Vec<ScopeDescriptor>,
     pub bindings: Vec<BindingDescriptor>,
@@ -132,14 +134,23 @@ pub struct IrUnit {
     pub nodes: Vec<NodeEntry>,
     pub patterns: Vec<()>,
     pub control_regions: Vec<()>,
+    /// Module interface exports (symbol texts); required table bootstrap.
+    pub interface_exports: Vec<String>,
     pub root_node: NodeId,
-    /// Exported symbol texts (module interface bootstrap).
+    /// Exported symbol texts (alias of interface for callers).
     pub exports: Vec<String>,
     /// Imported module paths (bootstrap).
     pub imports: Vec<String>,
 }
 
 impl IrUnit {
+    /// True if required structural tables are present (may be empty where allowed).
+    #[must_use]
+    pub fn has_required_tables(&self) -> bool {
+        // Sources must list ≥1 file for a materialised unit; root must be valid id.
+        !self.sources.files.is_empty() && self.root_node.is_valid()
+    }
+
     #[must_use]
     pub fn node(&self, id: NodeId) -> Option<&NodeEntry> {
         self.nodes.iter().find(|n| n.node_id == id)

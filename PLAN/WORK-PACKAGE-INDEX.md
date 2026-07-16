@@ -2742,3 +2742,62 @@ Agent Mode: main-only
 `
 
 Notes: T-P1 complete for v0 frontend with residual DEFER items only in P1-GAP-MATRIX (match/record/full types, etc.).
+
+---
+
+## 28. T-P2 SIR Work Packages (WP-S*)
+
+Authority: UNIFIED-IMPLEMENTATION-GUIDANCE.md Track T-P2
+
+`	ext
+WP-S00 AnalyzedModule → SIR materialization (bootstrap tables)
+WP-S01 SIR structural validation (sir_validate)
+WP-S02 SIR depth (types/patterns/control_regions) — planned
+`
+
+### WP-S00 · SIR materialization from AnalyzedModule
+
+`	ext
+WP-ID: WP-S00
+Title: Materialize IrUnit from AnalyzedModule
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+Frozen Spec References:
+
+`	ext
+SPEC-P2-IR section 4
+SPEC-P1-LANG (input via AnalyzedModule)
+`
+
+Outputs:
+
+`	ext
+script_lower::materialize_sir / compile_to_sir via analyze_source
+IrUnit.sources + interface_exports required tables
+`
+
+### WP-S01 · SIR structural validation
+
+`	ext
+WP-ID: WP-S01
+Title: sir_validate structural checks
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+Frozen Spec References:
+
+`	ext
+SPEC-P2-IR section 4.2 required tables
+`
+
+Outputs:
+
+`	ext
+validate_ir_unit (SIR001–SIR011)
+tests: fib unit, missing sources, exports
+`

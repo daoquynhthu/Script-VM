@@ -17,3 +17,5 @@ pub use unit::{
     SirBindingKind, SirMutability, SirVisibility, SourceFileRecord, SourceTable, SymbolDescriptor,
     Version, IR_SCHEMA_VERSION, LANGUAGE_BASELINE_VERSION,
 };
+
+// Note: SourceTable is part of required IR unit tables (SPEC-P2 §4.2).

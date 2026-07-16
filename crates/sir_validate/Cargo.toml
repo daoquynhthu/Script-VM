@@ -7,3 +7,6 @@ description = "SIR validation and diagnostics"
 [dependencies]
 sir = { path = "../sir" }
 vm_diag = { path = "../vm_diag" }
+
+[dev-dependencies]
+script_lower = { path = "../script_lower" }

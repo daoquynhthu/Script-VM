@@ -7,4 +7,4 @@ pub mod error;
 pub mod lower;
 
 pub use error::LowerError;
-pub use lower::{compile_to_sir, lower_module};
+pub use lower::{compile_to_sir, lower_module, materialize_sir};

@@ -57,6 +57,7 @@ version = "0.1.0"
 name = "sir_validate"
 version = "0.1.0"
 dependencies = [
+ "script_lower",
  "sir",
  "vm_diag",
 ]

@@ -9,14 +9,42 @@ use script_lex::Span;
 use script_parse::{
     BinaryOp as AstBin, Block, Decl, Expr, Item, Module, Stmt, UnaryOp as AstUn,
 };
-use script_sema::{analyze_module, BindingKind as SemaKind, SemaResult};
+use script_sema::{
+    analyze_module, analyze_source, AnalyzedModule, BindingKind as SemaKind, SemaResult,
+};
 use sir::{
     BindingDescriptor, BindingId, BinaryOp, IrHeader, IrUnit, ModuleDescriptor, ModuleId, NodeEntry,
     NodeId, ScopeDescriptor, ScopeId, SirBindingKind, SirMutability, SirNode, SirVisibility,
-    SourceOrigin, SourcePosition, SourceSpan, SymbolDescriptor, SymbolId, UnaryOp, Version,
+    SourceFileRecord, SourceOrigin, SourcePosition, SourceSpan, SourceTable, SymbolDescriptor,
+    SymbolId, UnaryOp, Version,
 };
 
 use crate::error::LowerError;
+
+/// Materialize SIR from a successful `AnalyzedModule` (T-P2 primary entry).
+pub fn materialize_sir(
+    analyzed: &AnalyzedModule,
+    module_name: &str,
+) -> Result<IrUnit, LowerError> {
+    if !analyzed.ok() {
+        return Err(LowerError::SemaFailed {
+            errors: analyzed
+                .diagnostics
+                .iter()
+                .map(|d| d.message.clone())
+                .collect(),
+        });
+    }
+    let module = analyzed
+        .module
+        .as_ref()
+        .ok_or_else(|| LowerError::SemaFailed {
+            errors: vec!["analyzed module has no AST".into()],
+        })?;
+    // Re-run lightweight binding snapshot for lowerer prelude (print).
+    let sema = analyze_module(module);
+    Ok(LowerCtx::new(module_name, &analyzed.source, &sema).lower_module(module))
+}
 
 /// Full frontend pipeline: parse is external; lower after successful sema.
 pub fn lower_module(module: &Module, module_name: &str, source: &str) -> Result<IrUnit, LowerError> {
@@ -29,10 +57,10 @@ pub fn lower_module(module: &Module, module_name: &str, source: &str) -> Result<
     Ok(LowerCtx::new(module_name, source, &sema).lower_module(module))
 }
 
-/// Parse + sema + lower convenience.
+/// Parse + sema + lower via `AnalyzedModule` (canonical T-P2 path).
 pub fn compile_to_sir(source: &str, module_name: &str) -> Result<IrUnit, LowerError> {
-    let module = script_parse::parse_module(source).map_err(LowerError::Parse)?;
-    lower_module(&module, module_name, source)
+    let analyzed = analyze_source(source);
+    materialize_sir(&analyzed, module_name)
 }
 
 struct LowerCtx<'a> {
@@ -210,18 +238,27 @@ impl<'a> LowerCtx<'a> {
             self.nodes.len()
         ));
 
+        let exports = self.exports.clone();
         IrUnit {
             header: IrHeader {
                 ir_schema_version: Version::bootstrap(1, 0, 0),
                 language_baseline_version: Version::new(1, 0, 0),
                 producer_name: "script_lower".into(),
                 producer_version: env!("CARGO_PKG_VERSION").into(),
-                source_digest,
+                source_digest: source_digest.clone(),
                 semantic_digest,
             },
             module: ModuleDescriptor {
                 module_id: ModuleId::new(0),
-                name: self.module_name,
+                name: self.module_name.clone(),
+            },
+            sources: SourceTable {
+                files: vec![SourceFileRecord {
+                    path_or_name: self.module_name.clone(),
+                    digest: source_digest,
+                    encoding: "utf-8",
+                }],
+                spans: Vec::new(),
             },
             symbols: self.symbols,
             scopes: self.scopes,
@@ -232,8 +269,9 @@ impl<'a> LowerCtx<'a> {
             nodes: self.nodes,
             patterns: Vec::new(),
             control_regions: Vec::new(),
+            interface_exports: exports.clone(),
             root_node: root,
-            exports: self.exports,
+            exports,
             imports: self.imports,
         }
     }
@@ -682,5 +720,19 @@ print(fib(10))
         let unit = compile_to_sir(src, "mod").unwrap();
         assert!(unit.imports.iter().any(|p| p == "util.math"));
         assert!(unit.exports.iter().any(|e| e == "id"));
+        assert!(unit.has_required_tables());
+        assert!(!unit.sources.files.is_empty());
+    }
+
+    #[test]
+    fn materialize_from_analyzed() {
+        use script_sema::analyze_source;
+        let a = analyze_source("let x = 1\nprint(x)\n");
+        assert!(a.ok());
+        let unit = materialize_sir(&a, "main").unwrap();
+        assert!(matches!(
+            unit.node(unit.root_node).map(|n| &n.kind),
+            Some(SirNode::ModuleBody { .. })
+        ));
     }
 }

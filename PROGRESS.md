@@ -1969,3 +1969,31 @@ Summary:
   (stage, span, line/col). T-P1 accepted for v0; residuals only DEFER in GAP.
 Next:
   T-P2 WP-S00 SIR materialization planning/implementation.
+
+## 2026-07-16 12:10 · T-P2 WP-S00/S01 SIR materialize + validate
+
+Work Package: WP-S00, WP-S01
+Agent Mode: main-only
+Changed Files:
+  - crates/sir/src/unit.rs
+  - crates/script_lower/**
+  - crates/sir_validate/**
+  - docs/IMPLEMENTATION-STATUS.md
+  - PLAN/WORK-PACKAGE-INDEX.md
+  - docs/agent-plan/WORK-PACKAGE-INDEX.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P2-IR §4
+  - UNIFIED-IMPLEMENTATION-GUIDANCE T-P2
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+Tests:
+  - cargo test -p script_lower -p sir_validate -p sir PASS
+Summary:
+  Canonical path: analyze_source → materialize_sir → IrUnit with sources table.
+  sir_validate::validate_ir_unit structural checks. T-P2 bootstrap baseline.
+Next:
+  WP-S02 deepen SIR tables; then T-P3L WP-R00 normative lowering.

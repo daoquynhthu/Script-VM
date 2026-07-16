@@ -2203,3 +2203,29 @@ Summary:
   for x in xs works for list values (not only list literals); break/continue on for.
 Next:
   Record/enum construction; map for-in defer; RuntimePlan deepen.
+## 2026-07-16 13:12 · WP-R08 record construct + real attributes
+
+Work Package: WP-R08
+Agent Mode: main-only
+Changed Files:
+  - crates/script_parse (Record, CallArg named, parse_record)
+  - crates/script_sema (RecordType, construct/field checks)
+  - crates/sir (RecordDef, ConstructRecord, field_index on Attr)
+  - crates/script_lower / script_eir_lower
+  - crates/script_codegen (reject record/named)
+  - docs/IMPLEMENTATION-STATUS.md
+  - PLAN/WORK-PACKAGE-INDEX.md + docs/agent-plan mirror
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG §19 record semantics
+  - SPEC-P3-HELPERS construct_record / get_attribute / set_attribute
+Gates:
+  - G0-G5 PASS
+Tests:
+  - cargo test -p script_eir_lower PASS (22) record_construct_and_field_read, record_mutable_field_write
+  - cargo test -p script_parse PASS parse_record_and_named_construct
+Summary:
+  record Point: field x; Point(x=1) via construct_record; p.x via get_attribute field index.
+  Map-key o.x path retained when field_index is None.
+Next:
+  enum; methods; field defaults; type annotations on fields.

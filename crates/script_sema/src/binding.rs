@@ -14,6 +14,8 @@ pub enum BindingKind {
     Immutable,
     /// Prelude / host-injected name (treated as immutable for assignment).
     Builtin,
+    /// `record` type name — immutable binding to a constructor type.
+    RecordType,
 }
 
 /// One name binding in a scope (name stored NFC-normalized).

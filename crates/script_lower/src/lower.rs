@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use script_lex::Span;
 use script_parse::{
-    BinaryOp as AstBin, Block, Decl, Expr, Item, Module, Stmt, UnaryOp as AstUn,
+    BinaryOp as AstBin, Block, CallArg, Decl, Expr, Item, Module, Stmt, UnaryOp as AstUn,
 };
 use script_sema::{
     analyze_module, analyze_source, AnalyzedModule, BindingKind as SemaKind, SemaResult,
@@ -84,6 +84,12 @@ struct LowerCtx<'a> {
     exports: Vec<String>,
     imports: Vec<String>,
     _sema: &'a SemaResult,
+    /// Record type binding → ordered fields.
+    record_layouts: HashMap<u32, Vec<(String, bool)>>,
+    /// Binding id of instance → type binding id.
+    instance_types: HashMap<u32, BindingId>,
+    /// Record type name → type binding.
+    record_by_name: HashMap<String, BindingId>,
 }
 
 impl<'a> LowerCtx<'a> {
@@ -107,6 +113,9 @@ impl<'a> LowerCtx<'a> {
             exports: Vec::new(),
             imports: Vec::new(),
             _sema: sema,
+            record_layouts: HashMap::new(),
+            instance_types: HashMap::new(),
+            record_by_name: HashMap::new(),
         };
         let root = ctx.alloc_scope(None);
         debug_assert_eq!(root.raw(), 0);
@@ -335,6 +344,7 @@ impl<'a> LowerCtx<'a> {
             Decl::Let { name, value, span } => {
                 let init = self.lower_expr(value);
                 let b = self.define_local(name, SirBindingKind::Let, SirMutability::Mutable, vis);
+                self.note_instance_type(b, init);
                 if exported {
                     self.exports.push(name.clone());
                 }
@@ -354,11 +364,55 @@ impl<'a> LowerCtx<'a> {
                     SirMutability::Immutable,
                     vis,
                 );
+                self.note_instance_type(b, init);
                 if exported {
                     self.exports.push(name.clone());
                 }
                 let node = self.emit(SirNode::Const { binding: b, init }, *span);
                 self.patch_binding_nodes(b, Some(init), Some(node));
+                if exported {
+                    self.emit(SirNode::ExportMarker { item: node }, *span)
+                } else {
+                    node
+                }
+            }
+            Decl::Record {
+                name,
+                fields,
+                span,
+            } => {
+                let b = self.define_local(
+                    name,
+                    SirBindingKind::RecordType,
+                    SirMutability::Immutable,
+                    vis,
+                );
+                if exported {
+                    self.exports.push(name.clone());
+                }
+                let sir_fields: Vec<_> = fields
+                    .iter()
+                    .map(|f| sir::SirRecordField {
+                        name: f.name.clone(),
+                        mutable: f.mutable,
+                    })
+                    .collect();
+                self.record_layouts.insert(
+                    b.raw(),
+                    sir_fields
+                        .iter()
+                        .map(|f| (f.name.clone(), f.mutable))
+                        .collect(),
+                );
+                self.record_by_name.insert(name.clone(), b);
+                let node = self.emit(
+                    SirNode::RecordDef {
+                        binding: b,
+                        fields: sir_fields,
+                    },
+                    *span,
+                );
+                self.patch_binding_nodes(b, None, Some(node));
                 if exported {
                     self.emit(SirNode::ExportMarker { item: node }, *span)
                 } else {
@@ -615,11 +669,13 @@ impl<'a> LowerCtx<'a> {
             } => {
                 let b = self.lower_expr(base);
                 let v = self.lower_expr(value);
+                let field_index = self.field_index_for_base(base, name);
                 self.emit(
                     SirNode::AttrAssign {
                         base: b,
                         name: name.clone(),
                         value: v,
+                        field_index,
                     },
                     *span,
                 )
@@ -704,8 +760,51 @@ impl<'a> LowerCtx<'a> {
                 }
             }
             Expr::Call { callee, args, span } => {
+                // Record constructor: Point(x = 1, y = 2)
+                if let Expr::Name { name, .. } = callee.as_ref() {
+                    if let Some(&type_b) = self.record_by_name.get(name) {
+                        let layout = self
+                            .record_layouts
+                            .get(&type_b.raw())
+                            .cloned()
+                            .unwrap_or_default();
+                        let mut named: HashMap<String, NodeId> = HashMap::new();
+                        for a in args {
+                            match a {
+                                CallArg::Named { name: fname, value } => {
+                                    named.insert(fname.clone(), self.lower_expr(value));
+                                }
+                                CallArg::Positional(e) => {
+                                    // Should not pass sema for records; lower as zero placeholder skip
+                                    let _ = self.lower_expr(e);
+                                }
+                            }
+                        }
+                        let field_values: Vec<_> = layout
+                            .iter()
+                            .map(|(fname, _)| {
+                                named.get(fname).copied().unwrap_or_else(|| {
+                                    self.emit(SirNode::LiteralNil, *span)
+                                })
+                            })
+                            .collect();
+                        return self.emit(
+                            SirNode::ConstructRecord {
+                                type_binding: type_b,
+                                field_values,
+                            },
+                            *span,
+                        );
+                    }
+                }
                 let c = self.lower_expr(callee);
-                let a: Vec<_> = args.iter().map(|e| self.lower_expr(e)).collect();
+                let a: Vec<_> = args
+                    .iter()
+                    .map(|arg| match arg {
+                        CallArg::Positional(e) => self.lower_expr(e),
+                        CallArg::Named { value, .. } => self.lower_expr(value),
+                    })
+                    .collect();
                 self.emit(SirNode::Call { callee: c, args: a }, *span)
             }
             Expr::Unary { op, expr, span } => {
@@ -756,15 +855,38 @@ impl<'a> LowerCtx<'a> {
             }
             Expr::Attr { base, name, span } => {
                 let b = self.lower_expr(base);
+                let field_index = self.field_index_for_base(base, name);
                 self.emit(
                     SirNode::Attr {
                         base: b,
                         name: name.clone(),
+                        field_index,
                     },
                     *span,
                 )
             }
         }
+    }
+
+    fn note_instance_type(&mut self, binding: BindingId, init: NodeId) {
+        if let Some(entry) = self.nodes.iter().find(|n| n.node_id == init) {
+            if let SirNode::ConstructRecord { type_binding, .. } = &entry.kind {
+                self.instance_types.insert(binding.raw(), *type_binding);
+            }
+        }
+    }
+
+    fn field_index_for_base(&self, base: &Expr, field: &str) -> Option<u32> {
+        let Expr::Name { name, .. } = base else {
+            return None;
+        };
+        let b = self.resolve(name)?;
+        let type_b = self.instance_types.get(&b.raw())?;
+        let layout = self.record_layouts.get(&type_b.raw())?;
+        layout
+            .iter()
+            .position(|(n, _)| n == field)
+            .map(|i| i as u32)
     }
 }
 
@@ -815,6 +937,7 @@ fn _map_sema(k: SemaKind) -> SirBindingKind {
         SemaKind::Mutable => SirBindingKind::Let,
         SemaKind::Immutable => SirBindingKind::Const,
         SemaKind::Builtin => SirBindingKind::Builtin,
+        SemaKind::RecordType => SirBindingKind::RecordType,
     }
 }
 

@@ -83,6 +83,8 @@ pub enum SirBindingKind {
     ForIteration,
     Import,
     Builtin,
+    /// Record type constructor binding.
+    RecordType,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

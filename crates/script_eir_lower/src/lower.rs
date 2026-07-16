@@ -22,8 +22,9 @@ use vm_core::profile::Version;
 use vm_core::value::Value;
 use vm_diag::source_span::SourceSpanId;
 use vm_runtime::helpers::dispatch::{
-    HELPER_CONSTRUCT_ERROR_ID, HELPER_CONSTRUCT_LIST_ID, HELPER_CONSTRUCT_MAP_ID, HELPER_DISPLAY_ID,
-    HELPER_GENERIC_CALL_ID, HELPER_INDEX_READ_ID, HELPER_INDEX_WRITE_ID, HELPER_LIST_LEN_ID,
+    HELPER_CONSTRUCT_ERROR_ID, HELPER_CONSTRUCT_LIST_ID, HELPER_CONSTRUCT_MAP_ID,
+    HELPER_CONSTRUCT_RECORD_ID, HELPER_DISPLAY_ID, HELPER_GENERIC_CALL_ID, HELPER_GET_ATTRIBUTE_ID,
+    HELPER_INDEX_READ_ID, HELPER_INDEX_WRITE_ID, HELPER_LIST_LEN_ID, HELPER_SET_ATTRIBUTE_ID,
 };
 
 use crate::error::EirLowerError;
@@ -330,25 +331,47 @@ impl<'a> SirEirLower<'a> {
                 }));
                 Ok(Some(v))
             }
-            SirNode::AttrAssign { base, name, value } => {
-                // Bootstrap: attribute as map string key.
+            SirNode::AttrAssign {
+                base,
+                name,
+                value,
+                field_index,
+            } => {
                 let b = self.lower_node_expr(fb, base)?;
-                let key = fb.alloc_slot();
-                let kc = self.intern_const(Value::String(name));
-                fb.push_op(EirOpKind::Constant(ConstantOp {
-                    dest: key,
-                    constant: kc,
-                }));
                 let v = self.lower_node_expr(fb, value)?;
-                fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
-                    dest: None,
-                    helper_id: HELPER_INDEX_WRITE_ID,
-                    args: vec![b, key, v],
-                    call_site: None,
-                    access_site: None,
-                    safepoint_id: None,
-                    deopt_id: None,
-                }));
+                if let Some(idx) = field_index {
+                    let fi = fb.alloc_slot();
+                    let fic = self.intern_const(Value::Int(i64::from(idx)));
+                    fb.push_op(EirOpKind::Constant(ConstantOp {
+                        dest: fi,
+                        constant: fic,
+                    }));
+                    fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                        dest: None,
+                        helper_id: HELPER_SET_ATTRIBUTE_ID,
+                        args: vec![b, fi, v],
+                        call_site: None,
+                        access_site: None,
+                        safepoint_id: None,
+                        deopt_id: None,
+                    }));
+                } else {
+                    let key = fb.alloc_slot();
+                    let kc = self.intern_const(Value::String(name));
+                    fb.push_op(EirOpKind::Constant(ConstantOp {
+                        dest: key,
+                        constant: kc,
+                    }));
+                    fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                        dest: None,
+                        helper_id: HELPER_INDEX_WRITE_ID,
+                        args: vec![b, key, v],
+                        call_site: None,
+                        access_site: None,
+                        safepoint_id: None,
+                        deopt_id: None,
+                    }));
+                }
                 Ok(Some(v))
             }
             SirNode::If {
@@ -358,9 +381,10 @@ impl<'a> SirEirLower<'a> {
                 else_block,
             } => self.lower_if(fb, cond, then_block, &elifs, else_block),
             SirNode::While { cond, body } => self.lower_while(fb, cond, body),
-            SirNode::Import { .. } | SirNode::ExportMarker { .. } | SirNode::Function { .. } => {
-                Ok(None)
-            }
+            SirNode::Import { .. }
+            | SirNode::ExportMarker { .. }
+            | SirNode::Function { .. }
+            | SirNode::RecordDef { .. } => Ok(None),
             SirNode::Assert { cond } => {
                 // assert cond ⇒ if not cond: raise AssertionError
                 let c = self.lower_node_expr(fb, cond)?;
@@ -423,6 +447,7 @@ impl<'a> SirEirLower<'a> {
                         | SirNode::Map { .. }
                         | SirNode::Index { .. }
                         | SirNode::Attr { .. }
+                        | SirNode::ConstructRecord { .. }
                         | SirNode::SymbolRef { .. }
                 ) {
                     Ok(Some(self.lower_node_expr(fb, id)?))
@@ -1032,19 +1057,58 @@ impl<'a> SirEirLower<'a> {
                 }));
                 Ok(dest)
             }
-            SirNode::Attr { base, name } => {
+            SirNode::Attr {
+                base,
+                name,
+                field_index,
+            } => {
                 let b = self.lower_node_expr(fb, base)?;
-                let key = fb.alloc_slot();
-                let kc = self.intern_const(Value::String(name));
-                fb.push_op(EirOpKind::Constant(ConstantOp {
-                    dest: key,
-                    constant: kc,
-                }));
+                let dest = fb.alloc_slot();
+                if let Some(idx) = field_index {
+                    let fi = fb.alloc_slot();
+                    let fic = self.intern_const(Value::Int(i64::from(idx)));
+                    fb.push_op(EirOpKind::Constant(ConstantOp {
+                        dest: fi,
+                        constant: fic,
+                    }));
+                    fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                        dest: Some(dest),
+                        helper_id: HELPER_GET_ATTRIBUTE_ID,
+                        args: vec![b, fi],
+                        call_site: None,
+                        access_site: None,
+                        safepoint_id: None,
+                        deopt_id: None,
+                    }));
+                } else {
+                    let key = fb.alloc_slot();
+                    let kc = self.intern_const(Value::String(name));
+                    fb.push_op(EirOpKind::Constant(ConstantOp {
+                        dest: key,
+                        constant: kc,
+                    }));
+                    fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                        dest: Some(dest),
+                        helper_id: HELPER_INDEX_READ_ID,
+                        args: vec![b, key],
+                        call_site: None,
+                        access_site: None,
+                        safepoint_id: None,
+                        deopt_id: None,
+                    }));
+                }
+                Ok(dest)
+            }
+            SirNode::ConstructRecord { field_values, .. } => {
+                let mut args = Vec::new();
+                for fv in field_values {
+                    args.push(self.lower_node_expr(fb, fv)?);
+                }
                 let dest = fb.alloc_slot();
                 fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
                     dest: Some(dest),
-                    helper_id: HELPER_INDEX_READ_ID,
-                    args: vec![b, key],
+                    helper_id: HELPER_CONSTRUCT_RECORD_ID,
+                    args,
                     call_site: None,
                     access_site: None,
                     safepoint_id: None,

@@ -275,6 +275,9 @@ impl Codegen {
                 Ok(Some(slot))
             }
             Decl::Function { .. } => Ok(None),
+            Decl::Record { .. } => Err(CodegenError::new(
+                "record not supported in demo codegen; use script_eir_lower",
+            )),
             Decl::Import { .. } | Decl::FromImport { .. } => {
                 // Bootstrap: import binds a placeholder None (no multi-module runtime yet).
                 Ok(None)
@@ -330,6 +333,7 @@ impl Codegen {
                     "index/attr/try not supported in demo codegen; use script_eir_lower",
                 ))
             }
+            // Decl::Record handled via Stmt::Decl path below
             Stmt::AugAssign { name, op, value, .. } => {
                 // Expand `x += e` to `x = x + e` for demo codegen only.
                 let dest = fb
@@ -542,7 +546,16 @@ impl Codegen {
                 let c = self.lower_expr(fb, callee)?;
                 let mut arg_slots = vec![c];
                 for a in args {
-                    arg_slots.push(self.lower_expr(fb, a)?);
+                    match a {
+                        script_parse::CallArg::Positional(e) => {
+                            arg_slots.push(self.lower_expr(fb, e)?);
+                        }
+                        script_parse::CallArg::Named { .. } => {
+                            return Err(CodegenError::new(
+                                "named call args / records not supported in demo codegen; use script_eir_lower",
+                            ));
+                        }
+                    }
                 }
                 let dest = fb.alloc_slot();
                 fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {

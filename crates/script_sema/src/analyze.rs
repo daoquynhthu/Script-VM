@@ -7,8 +7,10 @@
 //! - `PHASE-1-LANGUAGE-SPEC.md` §3.3 Unicode Normalization (NFC)
 //! - declaration / assignment immutability; export visibility
 
+use std::collections::HashMap;
+
 use script_lex::Span;
-use script_parse::{BinaryOp, Block, Decl, Expr, Item, Module, Stmt, UnaryOp};
+use script_parse::{BinaryOp, Block, CallArg, Decl, Expr, Item, Module, Stmt, UnaryOp};
 
 use crate::binding::{nfc, Binding, BindingKind, ScopeStack};
 use crate::error::SemaError;
@@ -42,6 +44,11 @@ enum StaticTy {
     Unknown,
 }
 
+#[derive(Debug, Clone)]
+struct RecordLayout {
+    fields: Vec<(String, bool)>, // (name, mutable)
+}
+
 struct Analyzer {
     scopes: ScopeStack,
     errors: Vec<SemaError>,
@@ -50,6 +57,10 @@ struct Analyzer {
     fn_depth: u32,
     /// When true, next `define` marks binding as exported.
     export_context: bool,
+    /// NFC record type name → field layout.
+    record_layouts: HashMap<String, RecordLayout>,
+    /// NFC instance binding → NFC record type name.
+    instance_types: HashMap<String, String>,
 }
 
 impl Analyzer {
@@ -61,6 +72,8 @@ impl Analyzer {
             loop_depth: 0,
             fn_depth: 0,
             export_context: false,
+            record_layouts: HashMap::new(),
+            instance_types: HashMap::new(),
         }
     }
 
@@ -100,10 +113,12 @@ impl Analyzer {
             Decl::Let { name, value, span } => {
                 self.expr(value);
                 self.define_clean(name.clone(), BindingKind::Mutable, *span);
+                self.note_instance_from_init(name, value);
             }
             Decl::Const { name, value, span } => {
                 self.expr(value);
                 self.define_clean(name.clone(), BindingKind::Immutable, *span);
+                self.note_instance_from_init(name, value);
             }
             Decl::Function {
                 name,
@@ -146,6 +161,88 @@ impl Analyzer {
                 self.export_context = true;
                 self.decl(item);
                 self.export_context = prev;
+            }
+            Decl::Record {
+                name,
+                fields,
+                span,
+            } => {
+                let key = nfc(name);
+                if fields.is_empty() {
+                    self.err("record requires at least one field", *span);
+                }
+                let mut seen = std::collections::HashSet::new();
+                let mut layout = Vec::new();
+                for f in fields {
+                    let fk = nfc(&f.name);
+                    if !seen.insert(fk.clone()) {
+                        self.err(format!("duplicate record field `{fk}`"), f.span);
+                    }
+                    layout.push((fk, f.mutable));
+                }
+                self.record_layouts
+                    .insert(key.clone(), RecordLayout { fields: layout });
+                self.define_clean(name.clone(), BindingKind::RecordType, *span);
+            }
+        }
+    }
+
+    fn note_instance_from_init(&mut self, name: &str, value: &Expr) {
+        if let Some(ty) = self.construct_type_name(value) {
+            self.instance_types.insert(nfc(name), ty);
+        }
+    }
+
+    fn construct_type_name(&self, expr: &Expr) -> Option<String> {
+        match expr {
+            Expr::Call { callee, .. } => {
+                if let Expr::Name { name, .. } = callee.as_ref() {
+                    let key = nfc(name);
+                    if self.record_layouts.contains_key(&key) {
+                        return Some(key);
+                    }
+                }
+                None
+            }
+            _ => None,
+        }
+    }
+
+    fn check_record_construct(&mut self, callee: &Expr, args: &[CallArg], span: Span) {
+        let Expr::Name { name, .. } = callee else {
+            return;
+        };
+        let key = nfc(name);
+        let Some(layout) = self.record_layouts.get(&key).cloned() else {
+            return;
+        };
+        let mut provided = HashMap::new();
+        for a in args {
+            match a {
+                CallArg::Positional(e) => {
+                    self.err(
+                        "record constructor requires named field arguments (SPEC-P1 §19.3)",
+                        expr_span(e),
+                    );
+                }
+                CallArg::Named { name: fname, value } => {
+                    self.expr(value);
+                    let fk = nfc(fname);
+                    if !layout.fields.iter().any(|(n, _)| n == &fk) {
+                        self.err(format!("unknown record field `{fk}` for `{key}`"), span);
+                    }
+                    if provided.insert(fk.clone(), ()).is_some() {
+                        self.err(format!("duplicate field initializer `{fk}`"), span);
+                    }
+                }
+            }
+        }
+        for (fname, _) in &layout.fields {
+            if !provided.contains_key(fname) {
+                self.err(
+                    format!("missing required field `{fname}` for record `{key}`"),
+                    span,
+                );
             }
         }
     }
@@ -221,6 +318,7 @@ impl Analyzer {
             Stmt::Assign { name, value, span } => {
                 self.expr(value);
                 self.check_mutable_assign(name, *span);
+                self.note_instance_from_init(name, value);
             }
             Stmt::IndexAssign {
                 base,
@@ -233,10 +331,32 @@ impl Analyzer {
                 self.expr(value);
             }
             Stmt::AttrAssign {
-                base, value, ..
+                base,
+                name,
+                value,
+                span,
             } => {
                 self.expr(base);
                 self.expr(value);
+                if let Expr::Name { name: bname, .. } = base {
+                    let bk = nfc(bname);
+                    if let Some(ty) = self.instance_types.get(&bk).cloned() {
+                        if let Some(layout) = self.record_layouts.get(&ty) {
+                            let fk = nfc(name);
+                            match layout.fields.iter().find(|(n, _)| n == &fk) {
+                                None => self.err(
+                                    format!("unknown field `{fk}` on record `{ty}`"),
+                                    *span,
+                                ),
+                                Some((_, false)) => self.err(
+                                    format!("cannot assign to immutable field `{fk}`"),
+                                    *span,
+                                ),
+                                Some((_, true)) => {}
+                            }
+                        }
+                    }
+                }
             }
             Stmt::AugAssign {
                 name, value, span, ..
@@ -361,10 +481,27 @@ impl Analyzer {
                     self.err(format!("unresolved name `{key}`"), *span);
                 }
             }
-            Expr::Call { callee, args, .. } => {
-                self.expr(callee);
-                for a in args {
-                    self.expr(a);
+            Expr::Call {
+                callee,
+                args,
+                span,
+            } => {
+                if matches!(callee.as_ref(), Expr::Name { name, .. }
+                    if self.record_layouts.contains_key(&nfc(name)))
+                {
+                    self.expr(callee);
+                    self.check_record_construct(callee, args, *span);
+                } else {
+                    self.expr(callee);
+                    for a in args {
+                        match a {
+                            CallArg::Positional(e) => self.expr(e),
+                            CallArg::Named { value, .. } => {
+                                // Named args on ordinary calls: bootstrap accepts values only.
+                                self.expr(value);
+                            }
+                        }
+                    }
                 }
             }
             Expr::Unary {
@@ -420,7 +557,23 @@ impl Analyzer {
                 self.expr(base);
                 self.expr(index);
             }
-            Expr::Attr { base, .. } => self.expr(base),
+            Expr::Attr { base, name, span } => {
+                self.expr(base);
+                if let Expr::Name { name: bname, .. } = base.as_ref() {
+                    let bk = nfc(bname);
+                    if let Some(ty) = self.instance_types.get(&bk).cloned() {
+                        if let Some(layout) = self.record_layouts.get(&ty) {
+                            let fk = nfc(name);
+                            if !layout.fields.iter().any(|(n, _)| n == &fk) {
+                                self.err(
+                                    format!("unknown field `{fk}` on record `{ty}`"),
+                                    *span,
+                                );
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

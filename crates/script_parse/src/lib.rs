@@ -8,7 +8,8 @@ pub mod error;
 pub mod parser;
 
 pub use ast::{
-    AugOp, BinaryOp, Block, CatchClause, Decl, Expr, ImportName, Item, Module, Stmt, UnaryOp,
+    AugOp, BinaryOp, Block, CallArg, CatchClause, Decl, Expr, ImportName, Item, Module, RecordField,
+    Stmt, UnaryOp,
 };
 pub use error::ParseError;
 pub use parser::parse_module;

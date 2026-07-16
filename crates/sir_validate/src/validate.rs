@@ -212,6 +212,8 @@ fn node_children(kind: &SirNode) -> Vec<NodeId> {
             v.extend(args.iter().copied());
             v
         }
+        RecordDef { .. } => vec![],
+        ConstructRecord { field_values, .. } => field_values.clone(),
         Binary { left, right, .. } => vec![*left, *right],
         List { elements } => elements.clone(),
         Map { entries } => {

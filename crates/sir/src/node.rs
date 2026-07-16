@@ -95,6 +95,16 @@ pub enum SirNode {
         callee: NodeId,
         args: Vec<NodeId>,
     },
+    /// Record type definition (fields in declaration order).
+    RecordDef {
+        binding: BindingId,
+        fields: Vec<SirRecordField>,
+    },
+    /// Construct record instance; field values in declaration order.
+    ConstructRecord {
+        type_binding: BindingId,
+        field_values: Vec<NodeId>,
+    },
     Unary {
         op: UnaryOp,
         expr: NodeId,
@@ -122,16 +132,19 @@ pub enum SirNode {
         index: NodeId,
         value: NodeId,
     },
-    /// Attribute read: `base.name` (bootstrap: map key string).
+    /// Attribute read: `base.name`.
+    /// `field_index = Some(i)` → record field via get_attribute; `None` → map string key.
     Attr {
         base: NodeId,
         name: String,
+        field_index: Option<u32>,
     },
     /// Attribute write: `base.name = value`.
     AttrAssign {
         base: NodeId,
         name: String,
         value: NodeId,
+        field_index: Option<u32>,
     },
     /// try / catch* / finally?
     Try {
@@ -146,6 +159,12 @@ pub struct SirCatch {
     pub binding: BindingId,
     pub guard: Option<NodeId>,
     pub body: NodeId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SirRecordField {
+    pub name: String,
+    pub mutable: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -2886,3 +2886,11 @@ WP-ID: WP-R07
 Title: for x in xs via list_len + index while; break/continue
 Status: COMPLETE
 `
+
+### WP-R08 · record construct + real attributes
+
+`	ext
+WP-ID: WP-R08
+Title: record def, named construct, get/set_attribute fields
+Status: COMPLETE
+`

@@ -6,7 +6,7 @@
 use script_lex::{lex, Keyword, LexError, Span, Token, TokenKind};
 
 use crate::ast::{
-    BinaryOp, Block, Decl, Expr, Item, Module, Stmt, UnaryOp,
+    BinaryOp, Block, CallArg, Decl, Expr, Item, Module, RecordField, Stmt, UnaryOp,
 };
 use crate::error::ParseError;
 
@@ -114,7 +114,8 @@ impl Parser {
                 | Keyword::Def
                 | Keyword::Import
                 | Keyword::From
-                | Keyword::Export,
+                | Keyword::Export
+                | Keyword::Record,
             ) => Ok(Item::Decl(self.parse_decl()?)),
             _ => Ok(Item::Stmt(self.parse_stmt()?)),
         }
@@ -125,6 +126,7 @@ impl Parser {
             TokenKind::Keyword(Keyword::Let) => self.parse_let_like(false),
             TokenKind::Keyword(Keyword::Const) => self.parse_let_like(true),
             TokenKind::Keyword(Keyword::Def) => self.parse_function(),
+            TokenKind::Keyword(Keyword::Record) => self.parse_record(),
             TokenKind::Keyword(Keyword::Import) => self.parse_import(),
             TokenKind::Keyword(Keyword::From) => self.parse_from_import(),
             TokenKind::Keyword(Keyword::Export) => self.parse_export(),
@@ -209,9 +211,11 @@ impl Parser {
 
     fn parse_export(&mut self) -> Result<Decl, ParseError> {
         let start = self.expect_keyword(Keyword::Export)?;
-        // export let|const|def ...
+        // export let|const|def|record ...
         let item = match self.peek_kind() {
-            TokenKind::Keyword(Keyword::Let | Keyword::Const | Keyword::Def) => self.parse_decl()?,
+            TokenKind::Keyword(Keyword::Let | Keyword::Const | Keyword::Def | Keyword::Record) => {
+                self.parse_decl()?
+            }
             _ => {
                 return Err(ParseError::new(
                     "expected declaration after `export`",
@@ -223,6 +227,7 @@ impl Parser {
             Decl::Let { span, .. }
             | Decl::Const { span, .. }
             | Decl::Function { span, .. }
+            | Decl::Record { span, .. }
             | Decl::Import { span, .. }
             | Decl::FromImport { span, .. }
             | Decl::Export { span, .. } => span.end,
@@ -230,6 +235,49 @@ impl Parser {
         Ok(Decl::Export {
             item: Box::new(item),
             span: Span::new(start.start, end),
+        })
+    }
+
+    fn parse_record(&mut self) -> Result<Decl, ParseError> {
+        let start = self.expect_keyword(Keyword::Record)?;
+        let (name, _) = self.expect_ident()?;
+        self.expect_kind(|k| matches!(k, TokenKind::Colon), "expected `:` after record name")?;
+        self.expect_kind(
+            |k| matches!(k, TokenKind::Newline),
+            "expected newline after record header",
+        )?;
+        self.expect_kind(|k| matches!(k, TokenKind::Indent), "expected indented record body")?;
+        let mut fields = Vec::new();
+        self.skip_newlines();
+        while !matches!(self.peek_kind(), TokenKind::Dedent | TokenKind::Eof) {
+            let mutable = if matches!(self.peek_kind(), TokenKind::Keyword(Keyword::Mutable)) {
+                self.bump();
+                true
+            } else {
+                false
+            };
+            self.expect_keyword(Keyword::Field)?;
+            let (fname, fspan) = self.expect_ident()?;
+            // Optional type annotation / default skipped in bootstrap.
+            self.expect_newline_or_end()?;
+            fields.push(RecordField {
+                name: fname,
+                mutable,
+                span: fspan,
+            });
+            self.skip_newlines();
+        }
+        let end = self.expect_kind(|k| matches!(k, TokenKind::Dedent), "expected dedent")?;
+        if fields.is_empty() {
+            return Err(ParseError::new(
+                "record requires at least one field",
+                Span::new(start.start, end.end),
+            ));
+        }
+        Ok(Decl::Record {
+            name,
+            fields,
+            span: Span::new(start.start, end.end),
         })
     }
 
@@ -356,9 +404,13 @@ impl Parser {
                     span: Span::new(start.start, end),
                 })
             }
-            TokenKind::Keyword(Keyword::Let | Keyword::Const | Keyword::Def | Keyword::Import) => {
-                Ok(Stmt::Decl(self.parse_decl()?))
-            }
+            TokenKind::Keyword(
+                Keyword::Let
+                | Keyword::Const
+                | Keyword::Def
+                | Keyword::Import
+                | Keyword::Record,
+            ) => Ok(Stmt::Decl(self.parse_decl()?)),
             TokenKind::Ident { .. } => {
                 // L-value assign (name / index / attr), aug-assign, or expression.
                 if let Some(op) = self.peek_aug_op() {
@@ -758,6 +810,23 @@ impl Parser {
         self.parse_postfix()
     }
 
+    /// Named arg: `name = expr`; otherwise positional expression.
+    fn parse_call_arg(&mut self) -> Result<CallArg, ParseError> {
+        // Lookahead: Ident Assign → named
+        if matches!(self.peek_kind(), TokenKind::Ident { .. }) {
+            let save = self.pos;
+            let (name, _) = self.expect_ident()?;
+            if matches!(self.peek_kind(), TokenKind::Assign) {
+                self.bump();
+                let value = self.parse_expr()?;
+                return Ok(CallArg::Named { name, value });
+            }
+            // rewind and parse full expression (name may be start of call/index/etc.)
+            self.pos = save;
+        }
+        Ok(CallArg::Positional(self.parse_expr()?))
+    }
+
     fn parse_postfix(&mut self) -> Result<Expr, ParseError> {
         let mut expr = self.parse_primary()?;
         loop {
@@ -766,7 +835,7 @@ impl Parser {
                 let mut args = Vec::new();
                 if !matches!(self.peek_kind(), TokenKind::RParen) {
                     loop {
-                        args.push(self.parse_expr()?);
+                        args.push(self.parse_call_arg()?);
                         if matches!(self.peek_kind(), TokenKind::Comma) {
                             self.bump();
                             continue;
@@ -1131,6 +1200,30 @@ finally:
                 finally_block: Some(_),
                 ..
             }) if catches.len() == 1
+        ));
+    }
+
+    #[test]
+    fn parse_record_and_named_construct() {
+        let src = r#"
+record Point:
+    field x
+    mutable field y
+let p = Point(x = 1, y = 2)
+"#;
+        let m = parse_module(src).unwrap();
+        assert!(matches!(
+            &m.items[0],
+            Item::Decl(Decl::Record { name, fields, .. })
+                if name == "Point" && fields.len() == 2 && fields[1].mutable
+        ));
+        assert!(matches!(
+            &m.items[1],
+            Item::Decl(Decl::Let {
+                value: Expr::Call { args, .. },
+                ..
+            }) if args.len() == 2
+                && matches!(&args[0], CallArg::Named { name, .. } if name == "x")
         ));
     }
 }

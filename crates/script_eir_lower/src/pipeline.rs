@@ -244,4 +244,28 @@ f()
         // print returns display string of 1 as last expr of finally — wait, finally doesn't replace return
         assert_eq!(run(src), ControlState::Return(Some(Value::Int(7))));
     }
+
+    #[test]
+    fn record_construct_and_field_read() {
+        let src = r#"
+record Point:
+    field x
+    field y
+let p = Point(x = 3, y = 4)
+p.x + p.y
+"#;
+        assert_eq!(run(src), ControlState::Return(Some(Value::Int(7))));
+    }
+
+    #[test]
+    fn record_mutable_field_write() {
+        let src = r#"
+record Counter:
+    mutable field value
+let c = Counter(value = 1)
+c.value = 10
+c.value
+"#;
+        assert_eq!(run(src), ControlState::Return(Some(Value::Int(10))));
+    }
 }

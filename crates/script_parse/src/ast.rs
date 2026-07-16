@@ -53,6 +53,20 @@ pub enum Decl {
         item: Box<Decl>,
         span: Span,
     },
+    /// `record Name: field ...` (SPEC-P1 §19)
+    Record {
+        name: String,
+        fields: Vec<RecordField>,
+        span: Span,
+    },
+}
+
+/// One field in a record definition.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordField {
+    pub name: String,
+    pub mutable: bool,
+    pub span: Span,
 }
 
 /// One name in a `from … import` list.
@@ -156,6 +170,13 @@ pub struct CatchClause {
     pub span: Span,
 }
 
+/// Call argument: positional or named (`name = expr`).
+#[derive(Debug, Clone, PartialEq)]
+pub enum CallArg {
+    Positional(Expr),
+    Named { name: String, value: Expr },
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Nil {
@@ -184,7 +205,8 @@ pub enum Expr {
     },
     Call {
         callee: Box<Expr>,
-        args: Vec<Expr>,
+        /// Positional and named (`name = expr`) arguments.
+        args: Vec<CallArg>,
         span: Span,
     },
     Unary {

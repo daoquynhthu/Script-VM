@@ -471,7 +471,7 @@ Validation Gates:
   - G7
 Test Requirement:
   Full regression run, integration gate checks, forbidden regression checks.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3 — IG suite + G6 scan + CI; see agent/gate-records/WP-19-*)
 ```
 
 ---

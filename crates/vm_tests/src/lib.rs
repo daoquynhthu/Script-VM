@@ -13,6 +13,8 @@ mod diagnostics;
 mod regression;
 #[cfg(test)]
 mod gap_closure;
+#[cfg(test)]
+mod integration;
 
 #[cfg(test)]
 mod smoke {

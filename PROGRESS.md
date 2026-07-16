@@ -1587,3 +1587,53 @@ Summary:
   conformance remains out of scope (TR-GAP / WP-19 residual).
 Next:
   WP-19 Stage 14 integration sign-off.
+
+## 2026-07-14 16:00 · WP-19 complete: Stage 14 integration gates
+
+Work Package: WP-19
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_tests/src/integration.rs (new)
+  - crates/vm_tests/src/lib.rs
+  - scripts/integration/g6-scan.ps1 (new)
+  - scripts/integration/g6-scan.sh (new)
+  - .github/workflows/ci.yml
+  - agent/gate-records/WP-19-integration-gate-plan.md
+  - agent/gate-records/WP-19-regression-gate-plan.md
+  - agent/gate-records/WP-19-release-candidate-criteria.md
+  - agent/gate-records/WP-19-post-freeze-erratum-policy.md
+  - agent/gate-records/G0-G7-20260714-wp19-final.md
+  - agent/gate-records/WP-19-handoff.md
+  - docs/IMPLEMENTATION-STATUS.md
+  - docs/agent-plan/WORK-PACKAGE-INDEX.md
+  - docs/agent-plan/TRACEABILITY-MATRIX.md
+  - HANDOVER.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P3-FREEZE
+  - SPEC-P3-VALID
+  - SPEC-P3-CACHE
+  - SPEC-P3-GC-META
+  - SPEC-P3-HOST
+  - TRACEABILITY-MATRIX.md TR-018
+  - GATE-CHECKLIST.md G0-G7
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G2 PASS
+  - G3 PASS
+  - G4 PASS
+  - G5 PASS
+  - G6 PASS
+  - G7 PASS
+Tests:
+  - cargo test --workspace PASS with RUSTFLAGS=-D warnings · ~368 unit tests (vm_tests 88)
+  - cargo test -p vm_tests integration:: PASS · IG-01..IG-10
+  - scripts/integration/g6-scan.ps1 PASS
+Summary:
+  Closed WP-19 and Stage 14 for Phase 3 bootstrap: integration gate plan,
+  regression plan, RC criteria, post-freeze erratum policy, G0-G7 final record,
+  IG suite, automated G6 scan in CI. Coding plan §24 bootstrap completion MET.
+  All WP-00..WP-19 COMPLETE for current Phase 3 substrate goals.
+Next:
+  Optional Phase 1 / TR-GAP language work; maintain CI green.

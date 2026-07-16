@@ -1,0 +1,8 @@
+[package]
+name = "script_parse"
+version = "0.1.0"
+edition = "2021"
+description = "Phase 1 parser and AST (bootstrap subset)"
+
+[dependencies]
+script_lex = { path = "../script_lex" }

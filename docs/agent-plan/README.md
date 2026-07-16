@@ -1,62 +1,45 @@
 # Agent Implementation Plan Package
 
-Updated: 2026-07-10
+Updated: 2026-07-16
 
-This package contains the Agent-team implementation planning framework for post-freeze Script VM implementation work.
-
-This package is not just governance. It includes a concrete coding execution plan.
-
-## Entry documents
+## 唯一前向入口
 
 ```text
-../../AGENT.md                         repository workflow contract
-IMPLEMENTATION-CODING-PLAN.md          Stage 0–14 coding sequence
-AGENT-MASTER-PLAN.md                   team / parallelism / WP model
-WORK-PACKAGE-INDEX.md                  WP-00–WP-19 scope (Status fields maintained)
-../../docs/IMPLEMENTATION-STATUS.md    live implementation snapshot (rewritable)
-../../PROGRESS.md                      append-only change log
-../../ISSUE.md                         append-only audit log
+UNIFIED-IMPLEMENTATION-GUIDANCE.md
 ```
 
-Use:
+Master copy: `PLAN/UNIFIED-IMPLEMENTATION-GUIDANCE.md` (wins on conflict).
+
+---
+
+## Entry set
 
 ```text
-IMPLEMENTATION-CODING-PLAN.md
+../../AGENT.md
+UNIFIED-IMPLEMENTATION-GUIDANCE.md     ← sole forward plan
+AGENT-MASTER-PLAN.md
+AGENT-OPERATING-PROTOCOL.md
+GATE-CHECKLIST.md
+WORK-PACKAGE-INDEX.md                  (legacy WP-00..19 archive + superseded notes)
+IMPLEMENTATION-CODING-PLAN.md          (archive: T-P3B Stage 0–14)
+TRACEABILITY-MATRIX.md
+../../docs/IMPLEMENTATION-STATUS.md
+../../PROGRESS.md
+../../ISSUE.md
 ```
-
-for concrete repository layout, directory creation, crate order, module order, test order, and step-by-step implementation sequence.
-
-Use:
-
-```text
-docs/IMPLEMENTATION-STATUS.md
-```
-
-for **current** stage/WP completion snapshot. Do not treat stale handoff notes as live status.
 
 ## Authority order
 
 ```text
-Frozen normative specifications
-  > PHASE-3-FREEZE.md
-  > Agent implementation plan documents
-  > AGENT.md
-  > PROGRESS.md / ISSUE.md
+Frozen ARCHITECTURE specs
+  > FREEZE declarations
+  > UNIFIED-IMPLEMENTATION-GUIDANCE.md
+  > governance plans + AGENT.md
+  > PROGRESS / ISSUE
+  > status snapshots
 ```
 
-## Document map
+## Current track
 
-| File | Role |
-|------|------|
-| `IMPLEMENTATION-CODING-PLAN.md` | Stage order and required actions |
-| `WORK-PACKAGE-INDEX.md` | WP identity, deps, gates, **Status** |
-| `TRACEABILITY-MATRIX.md` | Spec ↔ implementation ↔ tests |
-| `GATE-CHECKLIST.md` | G0–G7 criteria |
-| `RISK-REGISTER.md` | Risks |
-| `HANDOFF-TEMPLATE.md` | Handoff format |
-| `local-reference-map.md` | Spec alias routing |
-| `AGENT-OPERATING-PROTOCOL.md` | Main/sub-agent rules |
-
-## Note on PLAN/
-
-Repository also has `PLAN/` as a historical/canonical plan tree. Prefer **`docs/agent-plan/`** for day-to-day agent work; keep both WORK-PACKAGE Status fields aligned when updating.
+**T-P1 (Phase 1 language frontend)** — see unified guide §5.  
+Next work package: **WP-L00**.

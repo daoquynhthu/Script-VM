@@ -1826,3 +1826,32 @@ Summary:
   interpreter binary ops. PROJECT-OVERVIEW fib sample executes end-to-end.
 Next:
   Expand codegen surface (for/lists/and-or) or host print I/O as product needs.
+
+## 2026-07-16 11:58 · Unified implementation guidance (Phase-1-first)
+
+Work Package: WP-L00 (plan document landing; GAP matrix still pending)
+Agent Mode: main-only
+Changed Files:
+  - PLAN/UNIFIED-IMPLEMENTATION-GUIDANCE.md (new, master)
+  - docs/agent-plan/UNIFIED-IMPLEMENTATION-GUIDANCE.md (mirror)
+  - PLAN/README.md
+  - docs/agent-plan/README.md
+  - docs/IMPLEMENTATION-STATUS.md
+  - PLAN/MANIFEST.md (if updated)
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-FREEZE / SPEC-P1-LANG / SPEC-P1-DESIGN (strategy cites)
+  - PROJECT-OVERVIEW.md product pipeline
+  - PHASE-3 bootstrap archive (T-P3B)
+Gates:
+  - G0 PASS (planning only; no frozen-spec edits)
+  - G1 PASS (plan cites concrete specs)
+  - G7 PASS (handoff via PROGRESS + status)
+Tests:
+  - not run (documentation-only change)
+Summary:
+  Published sole forward plan guide: tracks T-P3B archive, T-P1 active
+  (Phase-1-first), T-P2/T-P3L ordered later, T-DEMO quarantine for
+  script_codegen. New WP-L* series. WP-20..25 superseded as plan IDs.
+Next:
+  WP-L00 remainder: docs/phase-1/P1-GAP-MATRIX.md + WORK-PACKAGE-INDEX WP-L* rows.

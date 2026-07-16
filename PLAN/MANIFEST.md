@@ -23,3 +23,9 @@ These documents are non-normative implementation planning documents.
 They give concrete coding instructions, repository layout, execution sequence, gates, and tracking rules.
 
 They do not redefine frozen VM semantics.
+
+## Forward Plan (2026-07-16)
+
+| File | Status |
+|---|---|
+| `UNIFIED-IMPLEMENTATION-GUIDANCE.md` | ACTIVE sole forward plan |

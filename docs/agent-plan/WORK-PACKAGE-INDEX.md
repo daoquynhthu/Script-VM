@@ -158,7 +158,7 @@ WP-19 Integration and regression gates
 WP-20 Phase 1 language pipeline process and traceability
 WP-21 Phase 1 lexical analysis
 WP-22 Phase 1 parser and AST (bootstrap COMPLETE)
-WP-23 Phase 1 semantic binding skeleton (planned)
+WP-23 Phase 1 semantic binding skeleton (COMPLETE)
 ```
 
 ---
@@ -2312,7 +2312,7 @@ without documented reason.
 WP-20 Phase 1 language pipeline process and traceability
 WP-21 Phase 1 lexical analysis (source text + tokens)
 WP-22 Phase 1 parser and AST (bootstrap COMPLETE)
-WP-23 Phase 1 semantic binding skeleton (planned)
+WP-23 Phase 1 semantic binding skeleton (COMPLETE)
 `
 
 ### WP-20 · Phase 1 Language Pipeline Process
@@ -2455,4 +2455,49 @@ Completion Criteria:
 
 `	ext
 bootstrap subset parses fib-shaped scripts with tests
+`
+
+### WP-23 · Phase 1 Semantic Binding Skeleton
+
+`	ext
+WP-ID: WP-23
+Title: Phase 1 semantic binding and scope skeleton
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+Frozen Spec References:
+
+`	ext
+SPEC-P1-FREEZE
+SPEC-P1-LANG section 2.1, 2.2, let/const/def and assignment rules
+`
+
+Outputs:
+
+`	ext
+crates/script_sema
+ScopeStack / BindingKind
+no assignment without let; const/def immutable; block scope; duplicates; unresolved names
+prelude print for bootstrap samples
+10 unit tests including fib check
+`
+
+Non-Goals:
+
+`	ext
+full type contracts, import graph, record/enum members
+`
+
+Dependencies:
+
+`	ext
+WP-22
+`
+
+Completion Criteria:
+
+`	ext
+bootstrap AST passes binding/scope checks per SPEC-P1 design corrections
 `

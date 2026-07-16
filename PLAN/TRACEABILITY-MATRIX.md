@@ -653,3 +653,14 @@ Frozen Spec References:
   - SPEC-P1-LANG sections 7-9 (bootstrap subset)
 Status: COMPLETE (bootstrap Phase 1 parser)
 `
+
+### TR-P1-005 · Binding and Scope Analysis
+
+`	ext
+Trace ID: TR-P1-005
+Implementation Item: Scope stack; let mutable; const/def immutable; assignment rules
+Work Package: WP-23
+Frozen Spec References:
+  - SPEC-P1-LANG section 2.1, 2.2
+Status: COMPLETE (bootstrap Phase 1 sema)
+`

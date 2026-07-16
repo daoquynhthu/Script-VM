@@ -1735,3 +1735,35 @@ Summary:
   (let/const/def/if/while/return/call/arith/list). WP-22 COMPLETE bootstrap.
 Next:
   WP-23 semantic binding skeleton.
+
+## 2026-07-16 11:45 · WP-23 script_sema + parser for/break/continue
+
+Work Package: WP-23 (COMPLETE); WP-22 surface extend
+Agent Mode: main-only
+Changed Files:
+  - crates/script_sema/** (new)
+  - crates/script_parse/src/ast.rs
+  - crates/script_parse/src/parser.rs
+  - Cargo.toml
+  - Cargo.lock
+  - docs/agent-plan/WORK-PACKAGE-INDEX.md
+  - docs/agent-plan/TRACEABILITY-MATRIX.md
+  - PLAN/*
+  - docs/IMPLEMENTATION-STATUS.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG section 2.1, 2.2, for/break/continue/return rules
+  - TR-P1-005
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+Tests:
+  - cargo test -p script_sema PASS (13)
+  - cargo test -p script_parse PASS (7)
+Summary:
+  Binding/scope analyzer with let/const/def, block scope, loop control,
+  top-level return rejection, print prelude. Parser adds for/break/continue.
+Next:
+  WP-24 SIR materialization from analyzed AST.

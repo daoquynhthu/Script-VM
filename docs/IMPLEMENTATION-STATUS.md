@@ -2,12 +2,10 @@
 
 Document class: Non-normative rolling status  
 Authority: Subordinate to frozen specs, `AGENT.md`, and plan package  
-Rule: This file **may be rewritten** as a snapshot. It is **not** a substitute for append-only `PROGRESS.md` / `ISSUE.md`.  
-**Do not use `HANDOVER.md` as live status** (update only at session handoff).
+Rule: This file **may be rewritten** as a snapshot.
 
-Updated: 2026-07-14 (Phase 1 frontend: WP-20..22 COMPLETE bootstrap)  
-Baseline tip: advance with commits on `main`  
-Workspace: Phase 3 bootstrap CLOSED + `script_lex` + `script_parse`
+Updated: 2026-07-14 (Phase 1 frontend WP-20..23 COMPLETE bootstrap)  
+Workspace: Phase 3 VM CLOSED + `script_lex` + `script_parse` + `script_sema`
 
 ---
 
@@ -16,80 +14,55 @@ Workspace: Phase 3 bootstrap CLOSED + `script_lex` + `script_parse`
 | Track | Status |
 |-------|--------|
 | Phase 3 bootstrap (WP-00..19) | **CLOSED** |
-| Phase 1 frontend process (WP-20) | **COMPLETE** |
-| Phase 1 lexer (WP-21) | **COMPLETE** (`crates/script_lex`) |
-| Phase 1 parser/AST (WP-22) | **COMPLETE** bootstrap (`crates/script_parse`) |
-| Phase 1 semantic skeleton (WP-23) | **NEXT** |
-| SIR / lowering product path | Later WPs |
+| WP-20 process | **COMPLETE** |
+| WP-21 lexer | **COMPLETE** (`script_lex`) |
+| WP-22 parser/AST | **COMPLETE** bootstrap (+ for/break/continue) |
+| WP-23 semantic binding | **COMPLETE** (`script_sema`) |
+| Next | SIR materialization / lowering toward RuntimePlan (new WP) |
 
 ---
 
-## 1. How to read project state
+## 1. Pipeline capability
 
-| Need | Source of truth |
-|------|-----------------|
-| What changed | `PROGRESS.md` |
-| Audit findings | `ISSUE.md` (last-status-wins) |
-| WP index | `docs/agent-plan/WORK-PACKAGE-INDEX.md` |
-| Trace | `docs/agent-plan/TRACEABILITY-MATRIX.md` (incl. TR-P1-*) |
-| Live snapshot | **This file** |
-| Phase 3 closure | `agent/gate-records/PHASE-3-BOOTSTRAP-CLOSURE-20260714.md` |
-| Semantics | `ARCHITECTURE/` frozen specs |
+```text
+source
+  -> script_lex::lex
+  -> script_parse::parse_module
+  -> script_sema::analyze_module / check_source
+  -> (not yet) SIR / RuntimePlan / vm_eval
+```
 
----
+**Sema rules (bootstrap)**
 
-## 2. Coding stages
+- `let` mutable; `const`/`def` immutable; no assign without binding  
+- Block scope (if/while/for body); for binds iterator var  
+- `break`/`continue` only in loop; top-level `return` invalid  
+- Unresolved names; duplicate same-scope bindings  
+- Prelude: `print` builtin for samples  
 
-| Stage | Status |
-|-------|--------|
-| 0–14 Phase 3 bootstrap | **COMPLETE** |
-| 15+ Phase 1 language frontend | **IN_PROGRESS** (lexer done) |
+**Tests (approx.)**
 
----
-
-## 3. Work packages
-
-| WP | Status | Notes |
-|----|--------|-------|
-| WP-00..19 | COMPLETE | Phase 3 bootstrap |
-| WP-20 | **COMPLETE** | Phase 1 process + TRACE |
-| WP-21 | **COMPLETE** | `script_lex` — SPEC-P1-LANG §3–§6 lexical |
-| WP-22 | **COMPLETE** | `script_parse` — bootstrap AST + RD parser (fib-shaped) |
-| WP-23 | **NEXT** | Semantic binding skeleton |
+- `script_lex` 18 · `script_parse` 7 · `script_sema` 13  
 
 ---
 
-## 4. Phase 1 capability (honest)
+## 2. Architecture books for next work
 
-**In place**
-
-- `script_lex`: full Phase 1 lexical subset (18 tests)
-- `script_parse`: bootstrap AST + recursive descent (6 tests, fib-shaped module)
-  - let/const/def, if/elif/else, while, return, assign, calls, arith, lists
-
-**Not yet**
-
-- Full grammar (match/record/enum/import/export/defer/…)
-- Semantic analysis (WP-23)
-- SIR materialization / lowering to RuntimePlan
-- End-to-end `source → run`
+| Goal | Specs |
+|------|--------|
+| SIR unit | `SPEC-P2-FREEZE`, `SPEC-P2-IR`, `SPEC-P2-FRAMEWORK`, SIR rounds |
+| Lowering to VM | `SPEC-P3-LOWERING`, `SPEC-P3-EIR`, `SPEC-P3-RTP` |
 
 ---
 
-## 5. Architecture books for next work (WP-23)
+## 3. Recommended next
 
-1. `SPEC-P1-LANG` binding/scope / declarations semantics
-2. `SPEC-P1-DESIGN` as needed
-3. Later: Phase 2 SIR docs when materializing IR
-
----
-
-## 6. Recommended next work
-
-**WP-23**: name resolution / scope skeleton on AST (block scope, `let` introduces binding, assignment requires existing binding).
+1. **WP-24**: materialize Phase 2 SIR (or bootstrap HIR→SIR) from analyzed AST  
+2. **WP-25**: SIR → RuntimePlan/EIR lowering into existing `vm_eval`  
+3. Expand grammar residual: match/record/import as needed for v0  
 
 ---
 
-## 7. Effective open audit items
+## 4. Effective open audit
 
-No OPEN blockers from Phase 3. Phase 1: none recorded yet.
+No OPEN Phase 1 blockers recorded.

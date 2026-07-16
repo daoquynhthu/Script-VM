@@ -325,6 +325,9 @@ impl Codegen {
                 })));
                 Ok(Some(dest))
             }
+            Stmt::IndexAssign { .. } => Err(CodegenError::new(
+                "index assign not supported in demo codegen; use script_eir_lower",
+            )),
             Stmt::AugAssign { name, op, value, .. } => {
                 // Expand `x += e` to `x = x + e` for demo codegen only.
                 let dest = fb
@@ -593,6 +596,7 @@ impl Codegen {
             }
             Expr::List { .. } => Err(CodegenError::new("list literals not yet lowered to EIR")),
             Expr::Map { .. } => Err(CodegenError::new("map literals not yet lowered to EIR")),
+            Expr::Index { .. } => Err(CodegenError::new("index not supported in demo codegen")),
         }
     }
 }

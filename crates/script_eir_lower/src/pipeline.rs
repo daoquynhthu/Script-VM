@@ -163,4 +163,16 @@ s
         let r = run("assert false\n");
         assert!(matches!(r, ControlState::Raise(_)));
     }
+
+    #[test]
+    fn list_index_read_write() {
+        let src = "let xs = [10, 20, 30]\nxs[1] = 99\nxs[1]\n";
+        assert_eq!(run(src), ControlState::Return(Some(Value::Int(99))));
+    }
+
+    #[test]
+    fn map_index_read() {
+        let src = "let m = {\"k\": 7}\nm[\"k\"]\n";
+        assert_eq!(run(src), ControlState::Return(Some(Value::Int(7))));
+    }
 }

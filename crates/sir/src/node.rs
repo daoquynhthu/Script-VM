@@ -111,6 +111,17 @@ pub enum SirNode {
     Map {
         entries: Vec<(NodeId, NodeId)>,
     },
+    /// Index read: `base[index]`.
+    Index {
+        base: NodeId,
+        index: NodeId,
+    },
+    /// Index write: `base[index] = value` (statement form).
+    IndexAssign {
+        base: NodeId,
+        index: NodeId,
+        value: NodeId,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

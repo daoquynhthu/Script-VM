@@ -589,6 +589,24 @@ impl<'a> LowerCtx<'a> {
                 let binding = self.resolve(name).expect("sema guarantees binding");
                 self.emit(SirNode::Assign { binding, value: v }, *span)
             }
+            Stmt::IndexAssign {
+                base,
+                index,
+                value,
+                span,
+            } => {
+                let b = self.lower_expr(base);
+                let i = self.lower_expr(index);
+                let v = self.lower_expr(value);
+                self.emit(
+                    SirNode::IndexAssign {
+                        base: b,
+                        index: i,
+                        value: v,
+                    },
+                    *span,
+                )
+            }
             Stmt::AugAssign {
                 name,
                 value,
@@ -674,6 +692,15 @@ impl<'a> LowerCtx<'a> {
                     .map(|(k, v)| (self.lower_expr(k), self.lower_expr(v)))
                     .collect();
                 self.emit(SirNode::Map { entries: pairs }, *span)
+            }
+            Expr::Index {
+                base,
+                index,
+                span,
+            } => {
+                let b = self.lower_expr(base);
+                let i = self.lower_expr(index);
+                self.emit(SirNode::Index { base: b, index: i }, *span)
             }
         }
     }

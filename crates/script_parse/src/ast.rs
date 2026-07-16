@@ -108,6 +108,13 @@ pub enum Stmt {
         value: Expr,
         span: Span,
     },
+    /// Index assignment: `base[index] = value` (SPEC-P1 assignment_target)
+    IndexAssign {
+        base: Expr,
+        index: Expr,
+        value: Expr,
+        span: Span,
+    },
     /// Augmented assignment: `x += 1` etc. (SPEC-P1 §10.2)
     AugAssign {
         name: String,
@@ -176,6 +183,12 @@ pub enum Expr {
     /// Map literal `{ k: v, ... }` (SPEC-P1 §6.7)
     Map {
         entries: Vec<(Expr, Expr)>,
+        span: Span,
+    },
+    /// Index / subscript: `base[index]`
+    Index {
+        base: Box<Expr>,
+        index: Box<Expr>,
         span: Span,
     },
 }

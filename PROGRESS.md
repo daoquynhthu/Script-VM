@@ -2101,3 +2101,28 @@ Summary:
   per-EIR function plans from SIR/EIR.
 Next:
   Index/subscript syntax; general for; finally/unwind on raise.
+
+## 2026-07-16 12:25 · WP-R04 index/subscript full stack
+
+Work Package: WP-R04
+Agent Mode: main-only
+Changed Files:
+  - crates/script_parse (Index, IndexAssign)
+  - crates/script_sema
+  - crates/sir (Index, IndexAssign nodes)
+  - crates/script_lower
+  - crates/script_eir_lower (index_read/write helpers)
+  - crates/script_codegen (reject with note)
+  - docs/IMPLEMENTATION-STATUS.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG assignment_target / index
+  - SPEC-P3-HELPERS index_read/write
+Gates:
+  - G0-G5 PASS
+Tests:
+  - cargo test -p script_eir_lower PASS (14) list/map index
+Summary:
+  xs[i] / m[k] parse and lower via helper_index_read/write.
+Next:
+  Attribute access; general for; finally unwind.

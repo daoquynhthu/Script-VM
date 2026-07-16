@@ -23,7 +23,7 @@ use vm_core::value::Value;
 use vm_diag::source_span::SourceSpanId;
 use vm_runtime::helpers::dispatch::{
     HELPER_CONSTRUCT_ERROR_ID, HELPER_CONSTRUCT_LIST_ID, HELPER_CONSTRUCT_MAP_ID, HELPER_DISPLAY_ID,
-    HELPER_GENERIC_CALL_ID,
+    HELPER_GENERIC_CALL_ID, HELPER_INDEX_READ_ID, HELPER_INDEX_WRITE_ID,
 };
 
 use crate::error::EirLowerError;
@@ -306,6 +306,25 @@ impl<'a> SirEirLower<'a> {
                 })));
                 Ok(Some(dest))
             }
+            SirNode::IndexAssign {
+                base,
+                index,
+                value,
+            } => {
+                let b = self.lower_node_expr(fb, base)?;
+                let i = self.lower_node_expr(fb, index)?;
+                let v = self.lower_node_expr(fb, value)?;
+                fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                    dest: None,
+                    helper_id: HELPER_INDEX_WRITE_ID,
+                    args: vec![b, i, v],
+                    call_site: None,
+                    access_site: None,
+                    safepoint_id: None,
+                    deopt_id: None,
+                }));
+                Ok(Some(v))
+            }
             SirNode::If {
                 cond,
                 then_block,
@@ -376,6 +395,7 @@ impl<'a> SirEirLower<'a> {
                         | SirNode::Binary { .. }
                         | SirNode::List { .. }
                         | SirNode::Map { .. }
+                        | SirNode::Index { .. }
                         | SirNode::SymbolRef { .. }
                 ) {
                     Ok(Some(self.lower_node_expr(fb, id)?))
@@ -749,6 +769,21 @@ impl<'a> SirEirLower<'a> {
                     dest: Some(dest),
                     helper_id: HELPER_CONSTRUCT_MAP_ID,
                     args,
+                    call_site: None,
+                    access_site: None,
+                    safepoint_id: None,
+                    deopt_id: None,
+                }));
+                Ok(dest)
+            }
+            SirNode::Index { base, index } => {
+                let b = self.lower_node_expr(fb, base)?;
+                let i = self.lower_node_expr(fb, index)?;
+                let dest = fb.alloc_slot();
+                fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                    dest: Some(dest),
+                    helper_id: HELPER_INDEX_READ_ID,
+                    args: vec![b, i],
                     call_site: None,
                     access_site: None,
                     safepoint_id: None,

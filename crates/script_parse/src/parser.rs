@@ -359,7 +359,7 @@ impl Parser {
                 Ok(Stmt::Decl(self.parse_decl()?))
             }
             TokenKind::Ident { .. } => {
-                // assign, aug-assign, or expression statement
+                // assign, index-assign, aug-assign, or expression statement
                 if self.is_assign_stmt() {
                     let (name, start) = self.expect_ident()?;
                     self.expect_kind(|k| matches!(k, TokenKind::Assign), "expected `=`")?;
@@ -370,6 +370,29 @@ impl Parser {
                         name,
                         value,
                         span: Span::new(start.start, end),
+                    })
+                } else if self.is_index_assign_stmt() {
+                    let base = self.parse_postfix()?;
+                    let Expr::Index {
+                        base,
+                        index,
+                        span: idx_span,
+                    } = base
+                    else {
+                        return Err(ParseError::new(
+                            "expected index assignment target",
+                            self.span_here(),
+                        ));
+                    };
+                    self.expect_kind(|k| matches!(k, TokenKind::Assign), "expected `=`")?;
+                    let value = self.parse_expr()?;
+                    let end = value.span_end();
+                    self.expect_newline_or_end()?;
+                    Ok(Stmt::IndexAssign {
+                        base: *base,
+                        index: *index,
+                        value,
+                        span: Span::new(idx_span.start, end),
                     })
                 } else if let Some(op) = self.peek_aug_op() {
                     let (name, start) = self.expect_ident()?;
@@ -405,6 +428,40 @@ impl Parser {
                 self.tokens.get(self.pos + 1).map(|t| &t.kind),
                 Some(TokenKind::Assign)
             )
+    }
+
+    /// Lookahead: `ident [ ... ] =` (simple name base only for bootstrap).
+    fn is_index_assign_stmt(&self) -> bool {
+        if !matches!(self.peek_kind(), TokenKind::Ident { .. }) {
+            return false;
+        }
+        if !matches!(
+            self.tokens.get(self.pos + 1).map(|t| &t.kind),
+            Some(TokenKind::LBracket)
+        ) {
+            return false;
+        }
+        // Scan for matching RBracket then Assign (depth-aware).
+        let mut depth = 0i32;
+        let mut i = self.pos + 1;
+        while i < self.tokens.len() {
+            match &self.tokens[i].kind {
+                TokenKind::LBracket => depth += 1,
+                TokenKind::RBracket => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return matches!(
+                            self.tokens.get(i + 1).map(|t| &t.kind),
+                            Some(TokenKind::Assign)
+                        );
+                    }
+                }
+                TokenKind::Newline | TokenKind::Eof => return false,
+                _ => {}
+            }
+            i += 1;
+        }
+        false
     }
 
     fn peek_aug_op(&self) -> Option<crate::ast::AugOp> {
@@ -660,6 +717,17 @@ impl Parser {
                     args,
                     span,
                 };
+            } else if matches!(self.peek_kind(), TokenKind::LBracket) {
+                self.bump();
+                let index = self.parse_expr()?;
+                let end =
+                    self.expect_kind(|k| matches!(k, TokenKind::RBracket), "expected `]`")?;
+                let span = Span::new(expr.span_start(), end.end);
+                expr = Expr::Index {
+                    base: Box::new(expr),
+                    index: Box::new(index),
+                    span,
+                };
             } else {
                 break;
             }
@@ -792,7 +860,8 @@ impl Expr {
             | Self::Unary { span, .. }
             | Self::Binary { span, .. }
             | Self::List { span, .. }
-            | Self::Map { span, .. } => *span,
+            | Self::Map { span, .. }
+            | Self::Index { span, .. } => *span,
         }
     }
 
@@ -933,5 +1002,18 @@ print(fib(10))
         // SPEC-P1 §4.4: compound body required; no empty block / no pass.
         assert!(parse_module("def f():\nlet x = 1\n").is_err());
         assert!(parse_module("while true:\n").is_err());
+    }
+
+    #[test]
+    fn parse_index_read_and_assign() {
+        let m = parse_module("let xs = [1, 2]\nlet a = xs[0]\nxs[1] = 9\n").unwrap();
+        assert!(matches!(
+            &m.items[1],
+            Item::Decl(Decl::Let {
+                value: Expr::Index { .. },
+                ..
+            })
+        ));
+        assert!(matches!(&m.items[2], Item::Stmt(Stmt::IndexAssign { .. })));
     }
 }

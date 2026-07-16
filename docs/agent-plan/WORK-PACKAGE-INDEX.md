@@ -2854,3 +2854,11 @@ WP-ID: WP-R03
 Title: Map literals; RuntimePlan exports/function plans from SIR
 Status: COMPLETE
 `
+
+### WP-R04 · Index / subscript end-to-end
+
+`	ext
+WP-ID: WP-R04
+Title: base[index] read/write through parse→sema→SIR→EIR
+Status: COMPLETE
+`

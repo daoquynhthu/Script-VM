@@ -16,6 +16,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "script_eir_lower"
+version = "0.1.0"
+dependencies = [
+ "script_lower",
+ "script_sema",
+ "sir",
+ "sir_validate",
+ "vm_core",
+ "vm_diag",
+ "vm_eval",
+ "vm_runtime",
+]
+
+[[package]]
 name = "script_lex"
 version = "0.1.0"
 dependencies = [

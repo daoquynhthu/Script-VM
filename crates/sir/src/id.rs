@@ -45,6 +45,7 @@ define_sir_id!(EffectId);
 define_sir_id!(CapabilityId);
 define_sir_id!(DiagnosticId);
 define_sir_id!(ExtensionId);
+define_sir_id!(ControlRegionId);
 
 #[cfg(test)]
 mod tests {

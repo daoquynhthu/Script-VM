@@ -3,7 +3,8 @@
 //! Spec: `PHASE-2-IR-SPEC.md` §4 IR Unit Schema (required tables; node bodies bootstrap)
 
 use crate::id::{
-    BindingId, CapabilityId, EffectId, ModuleId, NodeId, ScopeId, SymbolId, TypeId,
+    BindingId, CapabilityId, ControlRegionId, EffectId, ModuleId, NodeId, ScopeId, SymbolId,
+    TypeId,
 };
 use crate::node::SirNode;
 use crate::source::{SourceOrigin, SourceSpan};
@@ -133,7 +134,8 @@ pub struct IrUnit {
     pub effects: Vec<EffectId>,
     pub nodes: Vec<NodeEntry>,
     pub patterns: Vec<()>,
-    pub control_regions: Vec<()>,
+    /// Control regions (SPEC-P2 required table; bootstrap kinds).
+    pub control_regions: Vec<ControlRegionDescriptor>,
     /// Module interface exports (symbol texts); required table bootstrap.
     pub interface_exports: Vec<String>,
     pub root_node: NodeId,
@@ -188,4 +190,23 @@ pub struct SourceFileRecord {
 pub struct SourceTable {
     pub files: Vec<SourceFileRecord>,
     pub spans: Vec<SourceSpan>,
+}
+
+/// Bootstrap control-region kinds (align with Phase 2/3 control model at coarse grain).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ControlRegionKind {
+    Module,
+    Function,
+    Block,
+    Loop,
+}
+
+/// One control region row (SPEC-P2 control_regions table bootstrap).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ControlRegionDescriptor {
+    pub region_id: ControlRegionId,
+    pub kind: ControlRegionKind,
+    pub parent: Option<ControlRegionId>,
+    /// Owning SIR node when applicable (function/block/while/for).
+    pub owner_node: Option<NodeId>,
 }

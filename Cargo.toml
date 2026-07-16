@@ -14,5 +14,6 @@ members = [
     "crates/script_sema",
     "crates/script_lower",
     "crates/script_codegen",
+    "crates/script_eir_lower",
 ]
 resolver = "2"

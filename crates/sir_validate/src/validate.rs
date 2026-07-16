@@ -125,6 +125,52 @@ pub fn validate_ir_unit(unit: &IrUnit) -> ValidationResult {
         );
     }
 
+    // Control regions: module unit should have at least one Module region (WP-S02).
+    if unit.control_regions.is_empty() {
+        r.error(
+            "SIR012",
+            "control_regions table is empty (expected at least Module region)",
+        );
+    } else {
+        let mut seen = std::collections::BTreeSet::new();
+        for cr in &unit.control_regions {
+            if !seen.insert(cr.region_id.raw()) {
+                r.error(
+                    "SIR013",
+                    format!("duplicate control region id {}", cr.region_id.raw()),
+                );
+            }
+            if let Some(owner) = cr.owner_node {
+                if unit.node(owner).is_none() {
+                    r.error(
+                        "SIR014",
+                        format!(
+                            "control region {} owner node {} missing",
+                            cr.region_id.raw(),
+                            owner.raw()
+                        ),
+                    );
+                }
+            }
+            if let Some(parent) = cr.parent {
+                if !unit
+                    .control_regions
+                    .iter()
+                    .any(|p| p.region_id == parent)
+                {
+                    r.error(
+                        "SIR015",
+                        format!(
+                            "control region {} parent {} missing",
+                            cr.region_id.raw(),
+                            parent.raw()
+                        ),
+                    );
+                }
+            }
+        }
+    }
+
     r
 }
 

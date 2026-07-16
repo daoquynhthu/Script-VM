@@ -2803,3 +2803,22 @@ Outputs:
 validate_ir_unit (SIR001–SIR011)
 tests: fib unit, missing sources, exports
 `
+
+### WP-S02 · SIR control_regions table
+
+`	ext
+WP-ID: WP-S02
+Title: Populate control_regions (Module/Function/Block/Loop)
+Status: COMPLETE
+`
+
+### WP-R00 · SIR to EIR bootstrap pipeline
+
+`	ext
+WP-ID: WP-R00
+Title: SIR → EIR bootstrap (compile_source_via_sir)
+Status: COMPLETE
+`
+
+Notes: fib(10)=55 via analyze → materialize_sir → validate_ir_unit → lower_sir_to_eir → vm_eval.
+Distinct from T-DEMO script_codegen.

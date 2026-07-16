@@ -9,45 +9,47 @@ Updated: 2026-07-16
 
 | Track | Status |
 |-------|--------|
-| T-P3B Phase 3 bootstrap | ARCHIVED COMPLETE |
-| **T-P1** language frontend v0 | **COMPLETE** (WP-L00..L05) |
-| **T-P2** SIR | **IN PROGRESS** — WP-S00/S01 COMPLETE |
-| T-P3L normative lowering | not started |
-| T-DEMO codegen | QUARANTINED |
-
-**Next:** WP-S02 (SIR depth) or start **WP-R00** lowering plan against CONTROL-LOWERING-ROUND2 (prefer S02 first if types/regions needed).
+| T-P3B | ARCHIVED COMPLETE |
+| T-P1 frontend v0 | COMPLETE (WP-L00..L05) |
+| T-P2 SIR | **WP-S00..S02 COMPLETE** (bootstrap) |
+| T-P3L lowering | **WP-R00 COMPLETE** (SIR→EIR bootstrap) |
+| T-DEMO `script_codegen` | QUARANTINED (not acceptance) |
 
 ---
 
-## Pipeline (honest)
+## Normative pipeline (working)
 
 ```text
 source
-  → script_sema::check_module / analyze_source   [T-P1]
-  → script_lower::materialize_sir / compile_to_sir [T-P2 S00]
-  → sir_validate::validate_ir_unit                 [T-P2 S01]
-  → (next) SIR → RuntimePlan/EIR                   [T-P3L]
-  → vm_eval
+  → script_sema::check_module
+  → script_lower::materialize_sir
+  → sir_validate::validate_ir_unit   (+ control_regions SIR012+)
+  → script_eir_lower::lower_sir_to_eir / compile_source_via_sir
+  → vm_eval::Interpreter
 ```
 
-Demo `script_codegen` still exists but is **not** the plan path.
-
----
-
-## T-P2 S00/S01 deliverables
-
-- `IrUnit.sources` required table populated  
-- `interface_exports` + `exports`  
-- `materialize_sir(AnalyzedModule)`  
-- `validate_ir_unit` codes SIR001–SIR011  
-
----
-
-## Primary APIs
+**Milestone:** `fib(10) → 55` and `print(fib(10)) → 55` on this path  
+(crate: `script_eir_lower` pipeline tests).
 
 ```rust
-let a = script_sema::check_module(src);
-let unit = script_lower::materialize_sir(&a, "main")?;
-let v = sir_validate::validate_ir_unit(&unit);
-assert!(v.is_valid());
+let prog = script_eir_lower::compile_source_via_sir(src, "main")?;
+// install callables → run_module
 ```
+
+---
+
+## Residual (honest)
+
+- Full PHASE-3-SIR-LOWERING / CONTROL-LOWERING-ROUND2 coverage  
+- RuntimePlan packaging + cache digests for product units  
+- for/list/and-or/raise full EIR lower  
+- Real host `print` I/O  
+- script_codegen remains demo-only  
+
+---
+
+## Next
+
+1. Expand SIR→EIR surface (for, lists, short-circuit)  
+2. Emit minimal RuntimePlan alongside EIR  
+3. Wire `vm_cli` to `compile_source_via_sir`  

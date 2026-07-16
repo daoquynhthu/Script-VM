@@ -1997,3 +1997,30 @@ Summary:
   sir_validate::validate_ir_unit structural checks. T-P2 bootstrap baseline.
 Next:
   WP-S02 deepen SIR tables; then T-P3L WP-R00 normative lowering.
+
+## 2026-07-16 12:14 · WP-S02 control_regions + WP-R00 SIR→EIR fib path
+
+Work Package: WP-S02, WP-R00
+Agent Mode: main-only
+Changed Files:
+  - crates/sir (ControlRegionDescriptor)
+  - crates/script_lower (emit regions)
+  - crates/sir_validate (SIR012-015)
+  - crates/script_eir_lower/** (new)
+  - Cargo.toml
+  - docs/IMPLEMENTATION-STATUS.md
+  - PLAN/WORK-PACKAGE-INDEX.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P2-IR §4 control_regions
+  - PHASE-3-EIR-SCHEMA / SIR-LOWERING (bootstrap subset)
+Gates:
+  - G0-G5 PASS
+Tests:
+  - cargo test -p script_eir_lower PASS (fib 55 via SIR)
+  - script_lower / sir_validate PASS
+Summary:
+  SIR control_regions populated; normative pipeline compile_source_via_sir
+  runs fib(10)=55 without script_codegen.
+Next:
+  Expand SIR→EIR surface; RuntimePlan packaging; host print I/O.

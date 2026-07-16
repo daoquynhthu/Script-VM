@@ -13,8 +13,9 @@ use script_sema::{
     analyze_module, analyze_source, AnalyzedModule, BindingKind as SemaKind, SemaResult,
 };
 use sir::{
-    BindingDescriptor, BindingId, BinaryOp, IrHeader, IrUnit, ModuleDescriptor, ModuleId, NodeEntry,
-    NodeId, ScopeDescriptor, ScopeId, SirBindingKind, SirMutability, SirNode, SirVisibility,
+    BindingDescriptor, BindingId, BinaryOp, ControlRegionDescriptor, ControlRegionId,
+    ControlRegionKind, IrHeader, IrUnit, ModuleDescriptor, ModuleId, NodeEntry, NodeId,
+    ScopeDescriptor, ScopeId, SirBindingKind, SirMutability, SirNode, SirVisibility,
     SourceFileRecord, SourceOrigin, SourcePosition, SourceSpan, SourceTable, SymbolDescriptor,
     SymbolId, UnaryOp, Version,
 };
@@ -77,6 +78,9 @@ struct LowerCtx<'a> {
     /// name → binding in current scope chain (stack of maps)
     env: Vec<HashMap<String, BindingId>>,
     nodes: Vec<NodeEntry>,
+    control_regions: Vec<ControlRegionDescriptor>,
+    region_stack: Vec<ControlRegionId>,
+    next_region: u32,
     exports: Vec<String>,
     imports: Vec<String>,
     _sema: &'a SemaResult,
@@ -97,12 +101,18 @@ impl<'a> LowerCtx<'a> {
             bindings: Vec::new(),
             env: vec![HashMap::new()],
             nodes: Vec::new(),
+            control_regions: Vec::new(),
+            region_stack: Vec::new(),
+            next_region: 0,
             exports: Vec::new(),
             imports: Vec::new(),
             _sema: sema,
         };
         let root = ctx.alloc_scope(None);
         debug_assert_eq!(root.raw(), 0);
+        // Module control region (WP-S02).
+        let mod_region = ctx.push_region(ControlRegionKind::Module, None);
+        debug_assert_eq!(mod_region.raw(), 0);
         // Prelude bindings (print)
         let print_sym = ctx.intern("print");
         let print_b = ctx.alloc_binding(
@@ -116,6 +126,38 @@ impl<'a> LowerCtx<'a> {
         );
         ctx.env[0].insert("print".into(), print_b);
         ctx
+    }
+
+    fn push_region(
+        &mut self,
+        kind: ControlRegionKind,
+        owner_node: Option<NodeId>,
+    ) -> ControlRegionId {
+        let parent = self.region_stack.last().copied();
+        let id = ControlRegionId::new(self.next_region);
+        self.next_region += 1;
+        self.control_regions.push(ControlRegionDescriptor {
+            region_id: id,
+            kind,
+            parent,
+            owner_node,
+        });
+        self.region_stack.push(id);
+        id
+    }
+
+    fn pop_region(&mut self) {
+        self.region_stack.pop();
+    }
+
+    fn set_region_owner(&mut self, region: ControlRegionId, owner: NodeId) {
+        if let Some(r) = self
+            .control_regions
+            .iter_mut()
+            .find(|r| r.region_id == region)
+        {
+            r.owner_node = Some(owner);
+        }
     }
 
     fn alloc_scope(&mut self, parent: Option<ScopeId>) -> ScopeId {
@@ -268,7 +310,7 @@ impl<'a> LowerCtx<'a> {
             effects: Vec::new(),
             nodes: self.nodes,
             patterns: Vec::new(),
-            control_regions: Vec::new(),
+            control_regions: self.control_regions,
             interface_exports: exports.clone(),
             root_node: root,
             exports,
@@ -339,6 +381,7 @@ impl<'a> LowerCtx<'a> {
                     self.exports.push(name.clone());
                 }
                 self.push_scope();
+                let region = self.push_region(ControlRegionKind::Function, None);
                 let mut param_bs = Vec::new();
                 for p in params {
                     param_bs.push(self.define_local(
@@ -349,6 +392,7 @@ impl<'a> LowerCtx<'a> {
                     ));
                 }
                 let body_n = self.lower_block(body);
+                self.pop_region();
                 self.pop_scope();
                 let node = self.emit(
                     SirNode::Function {
@@ -358,6 +402,7 @@ impl<'a> LowerCtx<'a> {
                     },
                     *span,
                 );
+                self.set_region_owner(region, node);
                 self.patch_binding_nodes(b, None, Some(node));
                 if exported {
                     self.emit(SirNode::ExportMarker { item: node }, *span)
@@ -449,12 +494,16 @@ impl<'a> LowerCtx<'a> {
 
     fn lower_block(&mut self, block: &Block) -> NodeId {
         self.push_scope();
+        let region = self.push_region(ControlRegionKind::Block, None);
         let mut stmts = Vec::new();
         for s in &block.stmts {
             stmts.push(self.lower_stmt(s));
         }
+        self.pop_region();
         self.pop_scope();
-        self.emit(SirNode::Block { stmts }, block.span)
+        let node = self.emit(SirNode::Block { stmts }, block.span);
+        self.set_region_owner(region, node);
+        node
     }
 
     fn lower_stmt(&mut self, stmt: &Stmt) -> NodeId {
@@ -494,9 +543,13 @@ impl<'a> LowerCtx<'a> {
                 )
             }
             Stmt::While { cond, body, span } => {
+                let region = self.push_region(ControlRegionKind::Loop, None);
                 let c = self.lower_expr(cond);
                 let b = self.lower_block(body);
-                self.emit(SirNode::While { cond: c, body: b }, *span)
+                self.pop_region();
+                let node = self.emit(SirNode::While { cond: c, body: b }, *span);
+                self.set_region_owner(region, node);
+                node
             }
             Stmt::For {
                 name,
@@ -505,6 +558,7 @@ impl<'a> LowerCtx<'a> {
                 span,
             } => {
                 let it = self.lower_expr(iter);
+                let region = self.push_region(ControlRegionKind::Loop, None);
                 self.push_scope();
                 let b = self.define_local(
                     name,
@@ -518,14 +572,17 @@ impl<'a> LowerCtx<'a> {
                 }
                 let body_n = self.emit(SirNode::Block { stmts }, body.span);
                 self.pop_scope();
-                self.emit(
+                self.pop_region();
+                let node = self.emit(
                     SirNode::For {
                         binding: b,
                         iter: it,
                         body: body_n,
                     },
                     *span,
-                )
+                );
+                self.set_region_owner(region, node);
+                node
             }
             Stmt::Assign { name, value, span } => {
                 let v = self.lower_expr(value);
@@ -727,6 +784,7 @@ print(fib(10))
     #[test]
     fn materialize_from_analyzed() {
         use script_sema::analyze_source;
+        use sir::ControlRegionKind;
         let a = analyze_source("let x = 1\nprint(x)\n");
         assert!(a.ok());
         let unit = materialize_sir(&a, "main").unwrap();
@@ -734,5 +792,10 @@ print(fib(10))
             unit.node(unit.root_node).map(|n| &n.kind),
             Some(SirNode::ModuleBody { .. })
         ));
+        assert!(!unit.control_regions.is_empty());
+        assert!(unit
+            .control_regions
+            .iter()
+            .any(|r| r.kind == ControlRegionKind::Module));
     }
 }

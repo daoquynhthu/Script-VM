@@ -1,0 +1,15 @@
+[package]
+name = "script_eir_lower"
+version = "0.1.0"
+edition = "2021"
+description = "T-P3L bootstrap: lower validated SIR IrUnit to EIR for vm_eval"
+
+[dependencies]
+sir = { path = "../sir" }
+sir_validate = { path = "../sir_validate" }
+script_lower = { path = "../script_lower" }
+script_sema = { path = "../script_sema" }
+vm_core = { path = "../vm_core" }
+vm_diag = { path = "../vm_diag" }
+vm_runtime = { path = "../vm_runtime" }
+vm_eval = { path = "../vm_eval" }

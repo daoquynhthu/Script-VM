@@ -3,6 +3,19 @@
 version = 4
 
 [[package]]
+name = "script_codegen"
+version = "0.1.0"
+dependencies = [
+ "script_lex",
+ "script_parse",
+ "script_sema",
+ "vm_core",
+ "vm_diag",
+ "vm_eval",
+ "vm_runtime",
+]
+
+[[package]]
 name = "script_lex"
 version = "0.1.0"
 dependencies = [

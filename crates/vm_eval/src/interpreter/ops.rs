@@ -135,25 +135,80 @@ fn execute_binary(state: &mut InterpreterState, op: &BinaryOp) -> Result<OpOutco
     let left = read_slot(state, op.left)?;
     let right = read_slot(state, op.right)?;
     let result = match op.op {
-        BinaryOperator::Add => match (left, right) {
-            (Value::Int(a), Value::Int(b)) => Value::Int(a + b),
+        BinaryOperator::Add
+        | BinaryOperator::Subtract
+        | BinaryOperator::Multiply
+        | BinaryOperator::Divide
+        | BinaryOperator::Modulo => match (left, right) {
+            (Value::Int(a), Value::Int(b)) => match op.op {
+                BinaryOperator::Add => Value::Int(a.saturating_add(b)),
+                BinaryOperator::Subtract => Value::Int(a.saturating_sub(b)),
+                BinaryOperator::Multiply => Value::Int(a.saturating_mul(b)),
+                BinaryOperator::Divide => {
+                    if b == 0 {
+                        return Err(InterpreterError::language(
+                            RuntimeErrorCode::DivisionByZeroError,
+                            "division by zero",
+                        ));
+                    }
+                    Value::Int(a / b)
+                }
+                BinaryOperator::Modulo => {
+                    if b == 0 {
+                        return Err(InterpreterError::language(
+                            RuntimeErrorCode::DivisionByZeroError,
+                            "modulo by zero",
+                        ));
+                    }
+                    Value::Int(a % b)
+                }
+                _ => unreachable!(),
+            },
             _ => {
                 return Err(InterpreterError::language(
                     RuntimeErrorCode::TypeError,
-                    "add requires int operands",
+                    "arithmetic requires int operands",
                 ));
             }
         },
-        BinaryOperator::Equal => Value::Bool(left == right),
-        _ => {
+        BinaryOperator::Equal => Value::Bool(values_equal_bootstrap(&left, &right)),
+        BinaryOperator::NotEqual => Value::Bool(!values_equal_bootstrap(&left, &right)),
+        BinaryOperator::Less
+        | BinaryOperator::LessEqual
+        | BinaryOperator::Greater
+        | BinaryOperator::GreaterEqual => match (left, right) {
+            (Value::Int(a), Value::Int(b)) => {
+                let bval = match op.op {
+                    BinaryOperator::Less => a < b,
+                    BinaryOperator::LessEqual => a <= b,
+                    BinaryOperator::Greater => a > b,
+                    BinaryOperator::GreaterEqual => a >= b,
+                    _ => unreachable!(),
+                };
+                Value::Bool(bval)
+            }
+            _ => {
+                return Err(InterpreterError::language(
+                    RuntimeErrorCode::TypeError,
+                    "comparison requires int operands",
+                ));
+            }
+        },
+        BinaryOperator::Identity => Value::Bool(left == right),
+        BinaryOperator::NotIdentity => Value::Bool(left != right),
+        BinaryOperator::Contains => {
             return Err(InterpreterError::structural(
                 vm_core::error::registry::VmStructuralErrorCode::InvalidEirError,
-                "unsupported binary op in bootstrap interpreter",
+                "contains op not supported in bootstrap interpreter",
             ));
         }
     };
     write_slot(state, op.dest, result)?;
     Ok(OpOutcome::Continue)
+}
+
+fn values_equal_bootstrap(left: &Value, right: &Value) -> bool {
+    left == right
 }
 
 fn execute_check(state: &mut InterpreterState, op: &CheckOp) -> Result<OpOutcome, InterpreterError> {

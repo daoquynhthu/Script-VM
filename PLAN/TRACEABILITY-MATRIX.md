@@ -687,3 +687,16 @@ Frozen Spec References:
   - SPEC-P1-LANG sections 9.6, 9.7, 10
 Status: COMPLETE (bootstrap)
 `
+
+### TR-P1-008 · Source to EIR Execute Pipeline
+
+`	ext
+Trace ID: TR-P1-008
+Implementation Item: script_codegen + vm_eval run fib(10)=55
+Work Package: WP-25
+Frozen Spec References:
+  - SPEC-P1-LANG
+  - SPEC-P3-EIR
+  - SPEC-P3-CALL
+Status: COMPLETE (bootstrap)
+`

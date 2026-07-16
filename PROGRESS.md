@@ -1795,3 +1795,34 @@ Summary:
   Expanded Phase 1 surface: import, export, raise, assert. Fib lowers to SIR.
 Next:
   WP-25 SIR to RuntimePlan/EIR for vm_eval execution path.
+
+## 2026-07-16 11:52 · WP-25 source-to-EIR codegen; fib(10)=55 end-to-end
+
+Work Package: WP-25
+Agent Mode: main-only
+Changed Files:
+  - crates/script_codegen/** (new)
+  - crates/vm_eval/src/interpreter/ops.rs (binary arith/compare)
+  - Cargo.toml, Cargo.lock
+  - docs/*, PLAN/*, PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG
+  - SPEC-P3-EIR
+  - SPEC-P3-CALL
+  - TR-P1-008
+  - PROJECT-OVERVIEW.md fib success sample
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+  - G6 PASS_WITH_NOTES (bootstrap subset)
+Tests:
+  - cargo test -p script_codegen PASS (fib 55, print(fib(10)))
+  - cargo test -p vm_eval PASS
+  - cargo test --workspace PASS
+Summary:
+  Added script_codegen lowering AST to EIR with nested calls; extended
+  interpreter binary ops. PROJECT-OVERVIEW fib sample executes end-to-end.
+Next:
+  Expand codegen surface (for/lists/and-or) or host print I/O as product needs.

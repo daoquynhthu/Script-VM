@@ -158,7 +158,7 @@ WP-19 Integration and regression gates
 WP-20 Phase 1 language pipeline process and traceability
 WP-21 Phase 1 lexical analysis
 WP-22 Phase 1 parser and AST (bootstrap COMPLETE)
-WP-23 Phase 1 semantic binding skeleton (COMPLETE)\nWP-24 Phase 1 AST to bootstrap SIR (COMPLETE)
+WP-23 Phase 1 semantic binding skeleton (COMPLETE)\nWP-24 Phase 1 AST to bootstrap SIR (COMPLETE)\nWP-25 Bootstrap source to EIR execute (COMPLETE)
 ```
 
 ---
@@ -2312,7 +2312,7 @@ without documented reason.
 WP-20 Phase 1 language pipeline process and traceability
 WP-21 Phase 1 lexical analysis (source text + tokens)
 WP-22 Phase 1 parser and AST (bootstrap COMPLETE)
-WP-23 Phase 1 semantic binding skeleton (COMPLETE)\nWP-24 Phase 1 AST to bootstrap SIR (COMPLETE)
+WP-23 Phase 1 semantic binding skeleton (COMPLETE)\nWP-24 Phase 1 AST to bootstrap SIR (COMPLETE)\nWP-25 Bootstrap source to EIR execute (COMPLETE)
 `
 
 ### WP-20 · Phase 1 Language Pipeline Process
@@ -2547,4 +2547,46 @@ Completion Criteria:
 
 `	ext
 analyzed bootstrap modules lower to IrUnit with tests (fib, import/export)
+`
+
+### WP-25 · SIR/AST to EIR codegen and fib end-to-end
+
+`	ext
+WP-ID: WP-25
+Title: Bootstrap AST/EIR codegen for vm_eval (source to execute)
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+Frozen Spec References:
+
+`	ext
+SPEC-P1-LANG
+SPEC-P3-EIR
+SPEC-P3-CALL
+SPEC-P3-FREEZE
+`
+
+Outputs:
+
+`	ext
+crates/script_codegen
+compile_source -> EirModule + callables
+vm_eval binary ops extended (arith + compare)
+fib(10) == 55 end-to-end test
+`
+
+Non-Goals:
+
+`	ext
+full RuntimePlan production path
+for/break/continue/list/and-or short-circuit
+production overflow policy
+`
+
+Completion Criteria:
+
+`	ext
+PROJECT-OVERVIEW fib sample executes via source pipeline
 `

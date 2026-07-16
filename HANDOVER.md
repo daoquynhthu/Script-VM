@@ -3,7 +3,7 @@
 Document class: Agent onboarding and continuity guide  
 Normative status: Non-normative (subordinate to frozen specs and `AGENT.md`)  
 Audience: New Agent sessions taking over Script VM implementation  
-Last updated: 2026-07-14 (WP-00..WP-19 COMPLETE for Phase 3 bootstrap; tip main)
+Last updated: 2026-07-14 (Phase 3 bootstrap **CLOSED** after re-verification; tip main)
 
 ---
 
@@ -44,6 +44,7 @@ Frozen Phase 1–3 specs > PHASE-3-FREEZE > Agent plan docs > AGENT.md
 | 单元测试（约） | **368**（含 `vm_tests` 88） |
 | CI | `check` + `test`×2 + `scripts/integration/g6-scan.sh` |
 | G6 | **PASS**（见 `agent/gate-records/G0-G7-20260714-wp19-final.md`） |
+| Phase 3 bootstrap 收口 | **CLOSED**（`agent/gate-records/PHASE-3-BOOTSTRAP-CLOSURE-20260714.md`） |
 
 **尚未实现（产品级，非本阶段失败）**：
 

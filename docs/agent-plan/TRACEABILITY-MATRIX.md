@@ -78,7 +78,7 @@ Validation Gates:
   - G7
 Test Requirement:
   Planning review must reject tasks that reopen specification design.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 Notes:
   This row controls all implementation work.
 ```
@@ -99,7 +99,7 @@ Validation Gates:
   - G1
 Test Requirement:
   Alias resolution check.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-002 · Runtime Error Registry
@@ -119,7 +119,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Known error codes, non-Error raise rejection, structural error boundary tests.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-003 · RuntimePlan Schema
@@ -141,7 +141,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Missing table rejection, unknown ID rejection, profile mismatch rejection.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-004 · EIR Schema
@@ -163,7 +163,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Unknown op rejection, missing terminator rejection, invalid helper reference rejection.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-005 · Runtime Helper Registry
@@ -185,7 +185,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Duplicate helper rejection, missing helper rejection, may-raise/may-collect policy tests.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-006 · Value and ValueKey Semantics
@@ -206,7 +206,7 @@ Validation Gates:
   - G6
 Test Requirement:
   NaN key rejection, mutable aggregate key rejection, string slice bounds tests.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-007 · ReadOnlyView Semantics
@@ -227,7 +227,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Field/index mutation through view rejected, original mutation reflected in view, non-hashable target remains non-hashable.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-008 · Frame / Slot / Control State
@@ -248,7 +248,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Uninitialized slot read rejection, pending control root visibility, invalid slot ID rejection.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-009 · Structured Unwinding
@@ -270,7 +270,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Return through finally, raise through defer, resource close raise, break/continue cleanup crossing.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-010 · Module Runtime
@@ -292,7 +292,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Duplicate export rejection, uninitialized circular export rejection, failed module import behavior.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-011 · Call Execution Protocol
@@ -314,7 +314,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Wrong arity, duplicate named argument, default raises, return contract failure, host capability failure.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-012 · Host Boundary
@@ -337,7 +337,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Host call without capability rejected, host error normalized, retained VM value without root rejected.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-013 · GC Metadata
@@ -358,7 +358,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Safepoint without RootMap rejection, RootMap unknown slot rejection, moving GC profile root policy checks.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-014 · Cache Compatibility
@@ -381,7 +381,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Mismatched digest rejection, profile mismatch rejection, helper registry mismatch rejection, public-bytecode cache claim rejection.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-015 · Fast Interpreter Core
@@ -405,7 +405,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Literal execution, slot load/store, branch Bool check, helper call, raise/unwind path, module path.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-016 · Validation Matrix
@@ -423,7 +423,7 @@ Validation Gates:
   - G6
 Test Requirement:
   Validation failure tests per subsystem.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-017 · Conformance Matrix
@@ -557,7 +557,7 @@ Validation Gates:
   - G7
 Test Requirement:
   cargo metadata and cargo check --workspace if Rust workspace has been created.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 
 ### TR-020 · Concrete Coding Sequence
@@ -579,6 +579,6 @@ Validation Gates:
   - G7
 Test Requirement:
   Each stage records required commands and handoff.
-Status: MAPPED
+Status: COMPLETE (bootstrap Phase 3)
 ```
 

@@ -1950,7 +1950,7 @@ minimal EIR execution works under frozen semantics and validation gates
 ```text
 WP-ID: WP-18
 Title: Conformance test matrix
-Status: IN_PROGRESS
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+3
 Parallelism Justification: A1 validates spec mapping, A3 builds test categories, A4 checks integration risk.
@@ -2041,7 +2041,7 @@ every implemented subsystem has traceable positive and negative tests
 ```text
 WP-ID: WP-19
 Title: Integration and regression gates
-Status: IN_PROGRESS
+Status: COMPLETE
 Owner: Main Agent
 Agent Mode: main+2
 Parallelism Justification: A3 verifies regression checks; A4 identifies integration hazards.

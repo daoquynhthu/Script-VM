@@ -107,6 +107,10 @@ pub enum SirNode {
     List {
         elements: Vec<NodeId>,
     },
+    /// Map literal entries (key, value) node pairs.
+    Map {
+        entries: Vec<(NodeId, NodeId)>,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

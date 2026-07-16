@@ -22,7 +22,8 @@ use vm_core::profile::Version;
 use vm_core::value::Value;
 use vm_diag::source_span::SourceSpanId;
 use vm_runtime::helpers::dispatch::{
-    HELPER_CONSTRUCT_ERROR_ID, HELPER_CONSTRUCT_LIST_ID, HELPER_DISPLAY_ID, HELPER_GENERIC_CALL_ID,
+    HELPER_CONSTRUCT_ERROR_ID, HELPER_CONSTRUCT_LIST_ID, HELPER_CONSTRUCT_MAP_ID, HELPER_DISPLAY_ID,
+    HELPER_GENERIC_CALL_ID,
 };
 
 use crate::error::EirLowerError;
@@ -374,6 +375,7 @@ impl<'a> SirEirLower<'a> {
                         | SirNode::Unary { .. }
                         | SirNode::Binary { .. }
                         | SirNode::List { .. }
+                        | SirNode::Map { .. }
                         | SirNode::SymbolRef { .. }
                 ) {
                     Ok(Some(self.lower_node_expr(fb, id)?))
@@ -727,6 +729,25 @@ impl<'a> SirEirLower<'a> {
                 fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
                     dest: Some(dest),
                     helper_id: HELPER_CONSTRUCT_LIST_ID,
+                    args,
+                    call_site: None,
+                    access_site: None,
+                    safepoint_id: None,
+                    deopt_id: None,
+                }));
+                Ok(dest)
+            }
+            SirNode::Map { entries } => {
+                // Alternating key/value args for helper_construct_map.
+                let mut args = Vec::new();
+                for (k, v) in entries {
+                    args.push(self.lower_node_expr(fb, k)?);
+                    args.push(self.lower_node_expr(fb, v)?);
+                }
+                let dest = fb.alloc_slot();
+                fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                    dest: Some(dest),
+                    helper_id: HELPER_CONSTRUCT_MAP_ID,
                     args,
                     call_site: None,
                     access_site: None,

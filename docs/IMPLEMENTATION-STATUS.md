@@ -11,38 +11,38 @@ Updated: 2026-07-16
 |-------|--------|
 | T-P1 | COMPLETE |
 | T-P2 | S00–S02 COMPLETE |
-| T-P3L | **R00–R02 COMPLETE** (bootstrap) |
-| CLI | `script-vm run|eval` |
+| T-P3L | **R00–R03 COMPLETE** (bootstrap) |
+| CLI | `script-vm` |
 
 ---
 
-## Normative run
-
-```powershell
-cargo run -p vm_cli -- eval "print(fib(10))"
-# prints 55 to stdout; return value is String "55"
-```
+## Pipeline
 
 ```text
-source → SIR → validate → EIR → Interpreter
+source → AnalyzedModule → IrUnit (+ Map, control_regions)
+      → validate_ir_unit → EIR → Interpreter
+      → optional RuntimePlan (exports + function_plans from SIR/EIR)
 ```
 
-### R02 capabilities
+```rust
+script_eir_lower::compile_source_via_sir(src, "main")?;
+script_eir_lower::compile_executable(src, "main")?; // + plan shell
+```
 
-- `while` + **break** / **continue**
-- **raise** / **assert** → construct_error + Raise terminator  
-- **print(x)** → `helper_display` + **stdout**
-- Frame slots: 128
+### R03
 
-### Still residual
+- `SirNode::Map` / `HELPER_CONSTRUCT_MAP`
+- `ExecutableUnit.sir` retained; plan digests + export list + EIR function plans
 
-- for over non-list-literal iterators  
-- map EIR  
-- full RuntimePlan generation from SIR  
-- structured unwind from raise through finally  
+### Residual
+
+- `m[k]` index syntax in parser  
+- for over variables  
+- finally / structured unwind on raise  
+- full RuntimePlan generation (not fixture scaffold)  
 
 ---
 
 ## Next
 
-WP-R03 candidates: map lower, richer RuntimePlan metadata, CLI `run` file samples / REPL.
+WP-R04: index/subscript AST+EIR; or CLI sample scripts + docs.

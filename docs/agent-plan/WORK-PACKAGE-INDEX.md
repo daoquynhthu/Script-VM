@@ -2846,3 +2846,11 @@ WP-ID: WP-R02
 Title: Control raise/break/continue; host print via display
 Status: COMPLETE
 `
+
+### WP-R03 · Map EIR + RuntimePlan from SIR metadata
+
+`	ext
+WP-ID: WP-R03
+Title: Map literals; RuntimePlan exports/function plans from SIR
+Status: COMPLETE
+`

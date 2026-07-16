@@ -2076,3 +2076,28 @@ Summary:
   frame slots 128. CLI prints raise messages.
 Next:
   General for; richer RuntimePlan from SIR; map literals EIR.
+
+## 2026-07-16 12:23 · WP-R03 map SIR/EIR + RuntimePlan metadata from SIR
+
+Work Package: WP-R03
+Agent Mode: main-only
+Changed Files:
+  - crates/sir/src/node.rs (SirNode::Map)
+  - crates/script_lower (map entries)
+  - crates/sir_validate (map children)
+  - crates/script_eir_lower (map construct, package)
+  - docs/IMPLEMENTATION-STATUS.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG §6.7
+  - SPEC-P3-HELPERS construct_map
+  - SPEC-P3-RTP export/function plans
+Gates:
+  - G0-G5 PASS
+Tests:
+  - cargo test -p script_eir_lower PASS (12)
+Summary:
+  SirNode::Map; EIR construct_map; compile_executable fills exports and
+  per-EIR function plans from SIR/EIR.
+Next:
+  Index/subscript syntax; general for; finally/unwind on raise.

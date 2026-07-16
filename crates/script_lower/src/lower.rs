@@ -669,9 +669,11 @@ impl<'a> LowerCtx<'a> {
                 self.emit(SirNode::List { elements: els }, *span)
             }
             Expr::Map { entries, span } => {
-                // Bootstrap: lower map as list of keys only (placeholder shape).
-                let els: Vec<_> = entries.iter().map(|(k, _)| self.lower_expr(k)).collect();
-                self.emit(SirNode::List { elements: els }, *span)
+                let pairs: Vec<_> = entries
+                    .iter()
+                    .map(|(k, v)| (self.lower_expr(k), self.lower_expr(v)))
+                    .collect();
+                self.emit(SirNode::Map { entries: pairs }, *span)
             }
         }
     }

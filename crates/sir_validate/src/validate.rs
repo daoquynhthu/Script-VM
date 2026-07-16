@@ -214,6 +214,14 @@ fn node_children(kind: &SirNode) -> Vec<NodeId> {
         }
         Binary { left, right, .. } => vec![*left, *right],
         List { elements } => elements.clone(),
+        Map { entries } => {
+            let mut v = Vec::new();
+            for (k, val) in entries {
+                v.push(*k);
+                v.push(*val);
+            }
+            v
+        }
     }
 }
 

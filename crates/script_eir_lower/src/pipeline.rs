@@ -145,6 +145,14 @@ s
     }
 
     #[test]
+    fn map_literal_constructs() {
+        let r = run("let m = {\"a\": 1, \"b\": 2}\nm\n");
+        assert!(matches!(r, ControlState::Return(Some(Value::ObjectRef(_)))));
+        let r2 = run("let m = {1: 10, 2: 20}\nm\n");
+        assert!(matches!(r2, ControlState::Return(Some(Value::ObjectRef(_)))));
+    }
+
+    #[test]
     fn raise_string() {
         let r = run("raise \"boom\"\n");
         assert!(matches!(r, ControlState::Raise(_)));

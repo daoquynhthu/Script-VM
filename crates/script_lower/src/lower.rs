@@ -643,6 +643,41 @@ impl<'a> LowerCtx<'a> {
                 let c = self.lower_expr(cond);
                 self.emit(SirNode::Assert { cond: c }, *span)
             }
+            Stmt::Try {
+                try_block,
+                catches,
+                finally_block,
+                span,
+            } => {
+                let try_body = self.lower_block(try_block);
+                let mut sir_catches = Vec::new();
+                for c in catches {
+                    self.push_scope();
+                    let b = self.define_local(
+                        &c.name,
+                        SirBindingKind::Const,
+                        SirMutability::Immutable,
+                        SirVisibility::Local,
+                    );
+                    let guard = c.guard.as_ref().map(|g| self.lower_expr(g));
+                    let body = self.lower_block(&c.body);
+                    self.pop_scope();
+                    sir_catches.push(sir::SirCatch {
+                        binding: b,
+                        guard,
+                        body,
+                    });
+                }
+                let finally_body = finally_block.as_ref().map(|f| self.lower_block(f));
+                self.emit(
+                    SirNode::Try {
+                        try_body,
+                        catches: sir_catches,
+                        finally_body,
+                    },
+                    *span,
+                )
+            }
             Stmt::Decl(d) => self.lower_decl(d, false),
         }
     }

@@ -250,6 +250,28 @@ impl Analyzer {
                 let _ = span;
                 self.require_bool_condition(cond);
             }
+            Stmt::Try {
+                try_block,
+                catches,
+                finally_block,
+                ..
+            } => {
+                self.block(try_block);
+                for c in catches {
+                    if let Some(g) = &c.guard {
+                        self.require_bool_condition(g);
+                    }
+                    self.scopes.push();
+                    self.define_clean(c.name.clone(), BindingKind::Immutable, c.span);
+                    for s in &c.body.stmts {
+                        self.stmt(s);
+                    }
+                    self.scopes.pop();
+                }
+                if let Some(f) = finally_block {
+                    self.block(f);
+                }
+            }
             Stmt::Decl(d) => self.decl(d),
         }
     }

@@ -325,9 +325,11 @@ impl Codegen {
                 })));
                 Ok(Some(dest))
             }
-            Stmt::IndexAssign { .. } | Stmt::AttrAssign { .. } => Err(CodegenError::new(
-                "index/attr assign not supported in demo codegen; use script_eir_lower",
-            )),
+            Stmt::IndexAssign { .. } | Stmt::AttrAssign { .. } | Stmt::Try { .. } => {
+                Err(CodegenError::new(
+                    "index/attr/try not supported in demo codegen; use script_eir_lower",
+                ))
+            }
             Stmt::AugAssign { name, op, value, .. } => {
                 // Expand `x += e` to `x = x + e` for demo codegen only.
                 let dest = fb

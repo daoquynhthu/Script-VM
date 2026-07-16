@@ -291,9 +291,14 @@ impl<'a> SirEirLower<'a> {
                     Some(v) => Some(self.lower_node_expr(fb, v)?),
                     None => None,
                 };
-                fb.finish_return(slot);
+                self.finish_return_maybe_try(fb, slot)?;
                 Ok(slot)
             }
+            SirNode::Try {
+                try_body,
+                catches,
+                finally_body,
+            } => self.lower_try(fb, try_body, &catches, finally_body),
             SirNode::Assign { binding, value } => {
                 let v = self.lower_node_expr(fb, value)?;
                 let dest = fb.lookup_binding(binding).ok_or_else(|| {
@@ -519,18 +524,54 @@ impl<'a> SirEirLower<'a> {
         fb: &mut FuncBuilder,
         msg: &str,
     ) -> Result<(), EirLowerError> {
+        let err_slot = self.construct_error_from_message(fb, msg)?;
+        self.raise_error_slot(fb, err_slot)
+    }
+
+    fn emit_raise_value(
+        &mut self,
+        fb: &mut FuncBuilder,
+        value: SlotId,
+    ) -> Result<(), EirLowerError> {
+        let msg = fb.alloc_slot();
+        fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+            dest: Some(msg),
+            helper_id: HELPER_DISPLAY_ID,
+            args: vec![value],
+            call_site: None,
+            access_site: None,
+            safepoint_id: None,
+            deopt_id: None,
+        }));
+        let err_slot = self.construct_error_from_slots(fb, msg)?;
+        self.raise_error_slot(fb, err_slot)
+    }
+
+    fn construct_error_from_message(
+        &mut self,
+        fb: &mut FuncBuilder,
+        msg: &str,
+    ) -> Result<SlotId, EirLowerError> {
+        let msg_slot = fb.alloc_slot();
+        let msg_c = self.intern_const(Value::String(msg.into()));
+        fb.push_op(EirOpKind::Constant(ConstantOp {
+            dest: msg_slot,
+            constant: msg_c,
+        }));
+        self.construct_error_from_slots(fb, msg_slot)
+    }
+
+    fn construct_error_from_slots(
+        &mut self,
+        fb: &mut FuncBuilder,
+        msg_slot: SlotId,
+    ) -> Result<SlotId, EirLowerError> {
         // AssertionError is index 6 in RuntimeErrorCode::ALL.
         let code_slot = fb.alloc_slot();
         let code_c = self.intern_const(Value::Int(6));
         fb.push_op(EirOpKind::Constant(ConstantOp {
             dest: code_slot,
             constant: code_c,
-        }));
-        let msg_slot = fb.alloc_slot();
-        let msg_c = self.intern_const(Value::String(msg.into()));
-        fb.push_op(EirOpKind::Constant(ConstantOp {
-            dest: msg_slot,
-            constant: msg_c,
         }));
         let err_slot = fb.alloc_slot();
         fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
@@ -542,47 +583,225 @@ impl<'a> SirEirLower<'a> {
             safepoint_id: None,
             deopt_id: None,
         }));
+        Ok(err_slot)
+    }
+
+    fn raise_error_slot(
+        &mut self,
+        fb: &mut FuncBuilder,
+        err_slot: SlotId,
+    ) -> Result<(), EirLowerError> {
+        if let Some(ctx) = fb.try_stack.last() {
+            // Soft raise into catch/finally chain.
+            let pending_kind = ctx.pending_kind;
+            let pending_val = ctx.pending_value;
+            let handler = ctx.handler_entry;
+            let k = fb.alloc_slot();
+            let kc = self.intern_const(Value::Int(2)); // 2 = raise
+            fb.push_op(EirOpKind::Constant(ConstantOp {
+                dest: k,
+                constant: kc,
+            }));
+            fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+                dest: pending_kind,
+                value: k,
+                check_initialized: None,
+            })));
+            fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+                dest: pending_val,
+                value: err_slot,
+                check_initialized: None,
+            })));
+            fb.finish_jump(handler);
+            return Ok(());
+        }
         fb.seal_block(EirTerminator::Raise(Raise { error: err_slot }));
         Ok(())
     }
 
-    fn emit_raise_value(
+    fn finish_return_maybe_try(
         &mut self,
         fb: &mut FuncBuilder,
-        value: SlotId,
+        value: Option<SlotId>,
     ) -> Result<(), EirLowerError> {
-        // If value is already Error, raise it; else wrap String/other as AssertionError message.
-        // Bootstrap: always re-wrap via display path — construct_error(String).
-        // Prefer: raise Error values directly when produced by construct_error.
-        // For string/int, build message via display helper.
-        let msg = fb.alloc_slot();
-        fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
-            dest: Some(msg),
-            helper_id: HELPER_DISPLAY_ID,
-            args: vec![value],
-            call_site: None,
-            access_site: None,
-            safepoint_id: None,
-            deopt_id: None,
-        }));
-        let code_slot = fb.alloc_slot();
-        let code_c = self.intern_const(Value::Int(6));
-        fb.push_op(EirOpKind::Constant(ConstantOp {
-            dest: code_slot,
-            constant: code_c,
-        }));
-        let err_slot = fb.alloc_slot();
-        fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
-            dest: Some(err_slot),
-            helper_id: HELPER_CONSTRUCT_ERROR_ID,
-            args: vec![code_slot, msg],
-            call_site: None,
-            access_site: None,
-            safepoint_id: None,
-            deopt_id: None,
-        }));
-        fb.seal_block(EirTerminator::Raise(Raise { error: err_slot }));
+        if let Some(ctx) = fb.try_stack.last() {
+            let pending_kind = ctx.pending_kind;
+            let pending_val = ctx.pending_value;
+            let handler = ctx.handler_entry;
+            let k = fb.alloc_slot();
+            let kc = self.intern_const(Value::Int(1)); // 1 = return
+            fb.push_op(EirOpKind::Constant(ConstantOp {
+                dest: k,
+                constant: kc,
+            }));
+            fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+                dest: pending_kind,
+                value: k,
+                check_initialized: None,
+            })));
+            if let Some(v) = value {
+                fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+                    dest: pending_val,
+                    value: v,
+                    check_initialized: None,
+                })));
+            }
+            fb.finish_jump(handler);
+            return Ok(());
+        }
+        fb.finish_return(value);
         Ok(())
+    }
+
+    /// Bootstrap try/catch/finally with soft raise/return through handler.
+    fn lower_try(
+        &mut self,
+        fb: &mut FuncBuilder,
+        try_body: NodeId,
+        catches: &[sir::SirCatch],
+        finally_body: Option<NodeId>,
+    ) -> Result<Option<SlotId>, EirLowerError> {
+        let pending_kind = fb.alloc_slot();
+        let pending_value = fb.alloc_slot();
+        let zero = fb.alloc_slot();
+        let zc = self.intern_const(Value::Int(0));
+        fb.push_op(EirOpKind::Constant(ConstantOp {
+            dest: zero,
+            constant: zc,
+        }));
+        fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+            dest: pending_kind,
+            value: zero,
+            check_initialized: None,
+        })));
+
+        let after = fb.new_block_id();
+        let finally_entry = fb.new_block_id();
+        let first_catch = if catches.is_empty() {
+            finally_entry
+        } else {
+            fb.new_block_id()
+        };
+        // Soft-raise jumps to first catch (or finally if none).
+        let handler_entry = first_catch;
+
+        let try_block_id = fb.new_block_id();
+        fb.finish_jump(try_block_id);
+        fb.start_block(try_block_id);
+        fb.try_stack.push(TryCtx {
+            handler_entry,
+            pending_kind,
+            pending_value,
+        });
+        let _ = self.lower_node_stmt(fb, try_body)?;
+        fb.try_stack.pop();
+        // Normal completion of try → finally (or after if no finally).
+        if !fb.terminated {
+            fb.finish_jump(finally_entry);
+        }
+
+        // Catch chain (forward): each catch falls through to next catch or finally.
+        let catch_ids: Vec<EirBlockId> = if catches.is_empty() {
+            vec![]
+        } else {
+            let mut ids = vec![first_catch];
+            for _ in 1..catches.len() {
+                ids.push(fb.new_block_id());
+            }
+            ids
+        };
+        for (i, c) in catches.iter().enumerate() {
+            let cid = catch_ids[i];
+            let next = if i + 1 < catch_ids.len() {
+                catch_ids[i + 1]
+            } else {
+                finally_entry
+            };
+            fb.start_block(cid);
+            // Bind catch variable to pending_value (error object).
+            let name = self.binding_name(c.binding)?;
+            let slot = fb.alloc_slot();
+            fb.bind_binding(c.binding, name, slot);
+            fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+                dest: slot,
+                value: pending_value,
+                check_initialized: None,
+            })));
+            // Optional guard: if present and false, jump next.
+            if let Some(g) = c.guard {
+                let gv = self.lower_node_expr(fb, g)?;
+                let body_id = fb.new_block_id();
+                fb.finish_branch(gv, body_id, next);
+                fb.start_block(body_id);
+            }
+            // Clear raise pending before catch body (caught).
+            let z = fb.alloc_slot();
+            let zc = self.intern_const(Value::Int(0));
+            fb.push_op(EirOpKind::Constant(ConstantOp {
+                dest: z,
+                constant: zc,
+            }));
+            fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+                dest: pending_kind,
+                value: z,
+                check_initialized: None,
+            })));
+            let _ = self.lower_node_stmt(fb, c.body)?;
+            if !fb.terminated {
+                fb.finish_jump(finally_entry);
+            }
+        }
+
+        // Finally / exit dispatch
+        fb.start_block(finally_entry);
+        if let Some(f) = finally_body {
+            let _ = self.lower_node_stmt(fb, f)?;
+        }
+        if !fb.terminated {
+            // Dispatch pending: 1 return, 2 raise, else after
+            let k1 = fb.alloc_slot();
+            let c1 = self.intern_const(Value::Int(1));
+            fb.push_op(EirOpKind::Constant(ConstantOp {
+                dest: k1,
+                constant: c1,
+            }));
+            let is_ret = fb.alloc_slot();
+            fb.push_op(EirOpKind::Binary(BinaryOp {
+                dest: is_ret,
+                op: BinaryOperator::Equal,
+                left: pending_kind,
+                right: k1,
+                overflow_policy: None,
+            }));
+            let ret_bb = fb.new_block_id();
+            let not_ret = fb.new_block_id();
+            fb.finish_branch(is_ret, ret_bb, not_ret);
+            fb.start_block(ret_bb);
+            fb.finish_return(Some(pending_value));
+            fb.start_block(not_ret);
+            let k2 = fb.alloc_slot();
+            let c2 = self.intern_const(Value::Int(2));
+            fb.push_op(EirOpKind::Constant(ConstantOp {
+                dest: k2,
+                constant: c2,
+            }));
+            let is_raise = fb.alloc_slot();
+            fb.push_op(EirOpKind::Binary(BinaryOp {
+                dest: is_raise,
+                op: BinaryOperator::Equal,
+                left: pending_kind,
+                right: k2,
+                overflow_policy: None,
+            }));
+            let raise_bb = fb.new_block_id();
+            fb.finish_branch(is_raise, raise_bb, after);
+            fb.start_block(raise_bb);
+            fb.seal_block(EirTerminator::Raise(Raise {
+                error: pending_value,
+            }));
+        }
+        fb.start_block(after);
+        Ok(None)
     }
 
     fn lower_node_expr(
@@ -992,6 +1211,14 @@ struct LoopTargets {
     break_target: EirBlockId,
 }
 
+/// Soft-exception / return routing for try handlers.
+struct TryCtx {
+    /// Catch chain entry or finally when no catch.
+    handler_entry: EirBlockId,
+    pending_kind: SlotId,
+    pending_value: SlotId,
+}
+
 struct FuncBuilder {
     eir_id: u32,
     function_id: u32,
@@ -1004,6 +1231,7 @@ struct FuncBuilder {
     next_block: u32,
     terminated: bool,
     loop_stack: Vec<LoopTargets>,
+    try_stack: Vec<TryCtx>,
 }
 
 impl FuncBuilder {
@@ -1020,6 +1248,7 @@ impl FuncBuilder {
             next_block: 1,
             terminated: false,
             loop_stack: Vec::new(),
+            try_stack: Vec::new(),
         }
     }
 

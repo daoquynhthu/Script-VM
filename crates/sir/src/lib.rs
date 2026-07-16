@@ -10,7 +10,7 @@ pub mod source;
 pub mod unit;
 
 pub use id::*;
-pub use node::{BinaryOp, SirNode, UnaryOp};
+pub use node::{BinaryOp, SirCatch, SirNode, UnaryOp};
 pub use source::{SourceOrigin, SourcePosition, SourceSpan};
 pub use unit::{
     BindingDescriptor, ControlRegionDescriptor, ControlRegionKind, IrHeader, IrUnit,

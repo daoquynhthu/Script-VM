@@ -325,6 +325,7 @@ impl Parser {
             TokenKind::Keyword(Keyword::If) => self.parse_if(),
             TokenKind::Keyword(Keyword::While) => self.parse_while(),
             TokenKind::Keyword(Keyword::For) => self.parse_for(),
+            TokenKind::Keyword(Keyword::Try) => self.parse_try(),
             TokenKind::Keyword(Keyword::Break) => {
                 let span = self.bump().span;
                 self.expect_newline_or_end()?;
@@ -550,6 +551,60 @@ impl Parser {
             iter,
             body,
             span,
+        })
+    }
+
+    fn parse_try(&mut self) -> Result<Stmt, ParseError> {
+        // try: block { catch IDENT [if expr]: block } [finally: block]
+        let start = self.expect_keyword(Keyword::Try)?;
+        self.expect_kind(|k| matches!(k, TokenKind::Colon), "expected `:` after try")?;
+        self.expect_kind(|k| matches!(k, TokenKind::Newline), "expected newline")?;
+        let try_block = self.parse_block()?;
+        let mut catches = Vec::new();
+        while matches!(self.peek_kind(), TokenKind::Keyword(Keyword::Catch)) {
+            let cstart = self.bump().span;
+            let (name, _) = self.expect_ident()?;
+            let guard = if matches!(self.peek_kind(), TokenKind::Keyword(Keyword::If)) {
+                self.bump();
+                Some(self.parse_expr()?)
+            } else {
+                None
+            };
+            self.expect_kind(|k| matches!(k, TokenKind::Colon), "expected `:` after catch")?;
+            self.expect_kind(|k| matches!(k, TokenKind::Newline), "expected newline")?;
+            let body = self.parse_block()?;
+            let cend = body.span.end;
+            catches.push(crate::ast::CatchClause {
+                name,
+                guard,
+                body,
+                span: Span::new(cstart.start, cend),
+            });
+        }
+        let finally_block = if matches!(self.peek_kind(), TokenKind::Keyword(Keyword::Finally)) {
+            self.bump();
+            self.expect_kind(|k| matches!(k, TokenKind::Colon), "expected `:` after finally")?;
+            self.expect_kind(|k| matches!(k, TokenKind::Newline), "expected newline")?;
+            Some(self.parse_block()?)
+        } else {
+            None
+        };
+        if catches.is_empty() && finally_block.is_none() {
+            return Err(ParseError::new(
+                "try requires catch or finally",
+                self.span_here(),
+            ));
+        }
+        let end = finally_block
+            .as_ref()
+            .map(|b| b.span.end)
+            .or_else(|| catches.last().map(|c| c.span.end))
+            .unwrap_or(try_block.span.end);
+        Ok(Stmt::Try {
+            try_block,
+            catches,
+            finally_block,
+            span: Span::new(start.start, end),
         })
     }
 
@@ -1055,6 +1110,27 @@ print(fib(10))
         assert!(matches!(
             &m.items[2],
             Item::Stmt(Stmt::AttrAssign { name, .. }) if name == "x"
+        ));
+    }
+
+    #[test]
+    fn parse_try_catch_finally() {
+        let src = r#"
+try:
+    raise "x"
+catch e:
+    let y = 1
+finally:
+    let z = 2
+"#;
+        let m = parse_module(src).unwrap();
+        assert!(matches!(
+            &m.items[0],
+            Item::Stmt(Stmt::Try {
+                catches,
+                finally_block: Some(_),
+                ..
+            }) if catches.len() == 1
         ));
     }
 }

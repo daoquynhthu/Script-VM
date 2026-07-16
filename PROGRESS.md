@@ -2149,3 +2149,32 @@ Summary:
   o.x / o.x = v lowered as map string-key index ops (record shapes later).
 Next:
   Record types; general for; finally unwind.
+
+## 2026-07-16 12:32 · WP-R06 try/catch/finally bootstrap
+
+Work Package: WP-R06
+Agent Mode: main-only
+Changed Files:
+  - crates/script_parse (Stmt::Try, CatchClause, parse_try)
+  - crates/script_sema (try/catch scopes)
+  - crates/sir (SirNode::Try, SirCatch)
+  - crates/script_lower (emit Try)
+  - crates/sir_validate (Try children)
+  - crates/script_eir_lower (soft TryCtx handlers)
+  - crates/script_codegen (reject Try)
+  - docs/IMPLEMENTATION-STATUS.md
+  - PLAN/WORK-PACKAGE-INDEX.md + docs/agent-plan mirror
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG try/catch/finally
+  - SPEC-P3-CONTROL / SPEC-P3-UNWIND (bootstrap soft model)
+  - SPEC-P2-IR try nodes (shape)
+Gates:
+  - G0-G5 PASS
+Tests:
+  - cargo test -p script_eir_lower PASS (18) try_finally_runs, try_catch_handles_raise, try_finally_after_return
+  - cargo test -p script_parse -p script_sema -p script_lower -p sir -p sir_validate PASS
+Summary:
+  End-to-end try/catch/finally via SIR; soft raise/return through handler blocks; finally re-return/re-raise.
+Next:
+  Record types; general for; nested try hardening; RuntimePlan deepen.

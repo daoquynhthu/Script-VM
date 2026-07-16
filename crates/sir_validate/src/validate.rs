@@ -230,6 +230,23 @@ fn node_children(kind: &SirNode) -> Vec<NodeId> {
         } => vec![*base, *index, *value],
         Attr { base, .. } => vec![*base],
         AttrAssign { base, value, .. } => vec![*base, *value],
+        Try {
+            try_body,
+            catches,
+            finally_body,
+        } => {
+            let mut v = vec![*try_body];
+            for c in catches {
+                if let Some(g) = c.guard {
+                    v.push(g);
+                }
+                v.push(c.body);
+            }
+            if let Some(f) = finally_body {
+                v.push(*f);
+            }
+            v
+        }
     }
 }
 

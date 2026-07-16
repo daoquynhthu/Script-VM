@@ -2868,3 +2868,11 @@ WP-ID: WP-R05
 Title: base.name get/set via map string keys
 Status: COMPLETE
 `
+
+### WP-R06 · try/catch/finally bootstrap
+
+`	ext
+WP-ID: WP-R06
+Title: try/catch/finally parse→sema→SIR→soft EIR handlers
+Status: COMPLETE
+`

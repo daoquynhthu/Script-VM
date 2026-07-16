@@ -137,8 +137,23 @@ pub enum Stmt {
         cond: Expr,
         span: Span,
     },
+    /// `try` / `catch` / `finally` (SPEC-P1 try_statement)
+    Try {
+        try_block: Block,
+        catches: Vec<CatchClause>,
+        finally_block: Option<Block>,
+        span: Span,
+    },
     /// Nested declaration allowed in block scope (let/const/def).
     Decl(Decl),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CatchClause {
+    pub name: String,
+    pub guard: Option<Expr>,
+    pub body: Block,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone, PartialEq)]

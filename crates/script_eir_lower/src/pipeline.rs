@@ -181,4 +181,45 @@ s
         let src = "let o = {\"x\": 1}\no.x = 5\no.x\n";
         assert_eq!(run(src), ControlState::Return(Some(Value::Int(5))));
     }
+
+    #[test]
+    fn try_finally_runs() {
+        let src = r#"
+let x = 0
+try:
+    x = 1
+finally:
+    x = x + 10
+x
+"#;
+        assert_eq!(run(src), ControlState::Return(Some(Value::Int(11))));
+    }
+
+    #[test]
+    fn try_catch_handles_raise() {
+        let src = r#"
+let x = 0
+try:
+    raise "boom"
+catch e:
+    x = 42
+x
+"#;
+        assert_eq!(run(src), ControlState::Return(Some(Value::Int(42))));
+    }
+
+    #[test]
+    fn try_finally_after_return() {
+        // finally should run; still return 7
+        let src = r#"
+def f():
+    try:
+        return 7
+    finally:
+        print(1)
+f()
+"#;
+        // print returns display string of 1 as last expr of finally — wait, finally doesn't replace return
+        assert_eq!(run(src), ControlState::Return(Some(Value::Int(7))));
+    }
 }

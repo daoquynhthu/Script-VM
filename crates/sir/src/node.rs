@@ -133,6 +133,19 @@ pub enum SirNode {
         name: String,
         value: NodeId,
     },
+    /// try / catch* / finally?
+    Try {
+        try_body: NodeId,
+        catches: Vec<SirCatch>,
+        finally_body: Option<NodeId>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SirCatch {
+    pub binding: BindingId,
+    pub guard: Option<NodeId>,
+    pub body: NodeId,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

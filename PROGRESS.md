@@ -2024,3 +2024,28 @@ Summary:
   runs fib(10)=55 without script_codegen.
 Next:
   Expand SIR→EIR surface; RuntimePlan packaging; host print I/O.
+
+## 2026-07-16 12:16 · WP-R01 list/for/and-or, RuntimePlan shell, script-vm CLI
+
+Work Package: WP-R01
+Agent Mode: main-only
+Changed Files:
+  - crates/script_eir_lower (list, for unroll, and/or, package)
+  - crates/vm_cli (script-vm run/eval)
+  - docs/IMPLEMENTATION-STATUS.md
+  - PLAN/WORK-PACKAGE-INDEX.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG (for, list, and/or)
+  - SPEC-P3-EIR helpers construct_list
+  - SPEC-P3-RTP shell
+Gates:
+  - G0-G5 PASS
+Tests:
+  - cargo test -p script_eir_lower PASS (6)
+  - script-vm eval fib(10) → 55
+Summary:
+  Expanded SIR→EIR; compile_executable attaches validated RuntimePlan shell;
+  CLI runs normative pipeline.
+Next:
+  Deeper RuntimePlan from SIR; host print; remaining control constructs.

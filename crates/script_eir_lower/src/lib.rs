@@ -7,10 +7,12 @@
 
 pub mod error;
 pub mod lower;
+pub mod package;
 pub mod pipeline;
 pub mod program;
 
 pub use error::EirLowerError;
 pub use lower::lower_sir_to_eir;
+pub use package::{compile_executable, ExecutableUnit};
 pub use pipeline::{compile_source_via_sir, eir_from_source_sir};
 pub use program::EirProgram;

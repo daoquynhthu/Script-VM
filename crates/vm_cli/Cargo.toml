@@ -2,9 +2,13 @@
 name = "vm_cli"
 version = "0.1.0"
 edition = "2021"
-description = "VM command-line interface"
+description = "Script VM command-line interface (source via SIR→EIR path)"
+
+[[bin]]
+name = "script-vm"
+path = "src/main.rs"
 
 [dependencies]
-vm_diag = { path = "../vm_diag" }
+script_eir_lower = { path = "../script_eir_lower" }
+vm_core = { path = "../vm_core" }
 vm_eval = { path = "../vm_eval" }
-vm_host = { path = "../vm_host" }

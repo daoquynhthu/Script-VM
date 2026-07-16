@@ -9,47 +9,44 @@ Updated: 2026-07-16
 
 | Track | Status |
 |-------|--------|
-| T-P3B | ARCHIVED COMPLETE |
-| T-P1 frontend v0 | COMPLETE (WP-L00..L05) |
-| T-P2 SIR | **WP-S00..S02 COMPLETE** (bootstrap) |
-| T-P3L lowering | **WP-R00 COMPLETE** (SIR→EIR bootstrap) |
-| T-DEMO `script_codegen` | QUARANTINED (not acceptance) |
+| T-P1 frontend | COMPLETE |
+| T-P2 SIR | WP-S00..S02 COMPLETE (bootstrap) |
+| T-P3L | **WP-R00 + WP-R01 COMPLETE** (bootstrap) |
+| CLI | **`script-vm`** run/eval via SIR→EIR |
+| T-DEMO codegen | quarantined |
 
 ---
 
-## Normative pipeline (working)
+## Run
+
+```powershell
+cargo run -p vm_cli -- eval "fib source..."
+cargo run -p vm_cli -- run path\to\file.script
+```
+
+Pipeline:
 
 ```text
-source
-  → script_sema::check_module
-  → script_lower::materialize_sir
-  → sir_validate::validate_ir_unit   (+ control_regions SIR012+)
-  → script_eir_lower::lower_sir_to_eir / compile_source_via_sir
-  → vm_eval::Interpreter
+source → check_module → materialize_sir → validate_ir_unit
+      → lower_sir_to_eir → Interpreter
 ```
 
-**Milestone:** `fib(10) → 55` and `print(fib(10)) → 55` on this path  
-(crate: `script_eir_lower` pipeline tests).
-
-```rust
-let prog = script_eir_lower::compile_source_via_sir(src, "main")?;
-// install callables → run_module
-```
+Also: `compile_executable` → EIR + validated RuntimePlan shell.
 
 ---
 
-## Residual (honest)
+## WP-R01 additions
 
-- Full PHASE-3-SIR-LOWERING / CONTROL-LOWERING-ROUND2 coverage  
-- RuntimePlan packaging + cache digests for product units  
-- for/list/and-or/raise full EIR lower  
-- Real host `print` I/O  
-- script_codegen remains demo-only  
+- List literals → `HELPER_CONSTRUCT_LIST`
+- `for x in [..]:` unrolled (list-literal only)
+- `and` / `or` short-circuit via branch
+- CLI prints return value (`fib(10)` → `55`)
 
 ---
 
 ## Next
 
-1. Expand SIR→EIR surface (for, lists, short-circuit)  
-2. Emit minimal RuntimePlan alongside EIR  
-3. Wire `vm_cli` to `compile_source_via_sir`  
+- RuntimePlan fields derived from SIR (not fixture shell only)
+- General for-over-variable (needs len/iter helpers)
+- break/continue/raise EIR
+- Host print to stdout

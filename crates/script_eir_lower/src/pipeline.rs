@@ -102,4 +102,21 @@ print(fib(10))
             ControlState::Return(Some(Value::Int(7)))
         );
     }
+
+    #[test]
+    fn list_and_for_unroll() {
+        let src = "let s = 0\nfor x in [1, 2, 3]:\n    s = s + x\ns\n";
+        assert_eq!(run(src), ControlState::Return(Some(Value::Int(6))));
+    }
+
+    #[test]
+    fn short_circuit_and() {
+        // false and <unevaluated non-bool would fail if evaluated> — right side true
+        let src = "false and true\n";
+        assert_eq!(run(src), ControlState::Return(Some(Value::Bool(false))));
+        let src2 = "true and false\n";
+        assert_eq!(run(src2), ControlState::Return(Some(Value::Bool(false))));
+        let src3 = "true and true\n";
+        assert_eq!(run(src3), ControlState::Return(Some(Value::Bool(true))));
+    }
 }

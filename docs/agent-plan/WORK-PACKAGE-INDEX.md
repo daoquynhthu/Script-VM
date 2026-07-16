@@ -2822,3 +2822,19 @@ Status: COMPLETE
 
 Notes: fib(10)=55 via analyze → materialize_sir → validate_ir_unit → lower_sir_to_eir → vm_eval.
 Distinct from T-DEMO script_codegen.
+
+### WP-R01 · SIR→EIR surface + RuntimePlan shell + CLI
+
+`	ext
+WP-ID: WP-R01
+Title: Expand SIR→EIR (list/for/and-or); RuntimePlan shell; vm_cli
+Status: COMPLETE
+`
+
+Outputs:
+
+`	ext
+list construct, for-unroll over list literals, and/or short-circuit
+compile_executable RuntimePlan shell
+script-vm CLI run/eval
+`

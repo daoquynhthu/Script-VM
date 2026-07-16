@@ -21,7 +21,7 @@ use vm_core::id::{
 use vm_core::profile::Version;
 use vm_core::value::Value;
 use vm_diag::source_span::SourceSpanId;
-use vm_runtime::helpers::dispatch::HELPER_GENERIC_CALL_ID;
+use vm_runtime::helpers::dispatch::{HELPER_CONSTRUCT_LIST_ID, HELPER_GENERIC_CALL_ID};
 
 use crate::error::EirLowerError;
 use crate::program::{user_fn_target, EirProgram};
@@ -318,7 +318,11 @@ impl<'a> SirEirLower<'a> {
             SirNode::Break | SirNode::Continue => {
                 Err(EirLowerError::new("break/continue EIR not yet lowered"))
             }
-            SirNode::For { .. } => Err(EirLowerError::new("for-loop EIR not yet lowered")),
+            SirNode::For {
+                binding,
+                iter,
+                body,
+            } => self.lower_for(fb, binding, iter, body),
             other => {
                 // Expression used as statement
                 if matches!(
@@ -559,27 +563,155 @@ impl<'a> SirEirLower<'a> {
                 }));
                 Ok(dest)
             }
-            SirNode::Binary { op, left, right } => {
-                if matches!(op, SirBin::And | SirBin::Or) {
-                    return Err(EirLowerError::new("and/or short-circuit not lowered"));
+            SirNode::Binary { op, left, right } => match op {
+                SirBin::And => self.lower_and_or(fb, left, right, true),
+                SirBin::Or => self.lower_and_or(fb, left, right, false),
+                _ => {
+                    let l = self.lower_node_expr(fb, left)?;
+                    let r = self.lower_node_expr(fb, right)?;
+                    let dest = fb.alloc_slot();
+                    fb.push_op(EirOpKind::Binary(BinaryOp {
+                        dest,
+                        op: map_bin(op)?,
+                        left: l,
+                        right: r,
+                        overflow_policy: None,
+                    }));
+                    Ok(dest)
                 }
-                let l = self.lower_node_expr(fb, left)?;
-                let r = self.lower_node_expr(fb, right)?;
+            },
+            SirNode::List { elements } => {
+                let mut args = Vec::new();
+                for e in elements {
+                    args.push(self.lower_node_expr(fb, e)?);
+                }
                 let dest = fb.alloc_slot();
-                fb.push_op(EirOpKind::Binary(BinaryOp {
-                    dest,
-                    op: map_bin(op)?,
-                    left: l,
-                    right: r,
-                    overflow_policy: None,
+                fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                    dest: Some(dest),
+                    helper_id: HELPER_CONSTRUCT_LIST_ID,
+                    args,
+                    call_site: None,
+                    access_site: None,
+                    safepoint_id: None,
+                    deopt_id: None,
                 }));
                 Ok(dest)
             }
-            SirNode::List { .. } => Err(EirLowerError::new("list literal EIR not lowered")),
             other => Err(EirLowerError::new(format!(
                 "not an expression node: {other:?}"
             ))),
         }
+    }
+
+    /// Short-circuit: `a and b` ⇒ if a then b else false; `a or b` ⇒ if a then true else b.
+    fn lower_and_or(
+        &mut self,
+        fb: &mut FuncBuilder,
+        left: NodeId,
+        right: NodeId,
+        is_and: bool,
+    ) -> Result<SlotId, EirLowerError> {
+        let l = self.lower_node_expr(fb, left)?;
+        let then_id = fb.new_block_id();
+        let else_id = fb.new_block_id();
+        let merge_id = fb.new_block_id();
+        let result = fb.alloc_slot();
+        fb.finish_branch(l, then_id, else_id);
+
+        fb.start_block(then_id);
+        if is_and {
+            let r = self.lower_node_expr(fb, right)?;
+            fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+                dest: result,
+                value: r,
+                check_initialized: None,
+            })));
+        } else {
+            let t = fb.alloc_slot();
+            let cid = self.intern_const(Value::Bool(true));
+            fb.push_op(EirOpKind::Constant(ConstantOp {
+                dest: t,
+                constant: cid,
+            }));
+            fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+                dest: result,
+                value: t,
+                check_initialized: None,
+            })));
+        }
+        if !fb.terminated {
+            fb.finish_jump(merge_id);
+        }
+
+        fb.start_block(else_id);
+        if is_and {
+            let f = fb.alloc_slot();
+            let cid = self.intern_const(Value::Bool(false));
+            fb.push_op(EirOpKind::Constant(ConstantOp {
+                dest: f,
+                constant: cid,
+            }));
+            fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+                dest: result,
+                value: f,
+                check_initialized: None,
+            })));
+        } else {
+            let r = self.lower_node_expr(fb, right)?;
+            fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+                dest: result,
+                value: r,
+                check_initialized: None,
+            })));
+        }
+        if !fb.terminated {
+            fb.finish_jump(merge_id);
+        }
+
+        fb.start_block(merge_id);
+        Ok(result)
+    }
+
+    /// Bootstrap: only list-literal iterators, unrolled (no runtime len helper).
+    fn lower_for(
+        &mut self,
+        fb: &mut FuncBuilder,
+        binding: BindingId,
+        iter: NodeId,
+        body: NodeId,
+    ) -> Result<Option<SlotId>, EirLowerError> {
+        let elements = match self.node(iter)?.clone() {
+            SirNode::List { elements } => elements,
+            _ => {
+                return Err(EirLowerError::new(
+                    "for-loop EIR bootstrap only supports list-literal iterators",
+                ));
+            }
+        };
+        let name = self.binding_name(binding)?;
+        let mut last = None;
+        for elem in elements {
+            let v = self.lower_node_expr(fb, elem)?;
+            let slot = fb.lookup_binding(binding).unwrap_or_else(|| {
+                let s = fb.alloc_slot();
+                fb.bind_binding(binding, name.clone(), s);
+                s
+            });
+            // re-bind each iteration into same slot
+            if fb.lookup_binding(binding).is_none() {
+                fb.bind_binding(binding, name.clone(), slot);
+            }
+            fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+                dest: slot,
+                value: v,
+                check_initialized: None,
+            })));
+            last = self.lower_node_stmt(fb, body)?;
+            if fb.terminated {
+                break;
+            }
+        }
+        Ok(last)
     }
 }
 
@@ -599,7 +731,7 @@ fn map_bin(op: SirBin) -> Result<BinaryOperator, EirLowerError> {
         SirBin::Is => BinaryOperator::Identity,
         SirBin::In => BinaryOperator::Contains,
         SirBin::And | SirBin::Or => {
-            return Err(EirLowerError::new("and/or"));
+            return Err(EirLowerError::new("and/or handled via short-circuit"));
         }
     })
 }

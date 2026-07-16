@@ -110,9 +110,9 @@ dependencies = [
 name = "vm_cli"
 version = "0.1.0"
 dependencies = [
- "vm_diag",
+ "script_eir_lower",
+ "vm_core",
  "vm_eval",
- "vm_host",
 ]
 
 [[package]]

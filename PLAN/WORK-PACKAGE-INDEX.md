@@ -2671,3 +2671,51 @@ Completion Criteria:
 `	ext
 P1-GAP lexical rows updated; v0 lexical surface YES or explicit PARTIAL with tests
 `
+
+### WP-L02 · Grammar/AST v0 surface
+
+`	ext
+WP-ID: WP-L02
+Title: Grammar and AST v0 surface expansion
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+Frozen Spec References:
+
+`	ext
+SPEC-P1-LANG sections 4.4, 6.7, 9.6, 10.2
+`
+
+Outputs:
+
+`	ext
+from-import, aug-assign, map literal, empty-block rejection
+script_parse tests expanded
+`
+
+### WP-L03 · Semantic analysis v0
+
+`	ext
+WP-ID: WP-L03
+Title: Semantic analysis v0 (Bool conditions, NFC, export)
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+Frozen Spec References:
+
+`	ext
+SPEC-P1-LANG sections 2.1-2.3, 3.3, export
+`
+
+Outputs:
+
+`	ext
+script_sema Bool condition checks
+NFC binding identity
+Binding.exported
+22 unit tests
+`

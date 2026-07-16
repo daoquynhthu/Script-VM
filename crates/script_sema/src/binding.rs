@@ -1,8 +1,9 @@
 //! Binding table and scope stack.
 //!
-//! Spec: `PHASE-1-LANGUAGE-SPEC.md` §2.1–2.2, declaration immutability rules
+//! Spec: `PHASE-1-LANGUAGE-SPEC.md` §2.1–2.2, §3.3 NFC comparison
 
 use script_lex::Span;
+use unicode_normalization::UnicodeNormalization;
 
 /// How a name may be used after introduction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -15,12 +16,27 @@ pub enum BindingKind {
     Builtin,
 }
 
-/// One name binding in a scope.
+/// One name binding in a scope (name stored NFC-normalized).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Binding {
+    /// NFC-normalized identifier text (SPEC-P1 §3.3).
     pub name: String,
     pub kind: BindingKind,
     pub decl_span: Span,
+    /// True if introduced under `export` (module public interface).
+    pub exported: bool,
+}
+
+impl Binding {
+    #[must_use]
+    pub fn new(name: impl AsRef<str>, kind: BindingKind, decl_span: Span, exported: bool) -> Self {
+        Self {
+            name: nfc(name.as_ref()),
+            kind,
+            decl_span,
+            exported,
+        }
+    }
 }
 
 /// Lexical scope: map of NFC names → binding.
@@ -40,7 +56,7 @@ impl Scope {
     pub fn define(&mut self, binding: Binding) -> Result<(), String> {
         if self.bindings.iter().any(|b| b.name == binding.name) {
             return Err(format!(
-                "duplicate binding `{}` in the same scope",
+                "duplicate binding `{}` in the same scope (NFC)",
                 binding.name
             ));
         }
@@ -50,7 +66,8 @@ impl Scope {
 
     #[must_use]
     pub fn lookup_local(&self, name: &str) -> Option<&Binding> {
-        self.bindings.iter().rev().find(|b| b.name == name)
+        let key = nfc(name);
+        self.bindings.iter().rev().find(|b| b.name == key)
     }
 }
 
@@ -87,8 +104,9 @@ impl ScopeStack {
 
     #[must_use]
     pub fn resolve(&self, name: &str) -> Option<&Binding> {
+        let key = nfc(name);
         for scope in self.scopes.iter().rev() {
-            if let Some(b) = scope.lookup_local(name) {
+            if let Some(b) = scope.lookup_local(&key) {
                 return Some(b);
             }
         }
@@ -99,4 +117,10 @@ impl ScopeStack {
     pub fn depth(&self) -> usize {
         self.scopes.len()
     }
+}
+
+/// Normalize identifier spelling for comparison (SPEC-P1 §3.3).
+#[must_use]
+pub fn nfc(s: &str) -> String {
+    s.nfc().collect()
 }

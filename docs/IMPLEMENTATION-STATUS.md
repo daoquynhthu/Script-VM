@@ -10,10 +10,8 @@ Updated: 2026-07-16
 | Item | Status |
 |------|--------|
 | Active track | **T-P1** |
-| WP-L00 | COMPLETE |
-| WP-L01 | COMPLETE (lexical) |
-| WP-L02 | **COMPLETE** (grammar/AST v0 expansion) |
-| **Next** | **WP-L03** semantic analysis v0 |
+| WP-L00..L03 | **COMPLETE** |
+| **Next** | **WP-L04** diagnostics + `AnalyzedModule` API |
 | T-P3B | ARCHIVED COMPLETE |
 | T-DEMO | QUARANTINED |
 
@@ -25,10 +23,20 @@ Updated: 2026-07-16
 |-------|--------|
 | L0 | COMPLETE |
 | L1 lexical | COMPLETE |
-| L2 grammar/AST | COMPLETE (from-import, aug-assign, map, empty-block reject) |
-| L3 sema | NEXT |
-| L4 diagnostics API | pending |
+| L2 grammar/AST | COMPLETE |
+| L3 sema | **COMPLETE** (Bool §2.3, NFC §3.3, export flag) |
+| L4 diagnostics API | NEXT |
 | L5 acceptance | pending |
+
+---
+
+## script_sema highlights (L3)
+
+- Conditions: `if` / `while` / `assert` must be Bool (static reject of non-Bool literals/arithmetic)
+- `and` / `or` / `not` operand Bool checks
+- Binding names NFC-normalized; same-scope NFC clash = duplicate
+- `export` → `Binding.exported == true`
+- Tests: **22**
 
 ---
 

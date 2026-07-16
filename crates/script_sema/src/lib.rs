@@ -12,7 +12,7 @@ pub mod binding;
 pub mod error;
 
 pub use analyze::{analyze_module, check_source, SemaResult};
-pub use binding::{Binding, BindingKind, Scope, ScopeStack};
+pub use binding::{nfc, Binding, BindingKind, Scope, ScopeStack};
 pub use error::SemaError;
 
 /// Errors from combined parse + semantic check.

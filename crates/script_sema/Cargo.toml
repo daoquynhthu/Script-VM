@@ -7,3 +7,4 @@ description = "Phase 1 semantic binding and scope analysis (bootstrap)"
 [dependencies]
 script_lex = { path = "../script_lex" }
 script_parse = { path = "../script_parse" }
+unicode-normalization = "0.1"

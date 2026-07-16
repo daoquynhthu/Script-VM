@@ -1,20 +1,22 @@
-//! Walk AST and check binding / scope rules (bootstrap).
+//! Walk AST and check binding / scope / bool-condition rules (T-P1 / WP-L03).
 //!
 //! Spec:
 //! - `PHASE-1-LANGUAGE-SPEC.md` §2.1 No Implicit New Binding by Assignment
 //! - `PHASE-1-LANGUAGE-SPEC.md` §2.2 Block Scope Exists
-//! - let / const / def introduction; assignment requires mutable binding
+//! - `PHASE-1-LANGUAGE-SPEC.md` §2.3 Conditions Must Be Boolean
+//! - `PHASE-1-LANGUAGE-SPEC.md` §3.3 Unicode Normalization (NFC)
+//! - declaration / assignment immutability; export visibility
 
 use script_lex::Span;
-use script_parse::{Block, Decl, Expr, Item, Module, Stmt};
+use script_parse::{BinaryOp, Block, Decl, Expr, Item, Module, Stmt, UnaryOp};
 
-use crate::binding::{Binding, BindingKind, ScopeStack};
+use crate::binding::{nfc, Binding, BindingKind, ScopeStack};
 use crate::error::SemaError;
 
 /// Result of semantic analysis.
 #[derive(Debug, Clone)]
 pub struct SemaResult {
-    /// Module-level user bindings introduced during analysis.
+    /// Module-level user bindings introduced during analysis (NFC names).
     pub module_bindings: Vec<Binding>,
     pub errors: Vec<SemaError>,
 }
@@ -26,14 +28,28 @@ impl SemaResult {
     }
 }
 
+/// Conservative static type for SPEC-P1 §2.3 checks (not a full type system).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StaticTy {
+    Bool,
+    Int,
+    Float,
+    String,
+    Nil,
+    List,
+    Map,
+    /// Names, calls, or mixed forms — not rejected as non-Bool at frontend.
+    Unknown,
+}
+
 struct Analyzer {
     scopes: ScopeStack,
     errors: Vec<SemaError>,
     module_snapshot: Vec<Binding>,
-    /// Nesting depth of `while` / `for` for break/continue validity.
     loop_depth: u32,
-    /// Nesting depth of function bodies for top-level `return` rejection.
     fn_depth: u32,
+    /// When true, next `define` marks binding as exported.
+    export_context: bool,
 }
 
 impl Analyzer {
@@ -44,33 +60,30 @@ impl Analyzer {
             module_snapshot: Vec::new(),
             loop_depth: 0,
             fn_depth: 0,
+            export_context: false,
         }
     }
 
     fn install_prelude(&mut self) {
-        // Minimal host-facing names used by bootstrap samples (not full stdlib).
-        let _ = self.scopes.define(Binding {
-            name: "print".into(),
-            kind: BindingKind::Builtin,
-            decl_span: Span::empty(0),
-        });
+        let _ = self.scopes.define(Binding::new(
+            "print",
+            BindingKind::Builtin,
+            Span::empty(0),
+            false,
+        ));
     }
 
     fn err(&mut self, message: impl Into<String>, span: Span) {
         self.errors.push(SemaError::new(message, span));
     }
 
-    fn define(&mut self, name: String, kind: BindingKind, span: Span) {
-        let binding = Binding {
-            name: name.clone(),
-            kind,
-            decl_span: span,
-        };
+    fn define_clean(&mut self, name: String, kind: BindingKind, span: Span) {
+        let binding = Binding::new(&name, kind, span, self.export_context);
         if let Err(msg) = self.scopes.define(binding.clone()) {
             self.err(msg, span);
             return;
         }
-        if self.scopes.depth() == 1 {
+        if self.scopes.depth() == 1 && kind != BindingKind::Builtin {
             self.module_snapshot.push(binding);
         }
     }
@@ -86,11 +99,11 @@ impl Analyzer {
         match decl {
             Decl::Let { name, value, span } => {
                 self.expr(value);
-                self.define(name.clone(), BindingKind::Mutable, *span);
+                self.define_clean(name.clone(), BindingKind::Mutable, *span);
             }
             Decl::Const { name, value, span } => {
                 self.expr(value);
-                self.define(name.clone(), BindingKind::Immutable, *span);
+                self.define_clean(name.clone(), BindingKind::Immutable, *span);
             }
             Decl::Function {
                 name,
@@ -98,10 +111,10 @@ impl Analyzer {
                 body,
                 span,
             } => {
-                self.define(name.clone(), BindingKind::Immutable, *span);
+                self.define_clean(name.clone(), BindingKind::Immutable, *span);
                 self.scopes.push();
                 for p in params {
-                    self.define(p.clone(), BindingKind::Mutable, *span);
+                    self.define_clean(p.clone(), BindingKind::Mutable, *span);
                 }
                 self.fn_depth += 1;
                 self.block(body);
@@ -119,17 +132,21 @@ impl Analyzer {
                 if local.is_empty() {
                     self.err("import requires a module path", *span);
                 } else {
-                    // Import introduces an immutable binding (module object / namespace bootstrap).
-                    self.define(local, BindingKind::Immutable, *span);
+                    self.define_clean(local, BindingKind::Immutable, *span);
                 }
             }
             Decl::FromImport { items, span, .. } => {
                 for item in items {
                     let local = item.alias.clone().unwrap_or_else(|| item.name.clone());
-                    self.define(local, BindingKind::Immutable, *span);
+                    self.define_clean(local, BindingKind::Immutable, *span);
                 }
             }
-            Decl::Export { item, .. } => self.decl(item),
+            Decl::Export { item, .. } => {
+                let prev = self.export_context;
+                self.export_context = true;
+                self.decl(item);
+                self.export_context = prev;
+            }
         }
     }
 
@@ -159,10 +176,10 @@ impl Analyzer {
                 else_block,
                 ..
             } => {
-                self.expr(cond);
+                self.require_bool_condition(cond);
                 self.block(then_block);
                 for (c, b) in elifs {
-                    self.expr(c);
+                    self.require_bool_condition(c);
                     self.block(b);
                 }
                 if let Some(b) = else_block {
@@ -170,7 +187,7 @@ impl Analyzer {
                 }
             }
             Stmt::While { cond, body, .. } => {
-                self.expr(cond);
+                self.require_bool_condition(cond);
                 self.loop_depth += 1;
                 self.block(body);
                 self.loop_depth -= 1;
@@ -184,7 +201,7 @@ impl Analyzer {
                 self.expr(iter);
                 self.loop_depth += 1;
                 self.scopes.push();
-                self.define(name.clone(), BindingKind::Mutable, *span);
+                self.define_clean(name.clone(), BindingKind::Mutable, *span);
                 for s in &body.stmts {
                     self.stmt(s);
                 }
@@ -212,24 +229,84 @@ impl Analyzer {
                 self.check_mutable_assign(name, *span);
             }
             Stmt::Raise { value, .. } => self.expr(value),
-            Stmt::Assert { cond, .. } => self.expr(cond),
+            Stmt::Assert { cond, span } => {
+                // Assert condition follows Bool rule (same as control conditions).
+                let _ = span;
+                self.require_bool_condition(cond);
+            }
             Stmt::Decl(d) => self.decl(d),
         }
     }
 
     fn check_mutable_assign(&mut self, name: &str, span: Span) {
-        match self.scopes.resolve(name) {
+        let key = nfc(name);
+        match self.scopes.resolve(&key) {
             None => self.err(
                 format!(
-                    "assignment to unbound name `{name}` (use `let`/`const`/`def` to introduce a binding)"
+                    "assignment to unbound name `{key}` (use `let`/`const`/`def` to introduce a binding)"
                 ),
                 span,
             ),
             Some(b) if b.kind != BindingKind::Mutable => self.err(
-                format!("cannot assign to immutable binding `{name}`"),
+                format!("cannot assign to immutable binding `{key}`"),
                 span,
             ),
             Some(_) => {}
+        }
+    }
+
+    /// SPEC-P1 §2.3: control / logical conditions operate on Bool.
+    fn require_bool_condition(&mut self, expr: &Expr) {
+        self.expr_in_bool_context(expr);
+        match self.static_ty(expr) {
+            StaticTy::Bool | StaticTy::Unknown => {}
+            other => {
+                self.err(
+                    format!(
+                        "condition must be Bool (SPEC-P1 §2.3), found {other:?}"
+                    ),
+                    expr_span(expr),
+                );
+            }
+        }
+    }
+
+    fn expr_in_bool_context(&mut self, expr: &Expr) {
+        match expr {
+            Expr::Unary {
+                op: UnaryOp::Not,
+                expr: inner,
+                ..
+            } => {
+                self.require_bool_condition(inner);
+            }
+            Expr::Binary {
+                op: BinaryOp::And | BinaryOp::Or,
+                left,
+                right,
+                ..
+            } => {
+                self.require_bool_condition(left);
+                self.require_bool_condition(right);
+            }
+            Expr::Binary {
+                op:
+                    BinaryOp::Eq
+                    | BinaryOp::NotEq
+                    | BinaryOp::Lt
+                    | BinaryOp::LtEq
+                    | BinaryOp::Gt
+                    | BinaryOp::GtEq
+                    | BinaryOp::Is
+                    | BinaryOp::In,
+                left,
+                right,
+                ..
+            } => {
+                self.expr(left);
+                self.expr(right);
+            }
+            other => self.expr(other),
         }
     }
 
@@ -241,8 +318,9 @@ impl Analyzer {
             | Expr::Float { .. }
             | Expr::String { .. } => {}
             Expr::Name { name, span } => {
-                if self.scopes.resolve(name).is_none() {
-                    self.err(format!("unresolved name `{name}`"), *span);
+                let key = nfc(name);
+                if self.scopes.resolve(&key).is_none() {
+                    self.err(format!("unresolved name `{key}`"), *span);
                 }
             }
             Expr::Call { callee, args, .. } => {
@@ -251,7 +329,40 @@ impl Analyzer {
                     self.expr(a);
                 }
             }
-            Expr::Unary { expr, .. } => self.expr(expr),
+            Expr::Unary {
+                op: UnaryOp::Not,
+                expr: inner,
+                span,
+            } => {
+                // `not` requires Bool operand (§2.3 / keyword operators).
+                self.expr(inner);
+                match self.static_ty(inner) {
+                    StaticTy::Bool | StaticTy::Unknown => {}
+                    other => self.err(
+                        format!("`not` requires Bool operand, found {other:?}"),
+                        *span,
+                    ),
+                }
+            }
+            Expr::Unary { expr: inner, .. } => self.expr(inner),
+            Expr::Binary {
+                op: BinaryOp::And | BinaryOp::Or,
+                left,
+                right,
+                span,
+            } => {
+                self.expr(left);
+                self.expr(right);
+                for side in [left.as_ref(), right.as_ref()] {
+                    match self.static_ty(side) {
+                        StaticTy::Bool | StaticTy::Unknown => {}
+                        other => self.err(
+                            format!("logical operator requires Bool operands, found {other:?}"),
+                            *span,
+                        ),
+                    }
+                }
+            }
             Expr::Binary { left, right, .. } => {
                 self.expr(left);
                 self.expr(right);
@@ -269,9 +380,61 @@ impl Analyzer {
             }
         }
     }
+
+    fn static_ty(&self, expr: &Expr) -> StaticTy {
+        match expr {
+            Expr::Nil { .. } => StaticTy::Nil,
+            Expr::Bool { .. } => StaticTy::Bool,
+            Expr::Int { .. } => StaticTy::Int,
+            Expr::Float { .. } => StaticTy::Float,
+            Expr::String { .. } => StaticTy::String,
+            Expr::List { .. } => StaticTy::List,
+            Expr::Map { .. } => StaticTy::Map,
+            Expr::Name { .. } | Expr::Call { .. } => StaticTy::Unknown,
+            Expr::Unary {
+                op: UnaryOp::Not, ..
+            } => StaticTy::Bool,
+            Expr::Unary {
+                op: UnaryOp::Neg, ..
+            } => StaticTy::Int,
+            Expr::Binary { op, .. } => match op {
+                BinaryOp::And
+                | BinaryOp::Or
+                | BinaryOp::Eq
+                | BinaryOp::NotEq
+                | BinaryOp::Lt
+                | BinaryOp::LtEq
+                | BinaryOp::Gt
+                | BinaryOp::GtEq
+                | BinaryOp::Is
+                | BinaryOp::In => StaticTy::Bool,
+                BinaryOp::Add
+                | BinaryOp::Sub
+                | BinaryOp::Mul
+                | BinaryOp::Div
+                | BinaryOp::Rem => StaticTy::Int,
+            },
+        }
+    }
 }
 
-/// Analyze a parsed module for binding/scope errors.
+fn expr_span(expr: &Expr) -> Span {
+    match expr {
+        Expr::Nil { span }
+        | Expr::Bool { span, .. }
+        | Expr::Int { span, .. }
+        | Expr::Float { span, .. }
+        | Expr::String { span, .. }
+        | Expr::Name { span, .. }
+        | Expr::Call { span, .. }
+        | Expr::Unary { span, .. }
+        | Expr::Binary { span, .. }
+        | Expr::List { span, .. }
+        | Expr::Map { span, .. } => *span,
+    }
+}
+
+/// Analyze a parsed module for binding/scope/bool-condition errors.
 pub fn analyze_module(module: &Module) -> SemaResult {
     let mut ctx = Analyzer::new();
     ctx.install_prelude();
@@ -396,5 +559,75 @@ print(fib(10))
         let r = check("return 1\n");
         assert!(!r.ok());
         assert!(r.errors.iter().any(|e| e.message.contains("return")));
+    }
+
+    #[test]
+    fn if_condition_rejects_int_literal() {
+        // SPEC-P1 §2.3
+        let r = check("if 1:\n    let x = 1\n");
+        assert!(!r.ok());
+        assert!(r.errors.iter().any(|e| e.message.contains("Bool")));
+    }
+
+    #[test]
+    fn while_condition_rejects_string() {
+        let r = check("while \"x\":\n    break\n");
+        assert!(!r.ok());
+        assert!(r.errors.iter().any(|e| e.message.contains("Bool")));
+    }
+
+    #[test]
+    fn comparison_condition_ok() {
+        let r = check("let n = 1\nif n < 2:\n    let x = 1\n");
+        assert!(r.ok(), "{:?}", r.errors);
+    }
+
+    #[test]
+    fn logical_and_requires_bool_operands() {
+        let r = check("let x = 1 and 2\n");
+        assert!(!r.ok());
+        assert!(r.errors.iter().any(|e| e.message.contains("Bool")));
+    }
+
+    #[test]
+    fn logical_and_bool_ok() {
+        let r = check("let x = true and false\n");
+        assert!(r.ok(), "{:?}", r.errors);
+    }
+
+    #[test]
+    fn nfc_same_scope_clash() {
+        // e + combining acute vs precomposed é — same NFC
+        let src = "let e\u{0301} = 1\nlet \u{00e9} = 2\n";
+        let r = check(src);
+        assert!(!r.ok());
+        assert!(r.errors.iter().any(|e| e.message.contains("duplicate")));
+    }
+
+    #[test]
+    fn export_marks_binding() {
+        let r = check("export let x = 1\n");
+        assert!(r.ok(), "{:?}", r.errors);
+        let b = r
+            .module_bindings
+            .iter()
+            .find(|b| b.name == "x")
+            .expect("x");
+        assert!(b.exported);
+    }
+
+    #[test]
+    fn non_export_not_marked() {
+        let r = check("let x = 1\n");
+        assert!(r.ok(), "{:?}", r.errors);
+        let b = r.module_bindings.iter().find(|b| b.name == "x").unwrap();
+        assert!(!b.exported);
+    }
+
+    #[test]
+    fn assert_rejects_non_bool() {
+        let r = check("assert 1\n");
+        assert!(!r.ok());
+        assert!(r.errors.iter().any(|e| e.message.contains("Bool")));
     }
 }

@@ -70,13 +70,13 @@ DEFER    — explicitly deferred past T-P1 v0 (must not silent-skip)
 |------|---------|--------|-------|
 | §2.1 No implicit binding by assign | YES | script_sema | L3 |
 | §2.2 Block scope | YES | if/while/for scopes | L3 |
-| §2.3 Conditions must be Bool | NO | not enforced in sema | L3 |
+| §2.3 Conditions must be Bool | YES | if/while/assert + and/or/not static checks | L3 |
 | const/def immutable assign | YES | sema | L3 |
 | break/continue only in loop | YES | sema | L3 |
 | top-level return invalid | YES | sema | L3 |
 | duplicate binding same scope | YES | sema | L3 |
-| NFC same-scope clash | NO | L3 | L3 |
-| export visibility marking | PARTIAL | parse only | L3 |
+| NFC same-scope clash | YES | NFC define/resolve + test | L3 |
+| export visibility marking | YES | Binding.exported | L3 |
 | §2.4+ type/coercion/etc. | DEFER | beyond T-P1 binding skeleton | later |
 
 ---

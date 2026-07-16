@@ -1887,3 +1887,59 @@ Summary:
   continuation, line_col_at helper. Next WP-L02 grammar/AST v0.
 Next:
   WP-L02 expand script_parse against P1-GAP-MATRIX grammar rows.
+
+## 2026-07-16 12:04 · WP-L02 grammar/AST v0 surface expansion
+
+Work Package: WP-L02
+Agent Mode: main-only
+Changed Files:
+  - crates/script_parse/**
+  - crates/script_sema/src/analyze.rs
+  - crates/script_codegen/src/codegen.rs
+  - crates/script_lower/src/lower.rs
+  - docs/phase-1/P1-GAP-MATRIX.md
+  - PLAN/WORK-PACKAGE-INDEX.md
+  - docs/agent-plan/WORK-PACKAGE-INDEX.md
+  - docs/IMPLEMENTATION-STATUS.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG §4.4, §6.7, §9.6, §10.2
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+Tests:
+  - cargo test -p script_parse -p script_sema -p script_lower -p script_codegen PASS
+Summary:
+  from-import, augmented assignment, map literals, empty/missing block rejection.
+  Sema covers from-import bindings and aug-assign mutability.
+Next:
+  WP-L03 semantic v0 (Bool conditions, NFC clash, export flags).
+
+## 2026-07-16 12:07 · WP-L03 semantic analysis (Bool, NFC, export)
+
+Work Package: WP-L03
+Agent Mode: main-only
+Changed Files:
+  - crates/script_sema/**
+  - docs/phase-1/P1-GAP-MATRIX.md
+  - PLAN/WORK-PACKAGE-INDEX.md
+  - docs/agent-plan/WORK-PACKAGE-INDEX.md
+  - docs/IMPLEMENTATION-STATUS.md
+  - PROGRESS.md
+  - Cargo.lock
+Spec References:
+  - SPEC-P1-LANG §2.1–2.3, §3.3
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+Tests:
+  - cargo test -p script_sema PASS (22)
+Summary:
+  Bool conditions for if/while/assert; and/or/not operand checks; NFC
+  same-scope clash; export marks Binding.exported.
+Next:
+  WP-L04 AnalyzedModule API + unified diagnostics.

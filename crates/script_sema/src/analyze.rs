@@ -108,6 +108,22 @@ impl Analyzer {
                 self.fn_depth -= 1;
                 self.scopes.pop();
             }
+            Decl::Import {
+                module_path,
+                alias,
+                span,
+            } => {
+                let local = alias
+                    .clone()
+                    .unwrap_or_else(|| module_path.last().cloned().unwrap_or_default());
+                if local.is_empty() {
+                    self.err("import requires a module path", *span);
+                } else {
+                    // Import introduces an immutable binding (module object / namespace bootstrap).
+                    self.define(local, BindingKind::Immutable, *span);
+                }
+            }
+            Decl::Export { item, .. } => self.decl(item),
         }
     }
 
@@ -195,6 +211,8 @@ impl Analyzer {
                     Some(_) => {}
                 }
             }
+            Stmt::Raise { value, .. } => self.expr(value),
+            Stmt::Assert { cond, .. } => self.expr(cond),
             Stmt::Decl(d) => self.decl(d),
         }
     }

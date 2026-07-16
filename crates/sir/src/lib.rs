@@ -1,6 +1,19 @@
-//! Script IR (SIR) - Source-level intermediate representation
+//! Script IR (SIR) — internal semantic representation (not public bytecode).
 //!
-//! This crate defines the source-level IR types and structures.
+//! Spec: `PHASE-2-IR-SPEC.md`, SIR semantics rounds (bootstrap subset).
+//!
+//! Boundary: SIR is versioned internal schema only; never a distribution ABI.
 
 pub mod id;
+pub mod node;
 pub mod source;
+pub mod unit;
+
+pub use id::*;
+pub use node::{BinaryOp, SirNode, UnaryOp};
+pub use source::{SourceOrigin, SourcePosition, SourceSpan};
+pub use unit::{
+    BindingDescriptor, IrHeader, IrUnit, ModuleDescriptor, NodeEntry, ScopeDescriptor,
+    SirBindingKind, SirMutability, SirVisibility, SourceFileRecord, SourceTable, SymbolDescriptor,
+    Version, IR_SCHEMA_VERSION, LANGUAGE_BASELINE_VERSION,
+};

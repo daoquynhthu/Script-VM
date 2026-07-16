@@ -1,0 +1,11 @@
+[package]
+name = "script_lower"
+version = "0.1.0"
+edition = "2021"
+description = "Lower Phase 1 AST to bootstrap SIR after semantic analysis"
+
+[dependencies]
+script_lex = { path = "../script_lex" }
+script_parse = { path = "../script_parse" }
+script_sema = { path = "../script_sema" }
+sir = { path = "../sir" }

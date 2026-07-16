@@ -36,6 +36,17 @@ pub enum Decl {
         body: Block,
         span: Span,
     },
+    /// `import path.to.mod [as name]`
+    Import {
+        module_path: Vec<String>,
+        alias: Option<String>,
+        span: Span,
+    },
+    /// `export` wrapping a declaration.
+    Export {
+        item: Box<Decl>,
+        span: Span,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -82,6 +93,14 @@ pub enum Stmt {
     Assign {
         name: String,
         value: Expr,
+        span: Span,
+    },
+    Raise {
+        value: Expr,
+        span: Span,
+    },
+    Assert {
+        cond: Expr,
         span: Span,
     },
     /// Nested declaration allowed in block scope (let/const/def).

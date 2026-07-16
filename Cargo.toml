@@ -12,5 +12,6 @@ members = [
     "crates/script_lex",
     "crates/script_parse",
     "crates/script_sema",
+    "crates/script_lower",
 ]
 resolver = "2"

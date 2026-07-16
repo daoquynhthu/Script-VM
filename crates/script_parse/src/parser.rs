@@ -108,9 +108,13 @@ impl Parser {
 
     fn parse_top_item(&mut self) -> Result<Item, ParseError> {
         match self.peek_kind() {
-            TokenKind::Keyword(Keyword::Let | Keyword::Const | Keyword::Def) => {
-                Ok(Item::Decl(self.parse_decl()?))
-            }
+            TokenKind::Keyword(
+                Keyword::Let
+                | Keyword::Const
+                | Keyword::Def
+                | Keyword::Import
+                | Keyword::Export,
+            ) => Ok(Item::Decl(self.parse_decl()?)),
             _ => Ok(Item::Stmt(self.parse_stmt()?)),
         }
     }
@@ -120,8 +124,61 @@ impl Parser {
             TokenKind::Keyword(Keyword::Let) => self.parse_let_like(false),
             TokenKind::Keyword(Keyword::Const) => self.parse_let_like(true),
             TokenKind::Keyword(Keyword::Def) => self.parse_function(),
+            TokenKind::Keyword(Keyword::Import) => self.parse_import(),
+            TokenKind::Keyword(Keyword::Export) => self.parse_export(),
             _ => Err(ParseError::new("expected declaration", self.span_here())),
         }
+    }
+
+    fn parse_import(&mut self) -> Result<Decl, ParseError> {
+        let start = self.expect_keyword(Keyword::Import)?;
+        let mut module_path = Vec::new();
+        let (first, _) = self.expect_ident()?;
+        module_path.push(first);
+        while matches!(self.peek_kind(), TokenKind::Dot) {
+            self.bump();
+            let (part, _) = self.expect_ident()?;
+            module_path.push(part);
+        }
+        let alias = if matches!(self.peek_kind(), TokenKind::Keyword(Keyword::As)) {
+            self.bump();
+            let (a, _) = self.expect_ident()?;
+            Some(a)
+        } else {
+            None
+        };
+        let end = self.span_here();
+        self.expect_newline_or_end()?;
+        Ok(Decl::Import {
+            module_path,
+            alias,
+            span: Span::new(start.start, end.end),
+        })
+    }
+
+    fn parse_export(&mut self) -> Result<Decl, ParseError> {
+        let start = self.expect_keyword(Keyword::Export)?;
+        // export let|const|def ...
+        let item = match self.peek_kind() {
+            TokenKind::Keyword(Keyword::Let | Keyword::Const | Keyword::Def) => self.parse_decl()?,
+            _ => {
+                return Err(ParseError::new(
+                    "expected declaration after `export`",
+                    self.span_here(),
+                ))
+            }
+        };
+        let end = match &item {
+            Decl::Let { span, .. }
+            | Decl::Const { span, .. }
+            | Decl::Function { span, .. }
+            | Decl::Import { span, .. }
+            | Decl::Export { span, .. } => span.end,
+        };
+        Ok(Decl::Export {
+            item: Box::new(item),
+            span: Span::new(start.start, end),
+        })
     }
 
     fn parse_let_like(&mut self, is_const: bool) -> Result<Decl, ParseError> {
@@ -219,7 +276,27 @@ impl Parser {
                 self.expect_newline_or_end()?;
                 Ok(Stmt::Continue { span })
             }
-            TokenKind::Keyword(Keyword::Let | Keyword::Const | Keyword::Def) => {
+            TokenKind::Keyword(Keyword::Raise) => {
+                let start = self.bump().span;
+                let value = self.parse_expr()?;
+                let end = value.span_end_pub();
+                self.expect_newline_or_end()?;
+                Ok(Stmt::Raise {
+                    value,
+                    span: Span::new(start.start, end),
+                })
+            }
+            TokenKind::Keyword(Keyword::Assert) => {
+                let start = self.bump().span;
+                let cond = self.parse_expr()?;
+                let end = cond.span_end_pub();
+                self.expect_newline_or_end()?;
+                Ok(Stmt::Assert {
+                    cond,
+                    span: Span::new(start.start, end),
+                })
+            }
+            TokenKind::Keyword(Keyword::Let | Keyword::Const | Keyword::Def | Keyword::Import) => {
                 Ok(Stmt::Decl(self.parse_decl()?))
             }
             TokenKind::Ident { .. } => {
@@ -614,6 +691,11 @@ impl Expr {
     fn span_end(&self) -> u32 {
         self.span().end
     }
+
+    /// Public span end for statement builders.
+    pub fn span_end_pub(&self) -> u32 {
+        self.span_end()
+    }
 }
 
 #[cfg(test)]
@@ -684,5 +766,15 @@ print(fib(10))
         let src = "for x in xs:\n    if x == 0:\n        break\n    continue\n";
         let m = parse_module(src).unwrap();
         assert!(matches!(&m.items[0], Item::Stmt(Stmt::For { name, .. }) if name == "x"));
+    }
+
+    #[test]
+    fn parse_import_export_raise_assert() {
+        let m = parse_module("import foo.bar as b\nexport let x = 1\nraise x\nassert true\n")
+            .unwrap();
+        assert!(matches!(&m.items[0], Item::Decl(Decl::Import { .. })));
+        assert!(matches!(&m.items[1], Item::Decl(Decl::Export { .. })));
+        assert!(matches!(&m.items[2], Item::Stmt(Stmt::Raise { .. })));
+        assert!(matches!(&m.items[3], Item::Stmt(Stmt::Assert { .. })));
     }
 }

@@ -2178,3 +2178,28 @@ Summary:
   End-to-end try/catch/finally via SIR; soft raise/return through handler blocks; finally re-return/re-raise.
 Next:
   Record types; general for; nested try hardening; RuntimePlan deepen.
+
+## 2026-07-16 12:35 · WP-R07 general for-in over list values
+
+Work Package: WP-R07
+Agent Mode: main-only
+Changed Files:
+  - crates/vm_runtime (helper_list_len id 47, registry 48)
+  - crates/script_eir_lower (for → while+index+list_len)
+  - crates/vm_tests (helper count 48)
+  - docs/IMPLEMENTATION-STATUS.md
+  - PLAN/WORK-PACKAGE-INDEX.md + docs/agent-plan mirror
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG for-in
+  - SPEC-P3-HELPERS index_read + list_len bootstrap
+Gates:
+  - G0-G5 PASS
+Tests:
+  - cargo test -p script_eir_lower PASS (20) for_over_list_value, for_break_continue
+  - cargo test -p vm_runtime --lib PASS (218)
+  - cargo test -p vm_tests PASS (88)
+Summary:
+  for x in xs works for list values (not only list literals); break/continue on for.
+Next:
+  Record/enum construction; map for-in defer; RuntimePlan deepen.

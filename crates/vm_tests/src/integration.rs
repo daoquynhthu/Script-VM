@@ -64,11 +64,11 @@ mod tests {
         assert_eq!(state, ControlState::Return(Some(Value::Int(0))));
     }
 
-    /// IG-02: helper registry is complete (47) and digest is stable across collect.
+    /// IG-02: helper registry is complete (48) and digest is stable across collect.
     #[test]
     fn ig02_helper_registry_complete_and_digest_stable() {
         let reg = RuntimeHelperRegistry::canonical().expect("reg");
-        assert_eq!(reg.helper_ids().count(), 47);
+        assert_eq!(reg.helper_ids().count(), 48);
         let plan = minimal_valid_plan();
         let inputs = collect_digest_inputs(&plan);
         assert_eq!(inputs.helper_registry_digest, reg.digest());

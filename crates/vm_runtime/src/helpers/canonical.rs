@@ -72,6 +72,7 @@ const ROWS: &[Row] = &[
     row("helper_load_cell", RuntimeHelperFamily::Access, HelperResultType::Value, false, true, false, false, false, HelperGcBehavior::NoAllocation, HelperJitCallPolicy::InterpreterOnly, false),
     row("helper_store_cell", RuntimeHelperFamily::Access, HelperResultType::Unit, false, true, false, false, false, HelperGcBehavior::NoAllocation, HelperJitCallPolicy::InterpreterOnly, false),
     row("helper_load_module_slot", RuntimeHelperFamily::Module, HelperResultType::Value, false, true, false, false, false, HelperGcBehavior::NoAllocation, HelperJitCallPolicy::InterpreterOnly, false),
+    row("helper_list_len", RuntimeHelperFamily::Access, HelperResultType::Value, false, true, false, false, false, HelperGcBehavior::NoAllocation, HelperJitCallPolicy::InterpreterOnly, false),
 ];
 
 const fn row(
@@ -122,7 +123,7 @@ fn calling_convention(policy: HelperJitCallPolicy) -> HelperCallingConvention {
     }
 }
 
-/// Build the frozen canonical helper descriptor list (47 entries).
+/// Build the canonical helper descriptor list (48 entries; +list_len bootstrap).
 #[must_use]
 pub fn canonical_descriptors() -> Vec<RuntimeHelperDescriptor> {
     ROWS.iter()
@@ -164,8 +165,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn canonical_registry_has_47_entries() {
-        assert_eq!(canonical_descriptors().len(), 47);
+    fn canonical_registry_has_48_entries() {
+        assert_eq!(canonical_descriptors().len(), 48);
     }
 
     #[test]

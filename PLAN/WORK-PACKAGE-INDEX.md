@@ -2876,3 +2876,11 @@ WP-ID: WP-R06
 Title: try/catch/finally parse→sema→SIR→soft EIR handlers
 Status: COMPLETE
 `
+
+### WP-R07 · general for-in over list values
+
+`	ext
+WP-ID: WP-R07
+Title: for x in xs via list_len + index while; break/continue
+Status: COMPLETE
+`

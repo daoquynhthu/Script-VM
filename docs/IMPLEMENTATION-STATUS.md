@@ -11,7 +11,7 @@ Updated: 2026-07-16
 |-------|--------|
 | T-P1 | COMPLETE |
 | T-P2 | S00–S02 COMPLETE |
-| T-P3L | **R00–R06 COMPLETE** (bootstrap) |
+| T-P3L | **R00–R07 COMPLETE** (bootstrap) |
 | CLI | `script-vm` |
 
 ---
@@ -25,7 +25,7 @@ source → SIR → EIR → Interpreter
 ### Language surface (bootstrap, via SIR path)
 
 ```text
-let/const/def, if/while, for[list lit], break/continue
+let/const/def, if/while, for-in[list values], break/continue
 raise/assert, print (stdout)
 lists, maps, xs[i], m[k], o.field (map-key)
 and/or short-circuit, arith/compare
@@ -39,14 +39,18 @@ try / catch / finally (soft raise/return handlers)
 ### R06 note
 
 `try/catch/finally` uses **soft** pending-kind routing in EIR (kind 0 normal / 1 return / 2 raise).
-Not full structured unwinding / PendingRaise frame model yet. Nested try re-return after outer
-finally is limited. `script_codegen` rejects `Try` (demo path only).
+Not full structured unwinding / PendingRaise frame model yet.
+
+### R07 note
+
+`for x in xs` lowers to `list_len` + index `while` (helper id 47). Map/string iteration deferred.
+`helper_list_len` is a bootstrap registry extension (48 helpers).
 
 ---
 
 ## Next
 
 - Record/enum construction + real attribute helpers  
-- General for over values  
+- Map for-in (optional)  
 - RuntimePlan-from-SIR metadata deepen  
 - Harden try: nested finally identity, multi-catch guards, structured unwind fidelity  

@@ -23,7 +23,7 @@ use vm_core::value::Value;
 use vm_diag::source_span::SourceSpanId;
 use vm_runtime::helpers::dispatch::{
     HELPER_CONSTRUCT_ERROR_ID, HELPER_CONSTRUCT_LIST_ID, HELPER_CONSTRUCT_MAP_ID, HELPER_DISPLAY_ID,
-    HELPER_GENERIC_CALL_ID, HELPER_INDEX_READ_ID, HELPER_INDEX_WRITE_ID,
+    HELPER_GENERIC_CALL_ID, HELPER_INDEX_READ_ID, HELPER_INDEX_WRITE_ID, HELPER_LIST_LEN_ID,
 };
 
 use crate::error::EirLowerError;
@@ -1142,7 +1142,7 @@ impl<'a> SirEirLower<'a> {
         }
     }
 
-    /// Bootstrap: only list-literal iterators, unrolled (no runtime len helper).
+    /// Bootstrap for-in over list values: `for x in xs` → index while with list_len.
     fn lower_for(
         &mut self,
         fb: &mut FuncBuilder,
@@ -1150,38 +1150,102 @@ impl<'a> SirEirLower<'a> {
         iter: NodeId,
         body: NodeId,
     ) -> Result<Option<SlotId>, EirLowerError> {
-        let elements = match self.node(iter)?.clone() {
-            SirNode::List { elements } => elements,
-            _ => {
-                return Err(EirLowerError::new(
-                    "for-loop EIR bootstrap only supports list-literal iterators",
-                ));
-            }
-        };
+        let iter_slot = self.lower_node_expr(fb, iter)?;
+        let len_slot = fb.alloc_slot();
+        fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+            dest: Some(len_slot),
+            helper_id: HELPER_LIST_LEN_ID,
+            args: vec![iter_slot],
+            call_site: None,
+            access_site: None,
+            safepoint_id: None,
+            deopt_id: None,
+        }));
+
+        let idx = fb.alloc_slot();
+        let zero = fb.alloc_slot();
+        let zc = self.intern_const(Value::Int(0));
+        fb.push_op(EirOpKind::Constant(ConstantOp {
+            dest: zero,
+            constant: zc,
+        }));
+        fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+            dest: idx,
+            value: zero,
+            check_initialized: None,
+        })));
+
         let name = self.binding_name(binding)?;
-        let mut last = None;
-        for elem in elements {
-            let v = self.lower_node_expr(fb, elem)?;
-            let slot = fb.lookup_binding(binding).unwrap_or_else(|| {
-                let s = fb.alloc_slot();
-                fb.bind_binding(binding, name.clone(), s);
-                s
-            });
-            // re-bind each iteration into same slot
-            if fb.lookup_binding(binding).is_none() {
-                fb.bind_binding(binding, name.clone(), slot);
-            }
-            fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
-                dest: slot,
-                value: v,
-                check_initialized: None,
-            })));
-            last = self.lower_node_stmt(fb, body)?;
-            if fb.terminated {
-                break;
-            }
+        let elem = fb.lookup_binding(binding).unwrap_or_else(|| {
+            let s = fb.alloc_slot();
+            fb.bind_binding(binding, name.clone(), s);
+            s
+        });
+        if fb.lookup_binding(binding).is_none() {
+            fb.bind_binding(binding, name, elem);
         }
-        Ok(last)
+
+        let header = fb.new_block_id();
+        let body_id = fb.new_block_id();
+        let step = fb.new_block_id();
+        let exit = fb.new_block_id();
+        fb.finish_jump(header);
+
+        fb.start_block(header);
+        let cond = fb.alloc_slot();
+        fb.push_op(EirOpKind::Binary(BinaryOp {
+            dest: cond,
+            op: BinaryOperator::Less,
+            left: idx,
+            right: len_slot,
+            overflow_policy: None,
+        }));
+        fb.finish_branch(cond, body_id, exit);
+
+        fb.start_block(body_id);
+        fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+            dest: Some(elem),
+            helper_id: HELPER_INDEX_READ_ID,
+            args: vec![iter_slot, idx],
+            call_site: None,
+            access_site: None,
+            safepoint_id: None,
+            deopt_id: None,
+        }));
+        fb.loop_stack.push(LoopTargets {
+            continue_target: step,
+            break_target: exit,
+        });
+        let _ = self.lower_node_stmt(fb, body)?;
+        fb.loop_stack.pop();
+        if !fb.terminated {
+            fb.finish_jump(step);
+        }
+
+        fb.start_block(step);
+        let one = fb.alloc_slot();
+        let oc = self.intern_const(Value::Int(1));
+        fb.push_op(EirOpKind::Constant(ConstantOp {
+            dest: one,
+            constant: oc,
+        }));
+        let next = fb.alloc_slot();
+        fb.push_op(EirOpKind::Binary(BinaryOp {
+            dest: next,
+            op: BinaryOperator::Add,
+            left: idx,
+            right: one,
+            overflow_policy: None,
+        }));
+        fb.push_op(EirOpKind::Store(StoreOp::Slot(StoreSlot {
+            dest: idx,
+            value: next,
+            check_initialized: None,
+        })));
+        fb.finish_jump(header);
+
+        fb.start_block(exit);
+        Ok(None)
     }
 }
 

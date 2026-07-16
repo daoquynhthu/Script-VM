@@ -26,7 +26,7 @@ use super::h1::{
 use super::h2::{
     helper_compare, helper_construct_enum, helper_construct_map, helper_construct_record,
     helper_display, helper_get_attribute, helper_index_read, helper_index_write,
-    helper_numeric_binary, helper_set_attribute, helper_slice_read,
+    helper_list_len, helper_numeric_binary, helper_set_attribute, helper_slice_read,
 };
 use super::h3::{
     helper_bind_method, helper_call_builtin, helper_check_arity, helper_generic_call,
@@ -145,6 +145,8 @@ pub const HELPER_LOAD_CELL_ID: RuntimeHelperId = RuntimeHelperId::new(44);
 pub const HELPER_STORE_CELL_ID: RuntimeHelperId = RuntimeHelperId::new(45);
 /// Canonical helper id for `helper_load_module_slot`.
 pub const HELPER_LOAD_MODULE_SLOT_ID: RuntimeHelperId = RuntimeHelperId::new(46);
+/// Bootstrap helper id for `helper_list_len` (for-in over list values).
+pub const HELPER_LIST_LEN_ID: RuntimeHelperId = RuntimeHelperId::new(47);
 
 /// Default max logical call depth for bootstrap stack-overflow checks.
 pub const DEFAULT_MAX_CALL_DEPTH: u32 = 64;
@@ -247,6 +249,9 @@ pub fn dispatch_helper<E: UnwindExecutor>(
     if helper_id == HELPER_SET_ATTRIBUTE_ID {
         helper_set_attribute(args, env.heap, env.write_barrier)?;
         return Ok(HelperDispatchOutcome::Unit);
+    }
+    if helper_id == HELPER_LIST_LEN_ID {
+        return helper_list_len(args, env.heap).map(HelperDispatchOutcome::Value);
     }
     if helper_id == HELPER_INDEX_READ_ID {
         return helper_index_read(args, env.heap).map(HelperDispatchOutcome::Value);
@@ -1939,7 +1944,7 @@ mod tests {
         let registry = RuntimeHelperRegistry::canonical().expect("reg");
         let links = HelperDeoptLinkTable::new();
         let matrix = build_jit_readiness_matrix(&registry, &links);
-        assert_eq!(matrix.len(), 47);
+        assert_eq!(matrix.len(), 48);
         validate_jit_readiness_matrix(&matrix).expect("ok");
         let jit_callable: usize = matrix.iter().filter(|r| r.is_jit_callable).count();
         assert!(jit_callable > 0);

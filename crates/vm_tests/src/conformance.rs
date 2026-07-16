@@ -280,15 +280,15 @@ mod tests {
         assert!(!values_identical(&a, &b));
     }
 
-    /// CF-11: all 47 helpers resolve through registry + central dispatch negative for id 99.
+    /// CF-11: all 48 helpers resolve through registry + central dispatch negative for id 99.
     #[test]
-    fn cf11_helper_registry_has_47_and_out_of_range_rejected() {
+    fn cf11_helper_registry_has_48_and_out_of_range_rejected() {
         use vm_core::id::RuntimeHelperId;
         use vm_runtime::helpers::dispatch::{dispatch_helper, DEFAULT_MAX_CALL_DEPTH};
         use vm_runtime::helpers::RuntimeHelperRegistry;
         use vm_runtime::runtime_error::RuntimeFailure;
         let registry = RuntimeHelperRegistry::canonical().expect("reg");
-        assert_eq!(registry.helper_ids().count(), 47);
+        assert_eq!(registry.helper_ids().count(), 48);
         let mut heap = Heap::new();
         let mut store = ErrorStore::new();
         let checker = StubTypeContractChecker::new();

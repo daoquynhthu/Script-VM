@@ -121,6 +121,15 @@ pub fn helper_set_attribute(
     Ok(())
 }
 
+/// Bootstrap: `args[0]` list ObjectRef → Int length.
+pub fn helper_list_len(args: &[Value], heap: &Heap) -> RuntimeResult<Value> {
+    let container = object_ref(args, 0)?;
+    match heap.get(container)? {
+        HeapObject::List { elements, .. } => Ok(Value::Int(elements.len() as i64)),
+        _ => Err(type_error()),
+    }
+}
+
 /// Bootstrap: `args[0]` container, `args[1]` index/key.
 /// List[Int] and Map[Hashable] only.
 pub fn helper_index_read(args: &[Value], heap: &Heap) -> RuntimeResult<Value> {

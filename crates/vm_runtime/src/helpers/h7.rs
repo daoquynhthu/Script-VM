@@ -251,11 +251,11 @@ pub fn validate_jit_readiness_matrix(
 /// Helper ids currently dispatched through `dispatch_helper` (H1–H7 subset).
 #[must_use]
 pub fn dispatched_helper_ids() -> &'static [u32] {
-    // All 47 canonical helper ids (0..46) are dispatched.
+    // All 48 canonical helper ids (0..47) are dispatched.
     &[
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
         24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
-        46,
+        46, 47,
     ]
 }
 
@@ -344,7 +344,7 @@ mod tests {
         // Link a JIT-callable helper (numeric binary id 11)
         links.link(RuntimeHelperId::new(11), DeoptId::new(0));
         let matrix = build_jit_readiness_matrix(&registry, &links);
-        assert_eq!(matrix.len(), 47);
+        assert_eq!(matrix.len(), 48);
         validate_jit_readiness_matrix(&matrix).expect("valid");
         let row = matrix.iter().find(|r| r.helper_id.raw() == 11).expect("11");
         assert!(row.is_jit_callable);

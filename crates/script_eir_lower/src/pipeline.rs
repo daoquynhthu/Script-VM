@@ -111,6 +111,28 @@ print(fib(10))
     }
 
     #[test]
+    fn for_over_list_value() {
+        let src = "let xs = [10, 20, 30]\nlet s = 0\nfor x in xs:\n    s = s + x\ns\n";
+        assert_eq!(run(src), ControlState::Return(Some(Value::Int(60))));
+    }
+
+    #[test]
+    fn for_break_continue() {
+        let src = r#"
+let s = 0
+for x in [1, 2, 3, 4]:
+    if x == 2:
+        continue
+    if x == 4:
+        break
+    s = s + x
+s
+"#;
+        // 1 + 3 = 4 (skip 2, break before 4)
+        assert_eq!(run(src), ControlState::Return(Some(Value::Int(4))));
+    }
+
+    #[test]
     fn short_circuit_and() {
         // false and <unevaluated non-bool would fail if evaluated> — right side true
         let src = "false and true\n";

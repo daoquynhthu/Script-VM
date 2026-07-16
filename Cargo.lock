@@ -18,6 +18,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "script_sema"
+version = "0.1.0"
+dependencies = [
+ "script_lex",
+ "script_parse",
+]
+
+[[package]]
 name = "sir"
 version = "0.1.0"
 

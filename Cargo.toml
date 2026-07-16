@@ -11,5 +11,6 @@ members = [
     "crates/vm_cli",
     "crates/script_lex",
     "crates/script_parse",
+    "crates/script_sema",
 ]
 resolver = "2"

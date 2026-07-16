@@ -1,0 +1,9 @@
+[package]
+name = "script_sema"
+version = "0.1.0"
+edition = "2021"
+description = "Phase 1 semantic binding and scope analysis (bootstrap)"
+
+[dependencies]
+script_lex = { path = "../script_lex" }
+script_parse = { path = "../script_parse" }

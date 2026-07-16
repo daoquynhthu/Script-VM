@@ -81,7 +81,15 @@ fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         ControlState::Raise(h) => {
-            eprintln!("runtime raise: handle {}", h.raw());
+            // Best-effort message if error store still holds the object.
+            if let Some(err) = interp.state().error_store.get(h) {
+                eprintln!(
+                    "runtime error: {:?} — {}",
+                    err.error_code, err.message
+                );
+            } else {
+                eprintln!("runtime raise: handle {}", h.raw());
+            }
             ExitCode::from(1)
         }
         ControlState::VmError(e) => {

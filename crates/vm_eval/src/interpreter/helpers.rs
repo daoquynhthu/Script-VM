@@ -8,7 +8,7 @@ use vm_core::id::SlotId;
 use vm_core::value::Value;
 
 use vm_runtime::control::VmControl;
-use vm_runtime::helpers::dispatch::HELPER_GENERIC_CALL_ID;
+use vm_runtime::helpers::dispatch::{HELPER_DISPLAY_ID, HELPER_GENERIC_CALL_ID};
 use vm_runtime::helpers::h3::PreparedUserCall;
 use vm_runtime::helpers::{
     dispatch_helper, HelperDispatchEnv, HelperDispatchOutcome, DEFAULT_MAX_CALL_DEPTH,
@@ -104,6 +104,13 @@ pub fn dispatch_runtime_helper(
                     dest: op.dest,
                 });
             }
+        }
+    }
+
+    // Host print side-effect: `helper_display` used by frontend `print(...)` lowering.
+    if op.helper_id == HELPER_DISPLAY_ID {
+        if let HelperDispatchOutcome::Value(Value::String(ref s)) = outcome {
+            println!("{s}");
         }
     }
 

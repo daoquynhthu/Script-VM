@@ -34,7 +34,8 @@ use self::ops::{execute_op, OpOutcome};
 use self::terminators::{execute_terminator, TerminatorOutcome};
 
 /// Default slot capacity for bootstrap interpreter frames.
-const DEFAULT_SLOT_COUNT: usize = 16;
+/// SIR→EIR lowering may allocate many temps (short-circuit, loops, display).
+const DEFAULT_SLOT_COUNT: usize = 128;
 
 /// Maximum interpreter steps before forced halt (bootstrap guard).
 const MAX_STEPS: u32 = 10_000;

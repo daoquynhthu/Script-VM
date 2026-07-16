@@ -2049,3 +2049,30 @@ Summary:
   CLI runs normative pipeline.
 Next:
   Deeper RuntimePlan from SIR; host print; remaining control constructs.
+
+## 2026-07-16 12:19 · WP-R02 break/continue/raise/assert + host print
+
+Work Package: WP-R02
+Agent Mode: main-only
+Changed Files:
+  - crates/script_eir_lower/src/lower.rs
+  - crates/script_eir_lower/src/pipeline.rs
+  - crates/vm_eval/src/interpreter/helpers.rs
+  - crates/vm_eval/src/interpreter/mod.rs
+  - crates/vm_cli/src/main.rs
+  - docs/IMPLEMENTATION-STATUS.md
+  - PLAN/WORK-PACKAGE-INDEX.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG control/raise/assert/print
+  - SPEC-P3-HELPERS display/construct_error
+Gates:
+  - G0-G5 PASS
+Tests:
+  - cargo test -p script_eir_lower PASS (10)
+  - cargo test -p vm_eval PASS
+Summary:
+  while break/continue; raise/assert → EIR Raise; print → helper_display + stdout;
+  frame slots 128. CLI prints raise messages.
+Next:
+  General for; richer RuntimePlan from SIR; map literals EIR.

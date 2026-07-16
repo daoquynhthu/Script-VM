@@ -2836,3 +2836,11 @@ list construct, for-unroll over list literals, and/or short-circuit
 compile_executable RuntimePlan shell
 script-vm CLI run/eval
 `
+
+### WP-R02 · break/continue/raise/assert + host print
+
+`	ext
+WP-ID: WP-R02
+Title: Control raise/break/continue; host print via display
+Status: COMPLETE
+`

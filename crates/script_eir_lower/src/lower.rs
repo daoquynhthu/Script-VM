@@ -12,7 +12,7 @@ use vm_core::digest::Digest;
 use vm_core::eir::schema::{
     BinaryOp, BinaryOperator, Branch, ConstantEntry, ConstantOp, ConstantPool, EirBlock,
     EirFunction, EirModule, EirOp, EirOpKind, EirTerminator, Jump, LoadOp, LoadSlot, OpMetadata,
-    Return, RuntimeHelperOp, StoreOp, StoreSlot, UnaryOp, UnaryOperator,
+    Raise, Return, RuntimeHelperOp, StoreOp, StoreSlot, UnaryOp, UnaryOperator,
 };
 use vm_core::id::{
     ConstantId, EirBlockId, EirFunctionId, FrameMapId, FunctionId, ModuleId, ObjectId, SlotId,
@@ -21,7 +21,9 @@ use vm_core::id::{
 use vm_core::profile::Version;
 use vm_core::value::Value;
 use vm_diag::source_span::SourceSpanId;
-use vm_runtime::helpers::dispatch::{HELPER_CONSTRUCT_LIST_ID, HELPER_GENERIC_CALL_ID};
+use vm_runtime::helpers::dispatch::{
+    HELPER_CONSTRUCT_ERROR_ID, HELPER_CONSTRUCT_LIST_ID, HELPER_DISPLAY_ID, HELPER_GENERIC_CALL_ID,
+};
 
 use crate::error::EirLowerError;
 use crate::program::{user_fn_target, EirProgram};
@@ -313,10 +315,45 @@ impl<'a> SirEirLower<'a> {
             SirNode::Import { .. } | SirNode::ExportMarker { .. } | SirNode::Function { .. } => {
                 Ok(None)
             }
-            SirNode::Assert { cond } => Ok(Some(self.lower_node_expr(fb, cond)?)),
-            SirNode::Raise { .. } => Err(EirLowerError::new("raise not lowered to EIR yet")),
-            SirNode::Break | SirNode::Continue => {
-                Err(EirLowerError::new("break/continue EIR not yet lowered"))
+            SirNode::Assert { cond } => {
+                // assert cond ⇒ if not cond: raise AssertionError
+                let c = self.lower_node_expr(fb, cond)?;
+                let not_c = fb.alloc_slot();
+                fb.push_op(EirOpKind::Unary(UnaryOp {
+                    dest: not_c,
+                    op: UnaryOperator::Not,
+                    operand: c,
+                }));
+                let fail = fb.new_block_id();
+                let ok = fb.new_block_id();
+                fb.finish_branch(not_c, fail, ok);
+                fb.start_block(fail);
+                self.emit_raise_string(fb, "assertion failed")?;
+                fb.start_block(ok);
+                Ok(Some(c))
+            }
+            SirNode::Raise { value } => {
+                let v = self.lower_node_expr(fb, value)?;
+                self.emit_raise_value(fb, v)?;
+                Ok(None)
+            }
+            SirNode::Break => {
+                let target = fb
+                    .loop_stack
+                    .last()
+                    .map(|l| l.break_target)
+                    .ok_or_else(|| EirLowerError::new("break outside loop in EIR lower"))?;
+                fb.finish_jump(target);
+                Ok(None)
+            }
+            SirNode::Continue => {
+                let target = fb
+                    .loop_stack
+                    .last()
+                    .map(|l| l.continue_target)
+                    .ok_or_else(|| EirLowerError::new("continue outside loop in EIR lower"))?;
+                fb.finish_jump(target);
+                Ok(None)
             }
             SirNode::For {
                 binding,
@@ -420,12 +457,88 @@ impl<'a> SirEirLower<'a> {
         let c = self.lower_node_expr(fb, cond)?;
         fb.finish_branch(c, body_id, exit);
         fb.start_block(body_id);
+        fb.loop_stack.push(LoopTargets {
+            continue_target: header,
+            break_target: exit,
+        });
         let _ = self.lower_node_stmt(fb, body)?;
+        fb.loop_stack.pop();
         if !fb.terminated {
             fb.finish_jump(header);
         }
         fb.start_block(exit);
         Ok(None)
+    }
+
+    fn emit_raise_string(
+        &mut self,
+        fb: &mut FuncBuilder,
+        msg: &str,
+    ) -> Result<(), EirLowerError> {
+        // AssertionError is index 6 in RuntimeErrorCode::ALL.
+        let code_slot = fb.alloc_slot();
+        let code_c = self.intern_const(Value::Int(6));
+        fb.push_op(EirOpKind::Constant(ConstantOp {
+            dest: code_slot,
+            constant: code_c,
+        }));
+        let msg_slot = fb.alloc_slot();
+        let msg_c = self.intern_const(Value::String(msg.into()));
+        fb.push_op(EirOpKind::Constant(ConstantOp {
+            dest: msg_slot,
+            constant: msg_c,
+        }));
+        let err_slot = fb.alloc_slot();
+        fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+            dest: Some(err_slot),
+            helper_id: HELPER_CONSTRUCT_ERROR_ID,
+            args: vec![code_slot, msg_slot],
+            call_site: None,
+            access_site: None,
+            safepoint_id: None,
+            deopt_id: None,
+        }));
+        fb.seal_block(EirTerminator::Raise(Raise { error: err_slot }));
+        Ok(())
+    }
+
+    fn emit_raise_value(
+        &mut self,
+        fb: &mut FuncBuilder,
+        value: SlotId,
+    ) -> Result<(), EirLowerError> {
+        // If value is already Error, raise it; else wrap String/other as AssertionError message.
+        // Bootstrap: always re-wrap via display path — construct_error(String).
+        // Prefer: raise Error values directly when produced by construct_error.
+        // For string/int, build message via display helper.
+        let msg = fb.alloc_slot();
+        fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+            dest: Some(msg),
+            helper_id: HELPER_DISPLAY_ID,
+            args: vec![value],
+            call_site: None,
+            access_site: None,
+            safepoint_id: None,
+            deopt_id: None,
+        }));
+        let code_slot = fb.alloc_slot();
+        let code_c = self.intern_const(Value::Int(6));
+        fb.push_op(EirOpKind::Constant(ConstantOp {
+            dest: code_slot,
+            constant: code_c,
+        }));
+        let err_slot = fb.alloc_slot();
+        fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+            dest: Some(err_slot),
+            helper_id: HELPER_CONSTRUCT_ERROR_ID,
+            args: vec![code_slot, msg],
+            call_site: None,
+            access_site: None,
+            safepoint_id: None,
+            deopt_id: None,
+        }));
+        fb.seal_block(EirTerminator::Raise(Raise { error: err_slot }));
+        Ok(())
     }
 
     fn lower_node_expr(
@@ -532,6 +645,31 @@ impl<'a> SirEirLower<'a> {
                 Err(EirLowerError::new(format!("unresolved symbol {name}")))
             }
             SirNode::Call { callee, args } => {
+                // Host print: print(x) → helper_display(x) [stdout side-effect in interpreter]
+                if self.is_print_callee(callee) {
+                    let arg = if let Some(a) = args.first() {
+                        self.lower_node_expr(fb, *a)?
+                    } else {
+                        let s = fb.alloc_slot();
+                        let cid = self.intern_const(Value::None);
+                        fb.push_op(EirOpKind::Constant(ConstantOp {
+                            dest: s,
+                            constant: cid,
+                        }));
+                        s
+                    };
+                    let dest = fb.alloc_slot();
+                    fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                        dest: Some(dest),
+                        helper_id: HELPER_DISPLAY_ID,
+                        args: vec![arg],
+                        call_site: None,
+                        access_site: None,
+                        safepoint_id: None,
+                        deopt_id: None,
+                    }));
+                    return Ok(dest);
+                }
                 let c = self.lower_node_expr(fb, callee)?;
                 let mut arg_slots = vec![c];
                 for a in args {
@@ -672,6 +810,21 @@ impl<'a> SirEirLower<'a> {
         Ok(result)
     }
 
+    fn is_print_callee(&self, callee: NodeId) -> bool {
+        match self.node(callee) {
+            Ok(SirNode::Name { binding }) => self
+                .binding_name(*binding)
+                .map(|n| n == "print")
+                .unwrap_or(false),
+            Ok(SirNode::SymbolRef { symbol }) => self
+                .unit
+                .symbol_text(*symbol)
+                .map(|s| s == "print")
+                .unwrap_or(false),
+            _ => false,
+        }
+    }
+
     /// Bootstrap: only list-literal iterators, unrolled (no runtime len helper).
     fn lower_for(
         &mut self,
@@ -736,6 +889,11 @@ fn map_bin(op: SirBin) -> Result<BinaryOperator, EirLowerError> {
     })
 }
 
+struct LoopTargets {
+    continue_target: EirBlockId,
+    break_target: EirBlockId,
+}
+
 struct FuncBuilder {
     eir_id: u32,
     function_id: u32,
@@ -747,6 +905,7 @@ struct FuncBuilder {
     current_ops: Vec<EirOp>,
     next_block: u32,
     terminated: bool,
+    loop_stack: Vec<LoopTargets>,
 }
 
 impl FuncBuilder {
@@ -762,6 +921,7 @@ impl FuncBuilder {
             current_ops: Vec::new(),
             next_block: 1,
             terminated: false,
+            loop_stack: Vec::new(),
         }
     }
 

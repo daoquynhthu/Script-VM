@@ -92,7 +92,8 @@ def fib(n):
 
 print(fib(10))
 "#;
-        assert_eq!(run(src), ControlState::Return(Some(Value::Int(55))));
+        // print uses helper_display → String return (also prints to stdout).
+        assert_eq!(run(src), ControlState::Return(Some(Value::String("55".into()))));
     }
 
     #[test]
@@ -118,5 +119,40 @@ print(fib(10))
         assert_eq!(run(src2), ControlState::Return(Some(Value::Bool(false))));
         let src3 = "true and true\n";
         assert_eq!(run(src3), ControlState::Return(Some(Value::Bool(true))));
+    }
+
+    #[test]
+    fn while_break() {
+        let src = "let i = 0\nwhile true:\n    i = i + 1\n    if i > 2:\n        break\ni\n";
+        assert_eq!(run(src), ControlState::Return(Some(Value::Int(3))));
+    }
+
+    #[test]
+    fn while_continue() {
+        // sum odd steps: 1+3 = 4 (skip even via continue)
+        let src = r#"
+let i = 0
+let s = 0
+while i < 4:
+    i = i + 1
+    if i == 2:
+        continue
+    s = s + i
+s
+"#;
+        assert_eq!(run(src), ControlState::Return(Some(Value::Int(8))));
+        // i=1 s=1; i=2 continue; i=3 s=4; i=4 s=8
+    }
+
+    #[test]
+    fn raise_string() {
+        let r = run("raise \"boom\"\n");
+        assert!(matches!(r, ControlState::Raise(_)));
+    }
+
+    #[test]
+    fn assert_false_raises() {
+        let r = run("assert false\n");
+        assert!(matches!(r, ControlState::Raise(_)));
     }
 }

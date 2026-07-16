@@ -5,48 +5,44 @@ Updated: 2026-07-16
 
 ---
 
-## Current position
+## Position
 
 | Track | Status |
 |-------|--------|
-| T-P1 frontend | COMPLETE |
-| T-P2 SIR | WP-S00..S02 COMPLETE (bootstrap) |
-| T-P3L | **WP-R00 + WP-R01 COMPLETE** (bootstrap) |
-| CLI | **`script-vm`** run/eval via SIR→EIR |
-| T-DEMO codegen | quarantined |
+| T-P1 | COMPLETE |
+| T-P2 | S00–S02 COMPLETE |
+| T-P3L | **R00–R02 COMPLETE** (bootstrap) |
+| CLI | `script-vm run|eval` |
 
 ---
 
-## Run
+## Normative run
 
 ```powershell
-cargo run -p vm_cli -- eval "fib source..."
-cargo run -p vm_cli -- run path\to\file.script
+cargo run -p vm_cli -- eval "print(fib(10))"
+# prints 55 to stdout; return value is String "55"
 ```
-
-Pipeline:
 
 ```text
-source → check_module → materialize_sir → validate_ir_unit
-      → lower_sir_to_eir → Interpreter
+source → SIR → validate → EIR → Interpreter
 ```
 
-Also: `compile_executable` → EIR + validated RuntimePlan shell.
+### R02 capabilities
 
----
+- `while` + **break** / **continue**
+- **raise** / **assert** → construct_error + Raise terminator  
+- **print(x)** → `helper_display` + **stdout**
+- Frame slots: 128
 
-## WP-R01 additions
+### Still residual
 
-- List literals → `HELPER_CONSTRUCT_LIST`
-- `for x in [..]:` unrolled (list-literal only)
-- `and` / `or` short-circuit via branch
-- CLI prints return value (`fib(10)` → `55`)
+- for over non-list-literal iterators  
+- map EIR  
+- full RuntimePlan generation from SIR  
+- structured unwind from raise through finally  
 
 ---
 
 ## Next
 
-- RuntimePlan fields derived from SIR (not fixture shell only)
-- General for-over-variable (needs len/iter helpers)
-- break/continue/raise EIR
-- Host print to stdout
+WP-R03 candidates: map lower, richer RuntimePlan metadata, CLI `run` file samples / REPL.

@@ -158,7 +158,7 @@ WP-19 Integration and regression gates
 WP-20 Phase 1 language pipeline process and traceability
 WP-21 Phase 1 lexical analysis
 WP-22 Phase 1 parser and AST (bootstrap COMPLETE)
-WP-23 Phase 1 semantic binding skeleton (COMPLETE)
+WP-23 Phase 1 semantic binding skeleton (COMPLETE)\nWP-24 Phase 1 AST to bootstrap SIR (COMPLETE)
 ```
 
 ---
@@ -2310,7 +2310,7 @@ without documented reason.
 WP-20 Phase 1 language pipeline process and traceability
 WP-21 Phase 1 lexical analysis (source text + tokens)
 WP-22 Phase 1 parser and AST (bootstrap COMPLETE)
-WP-23 Phase 1 semantic binding skeleton (COMPLETE)
+WP-23 Phase 1 semantic binding skeleton (COMPLETE)\nWP-24 Phase 1 AST to bootstrap SIR (COMPLETE)
 `
 
 ### WP-20 · Phase 1 Language Pipeline Process
@@ -2498,4 +2498,51 @@ Completion Criteria:
 
 `	ext
 bootstrap AST passes binding/scope checks per SPEC-P1 design corrections
+`
+
+### WP-24 · Phase 1 AST to bootstrap SIR
+
+`	ext
+WP-ID: WP-24
+Title: Phase 1 AST to bootstrap SIR materialization
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+Frozen Spec References:
+
+`	ext
+SPEC-P1-LANG
+SPEC-P2-FREEZE
+SPEC-P2-IR
+PHASE-2-SIR-SEMANTICS-ROUND1 (binding table kinds)
+`
+
+Outputs:
+
+`	ext
+sir: IrUnit, SirNode, symbol/scope/binding tables
+script_lower: compile_to_sir / lower_module
+Phase 1 surface: import, export, raise, assert
+`
+
+Non-Goals:
+
+`	ext
+full SIR node schema rounds
+public IR ABI / bytecode
+SIR to RuntimePlan (WP-25)
+`
+
+Dependencies:
+
+`	ext
+WP-21, WP-22, WP-23
+`
+
+Completion Criteria:
+
+`	ext
+analyzed bootstrap modules lower to IrUnit with tests (fib, import/export)
 `

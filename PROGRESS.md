@@ -1767,3 +1767,31 @@ Summary:
   top-level return rejection, print prelude. Parser adds for/break/continue.
 Next:
   WP-24 SIR materialization from analyzed AST.
+
+## 2026-07-16 11:48 · WP-24 SIR materialization + Phase 1 surface expand
+
+Work Package: WP-24 (COMPLETE); WP-22/23 surface
+Agent Mode: main-only
+Changed Files:
+  - crates/sir/src/{unit,node,lib}.rs
+  - crates/script_lower/** (new)
+  - crates/script_parse (import/export/raise/assert)
+  - crates/script_sema (import/export/raise/assert)
+  - Cargo.toml, Cargo.lock
+  - docs/agent-plan/*, PLAN/*, docs/IMPLEMENTATION-STATUS.md, PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG
+  - SPEC-P2-IR / SPEC-P2-FREEZE
+  - TR-P1-006, TR-P1-007
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+Tests:
+  - cargo test -p script_lower -p script_parse -p script_sema -p sir PASS
+Summary:
+  Bootstrap IrUnit + SirNode tables; script_lower compile_to_sir after sema.
+  Expanded Phase 1 surface: import, export, raise, assert. Fib lowers to SIR.
+Next:
+  WP-25 SIR to RuntimePlan/EIR for vm_eval execution path.

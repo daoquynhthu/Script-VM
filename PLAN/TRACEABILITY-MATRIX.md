@@ -664,3 +664,26 @@ Frozen Spec References:
   - SPEC-P1-LANG section 2.1, 2.2
 Status: COMPLETE (bootstrap Phase 1 sema)
 `
+
+### TR-P1-006 · Bootstrap SIR Materialization
+
+`	ext
+Trace ID: TR-P1-006
+Implementation Item: IrUnit + AST lower after sema
+Work Package: WP-24
+Frozen Spec References:
+  - SPEC-P2-IR
+  - SPEC-P1-LANG
+Status: COMPLETE (bootstrap)
+`
+
+### TR-P1-007 · Import Export Raise Assert Surface
+
+`	ext
+Trace ID: TR-P1-007
+Implementation Item: import/export/raise/assert in parse+sema+lower
+Work Package: WP-22, WP-23, WP-24
+Frozen Spec References:
+  - SPEC-P1-LANG sections 9.6, 9.7, 10
+Status: COMPLETE (bootstrap)
+`

@@ -1855,3 +1855,35 @@ Summary:
   script_codegen. New WP-L* series. WP-20..25 superseded as plan IDs.
 Next:
   WP-L00 remainder: docs/phase-1/P1-GAP-MATRIX.md + WORK-PACKAGE-INDEX WP-L* rows.
+
+## 2026-07-16 12:01 · WP-L00 complete + WP-L01 lexical SPEC alignment
+
+Work Package: WP-L00, WP-L01
+Agent Mode: main-only
+Changed Files:
+  - docs/phase-1/P1-GAP-MATRIX.md
+  - docs/phase-1/P1-TEST-MATRIX.md
+  - PLAN/WORK-PACKAGE-INDEX.md
+  - docs/agent-plan/WORK-PACKAGE-INDEX.md
+  - crates/script_lex/src/lexer.rs
+  - crates/script_lex/src/span.rs
+  - crates/script_lex/src/lib.rs
+  - docs/IMPLEMENTATION-STATUS.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG sections 3-6
+  - UNIFIED-IMPLEMENTATION-GUIDANCE.md
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p script_lex PASS (26 tests)
+Summary:
+  Closed WP-L00 (GAP/TEST matrices, WP-L* registry). WP-L01: NFC idents,
+  XID unicode, CR lines, full keyword table, delimiters, brace/bracket
+  continuation, line_col_at helper. Next WP-L02 grammar/AST v0.
+Next:
+  WP-L02 expand script_parse against P1-GAP-MATRIX grammar rows.

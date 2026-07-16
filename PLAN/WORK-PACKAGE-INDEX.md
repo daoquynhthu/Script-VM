@@ -2588,3 +2588,86 @@ Completion Criteria:
 `	ext
 PROJECT-OVERVIEW fib sample executes via source pipeline
 `
+
+
+---
+
+## 27. Unified Plan Work Packages (WP-L* / SUPERSEDED note)
+
+Authority: PLAN/UNIFIED-IMPLEMENTATION-GUIDANCE.md  
+Legacy WP-00..19: Phase 3 bootstrap **COMPLETE (archived)**.  
+Legacy WP-20..25: **SUPERSEDED** as plan IDs (prototype/demo assets may remain in tree).
+
+### Active series (T-P1)
+
+`	ext
+WP-L00 T-P1 plan landing + P1-GAP-MATRIX
+WP-L01 Lexical SPEC alignment
+WP-L02 Grammar/AST v0 surface
+WP-L03 Semantic analysis v0
+WP-L04 Frontend diagnostics + AnalyzedModule API
+WP-L05 T-P1 acceptance
+`
+
+### WP-L00 · Plan Landing and Gap Baseline
+
+`	ext
+WP-ID: WP-L00
+Title: T-P1 plan landing + P1-GAP-MATRIX
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+Frozen Spec References:
+
+`	ext
+SPEC-P1-FREEZE
+SPEC-P1-LANG
+UNIFIED-IMPLEMENTATION-GUIDANCE.md
+`
+
+Outputs:
+
+`	ext
+PLAN/UNIFIED-IMPLEMENTATION-GUIDANCE.md
+docs/phase-1/P1-GAP-MATRIX.md
+WP-L* registry rows
+WP-20..25 marked SUPERSEDED
+`
+
+### WP-L01 · Lexical SPEC Alignment
+
+`	ext
+WP-ID: WP-L01
+Title: Lexical analysis SPEC-P1 section 3-6 alignment
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+Frozen Spec References:
+
+`	ext
+SPEC-P1-LANG sections 3-6
+`
+
+Outputs:
+
+`	ext
+script_lex convergence
+docs/phase-1/P1-TEST-MATRIX.md (lexical rows)
+positive/negative lexer tests mapped to SPEC sections
+`
+
+Dependencies:
+
+`	ext
+WP-L00
+`
+
+Completion Criteria:
+
+`	ext
+P1-GAP lexical rows updated; v0 lexical surface YES or explicit PARTIAL with tests
+`

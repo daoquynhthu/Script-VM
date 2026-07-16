@@ -15,5 +15,5 @@ pub mod token;
 
 pub use error::LexError;
 pub use lexer::lex;
-pub use span::{LineCol, Span};
+pub use span::{line_col_at, LineCol, Span};
 pub use token::{Keyword, Token, TokenKind};

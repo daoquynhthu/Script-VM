@@ -789,4 +789,98 @@ print(fib(10))
         assert!(toks.iter().any(|t| matches!(t.kind, TokenKind::Keyword(Keyword::Return))));
         assert!(matches!(toks.last().map(|t| &t.kind), Some(TokenKind::Eof)));
     }
+
+    #[test]
+    fn cr_only_line_endings() {
+        // SPEC-P1 §3.4 CR
+        let ks = kinds("let x = 1\rlet y = 2\r");
+        assert_eq!(
+            ks.iter().filter(|k| matches!(k, TokenKind::Newline)).count(),
+            2
+        );
+    }
+
+    #[test]
+    fn identifier_nfc_normalized() {
+        // e + combining acute (U+0301) vs precomposed é (U+00E9)
+        let decomposed = "let e\u{0301} = 1\n";
+        let composed = "let \u{00e9} = 1\n";
+        let d = lex(decomposed).unwrap();
+        let c = lex(composed).unwrap();
+        let d_name = d.iter().find_map(|t| match &t.kind {
+            TokenKind::Ident { nfc, .. } => Some(nfc.clone()),
+            _ => None,
+        });
+        let c_name = c.iter().find_map(|t| match &t.kind {
+            TokenKind::Ident { nfc, .. } => Some(nfc.clone()),
+            _ => None,
+        });
+        assert_eq!(d_name, c_name);
+        assert_eq!(d_name.as_deref(), Some("\u{00e9}"));
+    }
+
+    #[test]
+    fn unicode_xid_identifier() {
+        // Greek letter as identifier start (XID_Start)
+        let ks = kinds("let α = 1\n");
+        assert!(matches!(
+            &ks[1],
+            TokenKind::Ident { nfc, .. } if nfc == "α"
+        ));
+    }
+
+    #[test]
+    fn all_defined_and_future_keywords() {
+        // SPEC-P1 §5.3 defined + reserved-for-future (enum listed in both → keyword once)
+        let words = [
+            "and", "as", "assert", "break", "catch", "const", "continue", "def", "defer", "elif",
+            "else", "enum", "export", "false", "field", "finally", "for", "from", "if", "import",
+            "in", "is", "let", "match", "mutable", "nil", "not", "or", "raise", "readonly", "record",
+            "return", "true", "try", "use", "while", "async", "await", "class", "global", "lambda",
+            "nonlocal", "static", "trait", "type", "where", "yield",
+        ];
+        for w in words {
+            let src = format!("{w}\n");
+            let toks = lex(&src).unwrap_or_else(|e| panic!("lex {w}: {e}"));
+            assert!(
+                matches!(toks[0].kind, TokenKind::Keyword(_)),
+                "{w} must be keyword"
+            );
+        }
+        // contextual remain identifiers
+        for w in ["case", "default", "doc", "effect", "requires", "returns", "test"] {
+            let src = format!("{w}\n");
+            let toks = lex(&src).unwrap();
+            assert!(
+                matches!(toks[0].kind, TokenKind::Ident { .. }),
+                "{w} must be ident"
+            );
+        }
+    }
+
+    #[test]
+    fn delimiters_lexed() {
+        let ks = kinds("( ) [ ] { } , : . .. -> | ?\n");
+        assert!(ks.iter().any(|k| matches!(k, TokenKind::LParen)));
+        assert!(ks.iter().any(|k| matches!(k, TokenKind::RParen)));
+        assert!(ks.iter().any(|k| matches!(k, TokenKind::LBracket)));
+        assert!(ks.iter().any(|k| matches!(k, TokenKind::RBracket)));
+        assert!(ks.iter().any(|k| matches!(k, TokenKind::LBrace)));
+        assert!(ks.iter().any(|k| matches!(k, TokenKind::RBrace)));
+        assert!(ks.iter().any(|k| matches!(k, TokenKind::Comma)));
+        assert!(ks.iter().any(|k| matches!(k, TokenKind::Colon)));
+        assert!(ks.iter().any(|k| matches!(k, TokenKind::Dot)));
+        assert!(ks.iter().any(|k| matches!(k, TokenKind::DotDot)));
+        assert!(ks.iter().any(|k| matches!(k, TokenKind::Arrow)));
+        assert!(ks.iter().any(|k| matches!(k, TokenKind::Pipe)));
+        assert!(ks.iter().any(|k| matches!(k, TokenKind::Question)));
+    }
+
+    #[test]
+    fn bracket_brace_continuation() {
+        let src = "let m = {\n  a\n}\nlet xs = (\n  1\n)\n";
+        let ks = kinds(src);
+        let indents = ks.iter().filter(|k| matches!(k, TokenKind::Indent)).count();
+        assert_eq!(indents, 0, "continuation must not emit INDENT");
+    }
 }

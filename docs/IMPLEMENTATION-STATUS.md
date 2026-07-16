@@ -9,41 +9,45 @@ Updated: 2026-07-16
 
 | Item | Status |
 |------|--------|
-| Active track | **T-P1** |
-| WP-L00..L03 | **COMPLETE** |
-| **Next** | **WP-L04** diagnostics + `AnalyzedModule` API |
+| Active track | **T-P1 COMPLETE (v0)** |
+| WP-L00..L05 | **COMPLETE** |
+| **Next** | **T-P2 / WP-S00** — Phase 2 SIR materialization |
 | T-P3B | ARCHIVED COMPLETE |
 | T-DEMO | QUARANTINED |
 
 ---
 
-## T-P1 stages
+## T-P1 acceptance (P1-A..F)
 
-| Stage | Status |
-|-------|--------|
-| L0 | COMPLETE |
-| L1 lexical | COMPLETE |
-| L2 grammar/AST | COMPLETE |
-| L3 sema | **COMPLETE** (Bool §2.3, NFC §3.3, export flag) |
-| L4 diagnostics API | NEXT |
-| L5 acceptance | pending |
+| Criterion | Status |
+|-----------|--------|
+| P1-A lexical §3–§6 | YES |
+| P1-B grammar/AST v0 | YES (DEFER match/record/enum/…) |
+| P1-C semantics binding/Bool/NFC | YES |
+| P1-D diagnostics line/col | YES (`FrontendDiagnostic`) |
+| P1-E GAP matrix | YES |
+| P1-F AnalyzedModule API | YES (`check_module` / `analyze_source`) |
 
----
+**Primary API:**
 
-## script_sema highlights (L3)
-
-- Conditions: `if` / `while` / `assert` must be Bool (static reject of non-Bool literals/arithmetic)
-- `and` / `or` / `not` operand Bool checks
-- Binding names NFC-normalized; same-scope NFC clash = duplicate
-- `export` → `Binding.exported == true`
-- Tests: **22**
+```rust
+script_sema::check_module(source) -> AnalyzedModule
+// .ok(), .module, .bindings, .diagnostics
+```
 
 ---
 
-## Docs
+## Residual DEFER (not T-P1 failure)
 
 ```text
-PLAN/UNIFIED-IMPLEMENTATION-GUIDANCE.md
-docs/phase-1/P1-GAP-MATRIX.md
-docs/phase-1/P1-TEST-MATRIX.md
+match / record / enum / try / defer / use full forms
+full type-contract runtime checking
+import runtime loading
+normative SIR + lowering (T-P2 / T-P3L)
 ```
+
+---
+
+## Next track
+
+**T-P2:** AnalyzedModule → SIR (`SPEC-P2-*`), `sir_validate`, rewrite thin `script_lower` as needed.

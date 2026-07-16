@@ -2721,3 +2721,26 @@ NFC binding identity
 Binding.exported
 22 unit tests
 `
+
+
+### WP-L04 · Frontend diagnostics and AnalyzedModule API
+
+`	ext
+WP-ID: WP-L04
+Title: Frontend diagnostics + AnalyzedModule API
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+### WP-L05 · T-P1 acceptance
+
+`	ext
+WP-ID: WP-L05
+Title: T-P1 acceptance (P1-A..F)
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+Notes: T-P1 complete for v0 frontend with residual DEFER items only in P1-GAP-MATRIX (match/record/full types, etc.).

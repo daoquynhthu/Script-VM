@@ -1,17 +1,20 @@
-//! Phase 1 semantic analysis: binding and scope (bootstrap).
+//! Phase 1 semantic analysis: binding, scope, and analyzed-module API.
 //!
 //! Spec references:
-//! - `PHASE-1-LANGUAGE-SPEC.md` §2.1 No Implicit New Binding by Assignment
-//! - `PHASE-1-LANGUAGE-SPEC.md` §2.2 Block Scope Exists
-//! - declaration / assignment immutability rules (`let` vs `const`/`def`)
+//! - `PHASE-1-LANGUAGE-SPEC.md` §2.1–2.3, §3.3
+//! - declaration / assignment immutability; export visibility
 //!
-//! Non-goals (WP-23): full type contracts, import graph, record/enum members.
+//! Primary entry (WP-L04): [`check_module`] / [`analyze_source`] → [`AnalyzedModule`].
 
 pub mod analyze;
+pub mod analyzed;
 pub mod binding;
 pub mod error;
 
 pub use analyze::{analyze_module, check_source, SemaResult};
+pub use analyzed::{
+    analyze_source, check_module, AnalyzedModule, DiagStage, FrontendDiagnostic,
+};
 pub use binding::{nfc, Binding, BindingKind, Scope, ScopeStack};
 pub use error::SemaError;
 

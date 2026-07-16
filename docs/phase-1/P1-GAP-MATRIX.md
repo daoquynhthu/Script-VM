@@ -86,10 +86,10 @@ DEFER    — explicitly deferred past T-P1 v0 (must not silent-skip)
 | Item | Status | Stage |
 |------|--------|-------|
 | Lex errors with byte Span | YES | L1 |
-| Line/col from span | PARTIAL | L1 adds helper; full diag crate L4 |
-| Unified frontend diagnostic type | NO | L4 |
+| Line/col from span | YES | line_col_at + FrontendDiagnostic | L4 |
+| Unified frontend diagnostic type | YES | FrontendDiagnostic | L4 |
 | `AnalyzedModule` stable API | NO | L4 |
-| Parse/sema errors with span | PARTIAL | ParseError/SemaError have span | L4 |
+| Parse/sema errors with span + line/col | YES | FrontendDiagnostic | L4 |
 
 ---
 

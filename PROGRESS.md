@@ -1943,3 +1943,29 @@ Summary:
   same-scope clash; export marks Binding.exported.
 Next:
   WP-L04 AnalyzedModule API + unified diagnostics.
+
+## 2026-07-16 12:07 · WP-L04 AnalyzedModule + WP-L05 T-P1 acceptance
+
+Work Package: WP-L04, WP-L05
+Agent Mode: main-only
+Changed Files:
+  - crates/script_sema/src/analyzed.rs
+  - crates/script_sema/src/lib.rs
+  - docs/phase-1/P1-GAP-MATRIX.md
+  - PLAN/WORK-PACKAGE-INDEX.md
+  - docs/agent-plan/WORK-PACKAGE-INDEX.md
+  - docs/IMPLEMENTATION-STATUS.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG
+  - UNIFIED-IMPLEMENTATION-GUIDANCE.md §5.2 P1-A..F
+Gates:
+  - G0-G5 PASS
+  - G7 PASS
+Tests:
+  - cargo test -p script_sema PASS (26)
+Summary:
+  check_module/analyze_source → AnalyzedModule with FrontendDiagnostic
+  (stage, span, line/col). T-P1 accepted for v0; residuals only DEFER in GAP.
+Next:
+  T-P2 WP-S00 SIR materialization planning/implementation.

@@ -11,7 +11,7 @@ Updated: 2026-07-16
 |-------|--------|
 | T-P1 | COMPLETE |
 | T-P2 | S00–S02 COMPLETE |
-| T-P3L | **R00–R04 COMPLETE** (bootstrap) |
+| T-P3L | **R00–R05 COMPLETE** (bootstrap) |
 | CLI | `script-vm` |
 
 ---
@@ -19,30 +19,26 @@ Updated: 2026-07-16
 ## Pipeline
 
 ```text
-source → SIR → EIR → Interpreter (+ RuntimePlan shell)
+source → SIR → EIR → Interpreter
 ```
 
-### R04
+### Language surface (bootstrap, via SIR path)
 
 ```text
-xs[i] / m["k"]     index read  (HELPER_INDEX_READ)
-xs[i] = v          index write (HELPER_INDEX_WRITE)
+let/const/def, if/while, for[list lit], break/continue
+raise/assert, print (stdout)
+lists, maps, xs[i], m[k], o.field (map-key)
+and/or short-circuit, arith/compare
 ```
 
-```powershell
-cargo run -p vm_cli -- eval "let xs = [1,2]`nxs[0] = 9`nxs[0]`n"
-# 9
-```
+### R05 note
 
-### Residual
-
-- Attribute `.` access  
-- for over variables  
-- finally / structured unwind  
-- Full RuntimePlan from SIR (not fixture scaffold)  
+`o.x` is **map string-key** sugar (`index_read/write`), not record field indices yet.
 
 ---
 
 ## Next
 
-WP-R05: attribute access; or sample scripts + CLI polish.
+- Record/enum construction + real attribute helpers  
+- General for over values  
+- finally / structured unwind  

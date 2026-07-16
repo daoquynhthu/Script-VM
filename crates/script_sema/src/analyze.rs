@@ -232,6 +232,12 @@ impl Analyzer {
                 self.expr(index);
                 self.expr(value);
             }
+            Stmt::AttrAssign {
+                base, value, ..
+            } => {
+                self.expr(base);
+                self.expr(value);
+            }
             Stmt::AugAssign {
                 name, value, span, ..
             } => {
@@ -392,6 +398,7 @@ impl Analyzer {
                 self.expr(base);
                 self.expr(index);
             }
+            Expr::Attr { base, .. } => self.expr(base),
         }
     }
 
@@ -404,7 +411,10 @@ impl Analyzer {
             Expr::String { .. } => StaticTy::String,
             Expr::List { .. } => StaticTy::List,
             Expr::Map { .. } => StaticTy::Map,
-            Expr::Name { .. } | Expr::Call { .. } | Expr::Index { .. } => StaticTy::Unknown,
+            Expr::Name { .. }
+            | Expr::Call { .. }
+            | Expr::Index { .. }
+            | Expr::Attr { .. } => StaticTy::Unknown,
             Expr::Unary {
                 op: UnaryOp::Not, ..
             } => StaticTy::Bool,
@@ -445,7 +455,8 @@ fn expr_span(expr: &Expr) -> Span {
         | Expr::Binary { span, .. }
         | Expr::List { span, .. }
         | Expr::Map { span, .. }
-        | Expr::Index { span, .. } => *span,
+        | Expr::Index { span, .. }
+        | Expr::Attr { span, .. } => *span,
     }
 }
 

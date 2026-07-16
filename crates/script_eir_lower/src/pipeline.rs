@@ -175,4 +175,10 @@ s
         let src = "let m = {\"k\": 7}\nm[\"k\"]\n";
         assert_eq!(run(src), ControlState::Return(Some(Value::Int(7))));
     }
+
+    #[test]
+    fn attr_as_map_field() {
+        let src = "let o = {\"x\": 1}\no.x = 5\no.x\n";
+        assert_eq!(run(src), ControlState::Return(Some(Value::Int(5))));
+    }
 }

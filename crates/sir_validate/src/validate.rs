@@ -228,6 +228,8 @@ fn node_children(kind: &SirNode) -> Vec<NodeId> {
             index,
             value,
         } => vec![*base, *index, *value],
+        Attr { base, .. } => vec![*base],
+        AttrAssign { base, value, .. } => vec![*base, *value],
     }
 }
 

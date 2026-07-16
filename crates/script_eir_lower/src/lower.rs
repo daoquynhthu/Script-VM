@@ -325,6 +325,27 @@ impl<'a> SirEirLower<'a> {
                 }));
                 Ok(Some(v))
             }
+            SirNode::AttrAssign { base, name, value } => {
+                // Bootstrap: attribute as map string key.
+                let b = self.lower_node_expr(fb, base)?;
+                let key = fb.alloc_slot();
+                let kc = self.intern_const(Value::String(name));
+                fb.push_op(EirOpKind::Constant(ConstantOp {
+                    dest: key,
+                    constant: kc,
+                }));
+                let v = self.lower_node_expr(fb, value)?;
+                fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                    dest: None,
+                    helper_id: HELPER_INDEX_WRITE_ID,
+                    args: vec![b, key, v],
+                    call_site: None,
+                    access_site: None,
+                    safepoint_id: None,
+                    deopt_id: None,
+                }));
+                Ok(Some(v))
+            }
             SirNode::If {
                 cond,
                 then_block,
@@ -396,6 +417,7 @@ impl<'a> SirEirLower<'a> {
                         | SirNode::List { .. }
                         | SirNode::Map { .. }
                         | SirNode::Index { .. }
+                        | SirNode::Attr { .. }
                         | SirNode::SymbolRef { .. }
                 ) {
                     Ok(Some(self.lower_node_expr(fb, id)?))
@@ -784,6 +806,26 @@ impl<'a> SirEirLower<'a> {
                     dest: Some(dest),
                     helper_id: HELPER_INDEX_READ_ID,
                     args: vec![b, i],
+                    call_site: None,
+                    access_site: None,
+                    safepoint_id: None,
+                    deopt_id: None,
+                }));
+                Ok(dest)
+            }
+            SirNode::Attr { base, name } => {
+                let b = self.lower_node_expr(fb, base)?;
+                let key = fb.alloc_slot();
+                let kc = self.intern_const(Value::String(name));
+                fb.push_op(EirOpKind::Constant(ConstantOp {
+                    dest: key,
+                    constant: kc,
+                }));
+                let dest = fb.alloc_slot();
+                fb.push_op(EirOpKind::RuntimeHelper(RuntimeHelperOp {
+                    dest: Some(dest),
+                    helper_id: HELPER_INDEX_READ_ID,
+                    args: vec![b, key],
                     call_site: None,
                     access_site: None,
                     safepoint_id: None,

@@ -115,6 +115,13 @@ pub enum Stmt {
         value: Expr,
         span: Span,
     },
+    /// Attribute assignment: `base.name = value`
+    AttrAssign {
+        base: Expr,
+        name: String,
+        value: Expr,
+        span: Span,
+    },
     /// Augmented assignment: `x += 1` etc. (SPEC-P1 §10.2)
     AugAssign {
         name: String,
@@ -189,6 +196,12 @@ pub enum Expr {
     Index {
         base: Box<Expr>,
         index: Box<Expr>,
+        span: Span,
+    },
+    /// Attribute access: `base.name`
+    Attr {
+        base: Box<Expr>,
+        name: String,
         span: Span,
     },
 }

@@ -122,6 +122,17 @@ pub enum SirNode {
         index: NodeId,
         value: NodeId,
     },
+    /// Attribute read: `base.name` (bootstrap: map key string).
+    Attr {
+        base: NodeId,
+        name: String,
+    },
+    /// Attribute write: `base.name = value`.
+    AttrAssign {
+        base: NodeId,
+        name: String,
+        value: NodeId,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

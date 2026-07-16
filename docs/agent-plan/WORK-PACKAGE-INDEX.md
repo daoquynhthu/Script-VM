@@ -2862,3 +2862,11 @@ WP-ID: WP-R04
 Title: base[index] read/write through parse→sema→SIR→EIR
 Status: COMPLETE
 `
+
+### WP-R05 · Attribute access (map-key bootstrap)
+
+`	ext
+WP-ID: WP-R05
+Title: base.name get/set via map string keys
+Status: COMPLETE
+`

@@ -2126,3 +2126,26 @@ Summary:
   xs[i] / m[k] parse and lower via helper_index_read/write.
 Next:
   Attribute access; general for; finally unwind.
+
+## 2026-07-16 12:27 · WP-R05 attribute access end-to-end
+
+Work Package: WP-R05
+Agent Mode: main-only
+Changed Files:
+  - crates/script_parse (Attr, AttrAssign, unified L-value assign)
+  - crates/script_sema
+  - crates/sir (Attr, AttrAssign)
+  - crates/script_lower / script_eir_lower
+  - docs/IMPLEMENTATION-STATUS.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG assignment_target attribute
+  - SPEC-P3-HELPERS index_read/write (bootstrap map keys)
+Gates:
+  - G0-G5 PASS
+Tests:
+  - cargo test -p script_eir_lower PASS (15) attr_as_map_field
+Summary:
+  o.x / o.x = v lowered as map string-key index ops (record shapes later).
+Next:
+  Record types; general for; finally unwind.

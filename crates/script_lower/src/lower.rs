@@ -607,6 +607,23 @@ impl<'a> LowerCtx<'a> {
                     *span,
                 )
             }
+            Stmt::AttrAssign {
+                base,
+                name,
+                value,
+                span,
+            } => {
+                let b = self.lower_expr(base);
+                let v = self.lower_expr(value);
+                self.emit(
+                    SirNode::AttrAssign {
+                        base: b,
+                        name: name.clone(),
+                        value: v,
+                    },
+                    *span,
+                )
+            }
             Stmt::AugAssign {
                 name,
                 value,
@@ -701,6 +718,16 @@ impl<'a> LowerCtx<'a> {
                 let b = self.lower_expr(base);
                 let i = self.lower_expr(index);
                 self.emit(SirNode::Index { base: b, index: i }, *span)
+            }
+            Expr::Attr { base, name, span } => {
+                let b = self.lower_expr(base);
+                self.emit(
+                    SirNode::Attr {
+                        base: b,
+                        name: name.clone(),
+                    },
+                    *span,
+                )
             }
         }
     }

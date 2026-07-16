@@ -359,42 +359,8 @@ impl Parser {
                 Ok(Stmt::Decl(self.parse_decl()?))
             }
             TokenKind::Ident { .. } => {
-                // assign, index-assign, aug-assign, or expression statement
-                if self.is_assign_stmt() {
-                    let (name, start) = self.expect_ident()?;
-                    self.expect_kind(|k| matches!(k, TokenKind::Assign), "expected `=`")?;
-                    let value = self.parse_expr()?;
-                    let end = value.span_end();
-                    self.expect_newline_or_end()?;
-                    Ok(Stmt::Assign {
-                        name,
-                        value,
-                        span: Span::new(start.start, end),
-                    })
-                } else if self.is_index_assign_stmt() {
-                    let base = self.parse_postfix()?;
-                    let Expr::Index {
-                        base,
-                        index,
-                        span: idx_span,
-                    } = base
-                    else {
-                        return Err(ParseError::new(
-                            "expected index assignment target",
-                            self.span_here(),
-                        ));
-                    };
-                    self.expect_kind(|k| matches!(k, TokenKind::Assign), "expected `=`")?;
-                    let value = self.parse_expr()?;
-                    let end = value.span_end();
-                    self.expect_newline_or_end()?;
-                    Ok(Stmt::IndexAssign {
-                        base: *base,
-                        index: *index,
-                        value,
-                        span: Span::new(idx_span.start, end),
-                    })
-                } else if let Some(op) = self.peek_aug_op() {
+                // L-value assign (name / index / attr), aug-assign, or expression.
+                if let Some(op) = self.peek_aug_op() {
                     let (name, start) = self.expect_ident()?;
                     self.bump(); // aug op
                     let value = self.parse_expr()?;
@@ -406,6 +372,39 @@ impl Parser {
                         value,
                         span: Span::new(start.start, end),
                     })
+                } else if self.looks_like_assignment_stmt() {
+                    let target = self.parse_postfix()?;
+                    self.expect_kind(|k| matches!(k, TokenKind::Assign), "expected `=`")?;
+                    let value = self.parse_expr()?;
+                    let end = value.span_end();
+                    self.expect_newline_or_end()?;
+                    match target {
+                        Expr::Name { name, span } => Ok(Stmt::Assign {
+                            name,
+                            value,
+                            span: Span::new(span.start, end),
+                        }),
+                        Expr::Index {
+                            base,
+                            index,
+                            span,
+                        } => Ok(Stmt::IndexAssign {
+                            base: *base,
+                            index: *index,
+                            value,
+                            span: Span::new(span.start, end),
+                        }),
+                        Expr::Attr { base, name, span } => Ok(Stmt::AttrAssign {
+                            base: *base,
+                            name,
+                            value,
+                            span: Span::new(span.start, end),
+                        }),
+                        other => Err(ParseError::new(
+                            format!("invalid assignment target: {other:?}"),
+                            other.span_pub(),
+                        )),
+                    }
                 } else {
                     let expr = self.parse_expr()?;
                     let span = expr.span();
@@ -422,38 +421,49 @@ impl Parser {
         }
     }
 
-    fn is_assign_stmt(&self) -> bool {
-        matches!(self.peek_kind(), TokenKind::Ident { .. })
-            && matches!(
-                self.tokens.get(self.pos + 1).map(|t| &t.kind),
-                Some(TokenKind::Assign)
-            )
-    }
-
-    /// Lookahead: `ident [ ... ] =` (simple name base only for bootstrap).
-    fn is_index_assign_stmt(&self) -> bool {
+    /// True if this line looks like `postfix_lvalue = expr` (not comparison `==`).
+    fn looks_like_assignment_stmt(&self) -> bool {
         if !matches!(self.peek_kind(), TokenKind::Ident { .. }) {
             return false;
         }
-        if !matches!(
+        // Fast path: `name =`
+        if matches!(
             self.tokens.get(self.pos + 1).map(|t| &t.kind),
-            Some(TokenKind::LBracket)
+            Some(TokenKind::Assign)
         ) {
-            return false;
+            return true;
         }
-        // Scan for matching RBracket then Assign (depth-aware).
-        let mut depth = 0i32;
+        // Scan postfix chain for trailing `=` (not `==`).
         let mut i = self.pos + 1;
+        let mut depth_paren = 0i32;
+        let mut depth_brack = 0i32;
         while i < self.tokens.len() {
             match &self.tokens[i].kind {
-                TokenKind::LBracket => depth += 1,
-                TokenKind::RBracket => {
-                    depth -= 1;
-                    if depth == 0 {
-                        return matches!(
-                            self.tokens.get(i + 1).map(|t| &t.kind),
-                            Some(TokenKind::Assign)
-                        );
+                TokenKind::LParen => depth_paren += 1,
+                TokenKind::RParen => depth_paren -= 1,
+                TokenKind::LBracket => depth_brack += 1,
+                TokenKind::RBracket => depth_brack -= 1,
+                TokenKind::Assign if depth_paren == 0 && depth_brack == 0 => return true,
+                TokenKind::Eq | TokenKind::NotEq | TokenKind::PlusAssign
+                | TokenKind::MinusAssign | TokenKind::StarAssign | TokenKind::SlashAssign
+                | TokenKind::PercentAssign
+                    if depth_paren == 0 && depth_brack == 0 =>
+                {
+                    return false;
+                }
+                TokenKind::Newline | TokenKind::Eof | TokenKind::Keyword(_)
+                    if depth_paren == 0 && depth_brack == 0 && i > self.pos + 1 =>
+                {
+                    // Allow `.` and `[` chains only; stop at keyword at top level mid-scan
+                    if !matches!(
+                        self.tokens.get(i).map(|t| &t.kind),
+                        Some(TokenKind::Keyword(_))
+                    ) {
+                        return false;
+                    }
+                    // keywords inside [] ok via depth
+                    if depth_paren == 0 && depth_brack == 0 {
+                        return false;
                     }
                 }
                 TokenKind::Newline | TokenKind::Eof => return false,
@@ -728,6 +738,15 @@ impl Parser {
                     index: Box::new(index),
                     span,
                 };
+            } else if matches!(self.peek_kind(), TokenKind::Dot) {
+                self.bump();
+                let (name, name_span) = self.expect_ident()?;
+                let span = Span::new(expr.span_start(), name_span.end);
+                expr = Expr::Attr {
+                    base: Box::new(expr),
+                    name,
+                    span,
+                };
             } else {
                 break;
             }
@@ -861,8 +880,14 @@ impl Expr {
             | Self::Binary { span, .. }
             | Self::List { span, .. }
             | Self::Map { span, .. }
-            | Self::Index { span, .. } => *span,
+            | Self::Index { span, .. }
+            | Self::Attr { span, .. } => *span,
         }
+    }
+
+    /// Public span accessor for error reporting.
+    pub fn span_pub(&self) -> Span {
+        self.span()
     }
 
     fn span_start(&self) -> u32 {
@@ -1015,5 +1040,21 @@ print(fib(10))
             })
         ));
         assert!(matches!(&m.items[2], Item::Stmt(Stmt::IndexAssign { .. })));
+    }
+
+    #[test]
+    fn parse_attr_read_and_assign() {
+        let m = parse_module("let o = {\"x\": 1}\nlet a = o.x\no.x = 2\n").unwrap();
+        assert!(matches!(
+            &m.items[1],
+            Item::Decl(Decl::Let {
+                value: Expr::Attr { name, .. },
+                ..
+            }) if name == "x"
+        ));
+        assert!(matches!(
+            &m.items[2],
+            Item::Stmt(Stmt::AttrAssign { name, .. }) if name == "x"
+        ));
     }
 }

@@ -208,6 +208,17 @@ impl Parser {
             }
             TokenKind::Keyword(Keyword::If) => self.parse_if(),
             TokenKind::Keyword(Keyword::While) => self.parse_while(),
+            TokenKind::Keyword(Keyword::For) => self.parse_for(),
+            TokenKind::Keyword(Keyword::Break) => {
+                let span = self.bump().span;
+                self.expect_newline_or_end()?;
+                Ok(Stmt::Break { span })
+            }
+            TokenKind::Keyword(Keyword::Continue) => {
+                let span = self.bump().span;
+                self.expect_newline_or_end()?;
+                Ok(Stmt::Continue { span })
+            }
             TokenKind::Keyword(Keyword::Let | Keyword::Const | Keyword::Def) => {
                 Ok(Stmt::Decl(self.parse_decl()?))
             }
@@ -293,6 +304,24 @@ impl Parser {
         let body = self.parse_block()?;
         let span = Span::new(start.start, body.span.end);
         Ok(Stmt::While { cond, body, span })
+    }
+
+    fn parse_for(&mut self) -> Result<Stmt, ParseError> {
+        // for IDENT in expression ":" block
+        let start = self.expect_keyword(Keyword::For)?;
+        let (name, _) = self.expect_ident()?;
+        self.expect_keyword(Keyword::In)?;
+        let iter = self.parse_expr()?;
+        self.expect_kind(|k| matches!(k, TokenKind::Colon), "expected `:`")?;
+        self.expect_kind(|k| matches!(k, TokenKind::Newline), "expected newline")?;
+        let body = self.parse_block()?;
+        let span = Span::new(start.start, body.span.end);
+        Ok(Stmt::For {
+            name,
+            iter,
+            body,
+            span,
+        })
     }
 
     fn expect_newline_or_end(&mut self) -> Result<(), ParseError> {
@@ -648,5 +677,12 @@ print(fib(10))
             }
             _ => panic!("expected let"),
         }
+    }
+
+    #[test]
+    fn parse_for_break_continue() {
+        let src = "for x in xs:\n    if x == 0:\n        break\n    continue\n";
+        let m = parse_module(src).unwrap();
+        assert!(matches!(&m.items[0], Item::Stmt(Stmt::For { name, .. }) if name == "x"));
     }
 }

@@ -66,6 +66,19 @@ pub enum Stmt {
         body: Block,
         span: Span,
     },
+    /// `for name in iter: block`
+    For {
+        name: String,
+        iter: Expr,
+        body: Block,
+        span: Span,
+    },
+    Break {
+        span: Span,
+    },
+    Continue {
+        span: Span,
+    },
     Assign {
         name: String,
         value: Expr,

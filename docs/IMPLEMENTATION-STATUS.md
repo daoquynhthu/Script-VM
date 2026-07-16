@@ -5,27 +5,22 @@ Authority: Subordinate to frozen specs, `AGENT.md`, and plan package
 Rule: This file **may be rewritten** as a snapshot. It is **not** a substitute for append-only `PROGRESS.md` / `ISSUE.md`.  
 **Do not use `HANDOVER.md` as live status** (update only at session handoff).
 
-Updated: 2026-07-14 (Phase 3 bootstrap **re-verification / closure stamp**)  
-Baseline tip at re-check: `77973b7` (closure-doc commits may advance)  
-Workspace unit tests (approx.): **368** (sir 1 + vm_core 38 + vm_diag 3 + vm_eval 14 + vm_host 6 + vm_runtime 218 + vm_tests 88)
+Updated: 2026-07-14 (Phase 1 frontend: WP-20..22 COMPLETE bootstrap)  
+Baseline tip: advance with commits on `main`  
+Workspace: Phase 3 bootstrap CLOSED + `script_lex` + `script_parse`
 
 ---
 
-## 0. Phase 3 bootstrap closure
+## 0. Where we are
 
-| Item | Status |
-|------|--------|
-| Agent coding plan Stages 0–14 | **COMPLETE** |
-| WP-00 .. WP-19 | **COMPLETE** (bootstrap / substrate) |
-| Coding plan §24 definition | **MET** |
-| Effective OPEN audit issues | **0** |
-| G0–G7 | **PASS** |
-| G6 automated scan | **PASS** |
-| Closure evidence | `agent/gate-records/PHASE-3-BOOTSTRAP-CLOSURE-20260714.md` |
-
-**Decision: Phase 3 bootstrap minimal VM candidate is CLOSED.**
-
-Not closed as product: Phase 1 language frontend, production GC/JIT, industrial full-language suite (TR-GAP / freeze deferred).
+| Track | Status |
+|-------|--------|
+| Phase 3 bootstrap (WP-00..19) | **CLOSED** |
+| Phase 1 frontend process (WP-20) | **COMPLETE** |
+| Phase 1 lexer (WP-21) | **COMPLETE** (`crates/script_lex`) |
+| Phase 1 parser/AST (WP-22) | **COMPLETE** bootstrap (`crates/script_parse`) |
+| Phase 1 semantic skeleton (WP-23) | **NEXT** |
+| SIR / lowering product path | Later WPs |
 
 ---
 
@@ -33,115 +28,68 @@ Not closed as product: Phase 1 language frontend, production GC/JIT, industrial 
 
 | Need | Source of truth |
 |------|-----------------|
-| What changed (history) | `PROGRESS.md` (append-only) |
-| Audit findings | `ISSUE.md` — **last entry with the same ISSUE-ID wins** |
-| Coding sequence | `docs/agent-plan/IMPLEMENTATION-CODING-PLAN.md` (Stage 0–14) |
-| WP identity / scope | `docs/agent-plan/WORK-PACKAGE-INDEX.md` |
-| Live implementation snapshot | **This file** |
-| Session handoff | `HANDOVER.md` (only when handing off) |
-| Bootstrap closure evidence | `agent/gate-records/PHASE-3-BOOTSTRAP-CLOSURE-20260714.md` |
-| Semantics | Frozen specs under `ARCHITECTURE/` / `docs/frozen-specs/` |
-
-Authority order (unchanged):
-
-```text
-Frozen Phase 1–3 specs
-  > PHASE-3-FREEZE
-  > Agent plan docs (docs/agent-plan/, PLAN/)
-  > AGENT.md
-  > PROGRESS.md / ISSUE.md
-  > this snapshot / HANDOVER / notes
-```
+| What changed | `PROGRESS.md` |
+| Audit findings | `ISSUE.md` (last-status-wins) |
+| WP index | `docs/agent-plan/WORK-PACKAGE-INDEX.md` |
+| Trace | `docs/agent-plan/TRACEABILITY-MATRIX.md` (incl. TR-P1-*) |
+| Live snapshot | **This file** |
+| Phase 3 closure | `agent/gate-records/PHASE-3-BOOTSTRAP-CLOSURE-20260714.md` |
+| Semantics | `ARCHITECTURE/` frozen specs |
 
 ---
 
-## 2. Coding stages (IMPLEMENTATION-CODING-PLAN)
+## 2. Coding stages
 
-| Stage | Title | Status |
-|-------|--------|--------|
-| 0–12 | Bootstrap through fast interpreter | **COMPLETE** |
-| 13 | Conformance and regression | **COMPLETE** (WP-18) |
-| 14 | Integration review | **COMPLETE** (WP-19) |
-
-**Coding plan §24 completion (Phase 3 bootstrap substrate): MET.**
+| Stage | Status |
+|-------|--------|
+| 0–14 Phase 3 bootstrap | **COMPLETE** |
+| 15+ Phase 1 language frontend | **IN_PROGRESS** (lexer done) |
 
 ---
 
-## 3. Work packages (WP-00–WP-19)
+## 3. Work packages
 
-| WP | Title | Status | Notes |
-|----|--------|--------|-------|
-| WP-00 .. WP-17 | Substrate packages | COMPLETE | Bootstrap / substrate goals |
-| WP-18 | Conformance test matrix | **COMPLETE** | `tests/MATRIX.md` + `vm_tests` |
-| WP-19 | Integration and regression gates | **COMPLETE** | G6 scan, IG suite, CI, gate records |
-
-All WP-00–WP-19 are **COMPLETE** for current Phase 3 bootstrap goals.  
-`PLAN/WORK-PACKAGE-INDEX.md` mirrored to match `docs/agent-plan/` (re-check fixed WP-18/19 drift).
-
----
-
-## 4. Effective open audit items
-
-No effective OPEN blockers (last-status-wins on `ISSUE.md`).
-
-| Status | Count |
-|--------|-------|
-| OPEN | 0 |
-| RESOLVED | 19 |
-| ACCEPTED | 2 (harness `mcps/`; dual region-stack bootstrap) |
+| WP | Status | Notes |
+|----|--------|-------|
+| WP-00..19 | COMPLETE | Phase 3 bootstrap |
+| WP-20 | **COMPLETE** | Phase 1 process + TRACE |
+| WP-21 | **COMPLETE** | `script_lex` — SPEC-P1-LANG §3–§6 lexical |
+| WP-22 | **COMPLETE** | `script_parse` — bootstrap AST + RD parser (fib-shaped) |
+| WP-23 | **NEXT** | Semantic binding skeleton |
 
 ---
 
-## 5. Implementation capability (honest)
+## 4. Phase 1 capability (honest)
 
-**In place (minimal VM candidate)**
+**In place**
 
-- Full Rust workspace; validators; runtime substrate; 47-helper dispatch  
-- Interpreter subset (nested call, mid-block resume, module init)  
-- WP-18 matrix TR-002..017; WP-19 TR-018 IG + G6 automation  
-- CI: check + test×2 + `scripts/integration/g6-scan.sh`  
+- `script_lex`: full Phase 1 lexical subset (18 tests)
+- `script_parse`: bootstrap AST + recursive descent (6 tests, fib-shaped module)
+  - let/const/def, if/elif/else, while, return, assign, calls, arith, lists
 
-**Scaffold / residual (accepted for bootstrap)**
+**Not yet**
 
-- `vm_cli` binary prints scaffold message only (crate present; product CLI deferred)  
-- Dual control vs unwind region stacks (ISSUE-20260706-010 ACCEPTED)  
-
-**Not in place**
-
-- Phase 1 source language product path (TR-GAP-001)  
-- Phase 2 SIR depth (TR-GAP-002)  
-- Production GC / JIT  
-- Full language product packaging  
+- Full grammar (match/record/enum/import/export/defer/…)
+- Semantic analysis (WP-23)
+- SIR materialization / lowering to RuntimePlan
+- End-to-end `source → run`
 
 ---
 
-## 6. Re-verification evidence (this session)
+## 5. Architecture books for next work (WP-23)
 
-```text
-cargo check --workspace   PASS  (RUSTFLAGS=-D warnings)
-cargo test --workspace    PASS  (~368 unit tests; vm_tests 88)
-g6-scan.ps1               PASS
-ISSUE last-status-wins    OPEN=0
-PLAN vs docs WP-18/19     synced COMPLETE
-TRACEABILITY core rows    COMPLETE (bootstrap Phase 3); GAP rows remain GAP
-```
+1. `SPEC-P1-LANG` binding/scope / declarations semantics
+2. `SPEC-P1-DESIGN` as needed
+3. Later: Phase 2 SIR docs when materializing IR
 
 ---
 
-## 7. Recommended next work
+## 6. Recommended next work
 
-1. **Do not reopen** WP-00..19 without documented reason.  
-2. Product/Phase 1 language work when prioritized (**new** WPs / TR-GAP rows).  
-3. Keep CI green; expand substrate only with new TRACEABILITY + matrix rows.  
+**WP-23**: name resolution / scope skeleton on AST (block scope, `let` introduces binding, assignment requires existing binding).
 
 ---
 
-## 8. Related doc sync policy
+## 7. Effective open audit items
 
-| File | Policy |
-|------|--------|
-| `PROGRESS.md` | Append only on real changes |
-| `ISSUE.md` | Append only findings / resolutions |
-| This file | Rewrite freely as snapshot |
-| `HANDOVER.md` | **Only at handoff** |
-| Frozen normative docs | Never edit for progress tracking |
+No OPEN blockers from Phase 3. Phase 1: none recorded yet.

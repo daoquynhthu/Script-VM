@@ -1672,3 +1672,66 @@ Summary:
   record PHASE-3-BOOTSTRAP-CLOSURE-20260714.md. Decision: Phase 3 bootstrap CLOSED.
 Next:
   New product WPs only (e.g. Phase 1 frontend); do not reopen WP-00..19 without reason.
+
+## 2026-07-16 11:41 · WP-20 process + WP-21 Phase 1 lexer (script_lex)
+
+Work Package: WP-20, WP-21
+Agent Mode: main-only
+Changed Files:
+  - crates/script_lex/** (new)
+  - Cargo.toml (workspace member)
+  - Cargo.lock
+  - docs/agent-plan/WORK-PACKAGE-INDEX.md
+  - docs/agent-plan/TRACEABILITY-MATRIX.md
+  - PLAN/WORK-PACKAGE-INDEX.md
+  - PLAN/TRACEABILITY-MATRIX.md
+  - docs/IMPLEMENTATION-STATUS.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-FREEZE
+  - SPEC-P1-LANG (sections 3-6 lexical)
+  - SPEC-P1-DESIGN
+  - TR-P1-000..TR-P1-003
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+Tests:
+  - cargo test -p script_lex PASS (18 tests)
+  - cargo test --workspace PASS
+Summary:
+  Opened Phase 1 frontend track: WP-20 process/TRACE complete; WP-21 implements
+  crates/script_lex lexer (indent stack, keywords, literals, strings, operators,
+  line continuation) per PHASE-1-LANGUAGE-SPEC. WP-21 COMPLETE.
+Next:
+  WP-22 parser and AST (minimal module toward fib).
+
+## 2026-07-16 11:42 · WP-22 Phase 1 parser/AST bootstrap (script_parse)
+
+Work Package: WP-22
+Agent Mode: main-only
+Changed Files:
+  - crates/script_parse/** (new)
+  - Cargo.toml
+  - Cargo.lock
+  - docs/agent-plan/WORK-PACKAGE-INDEX.md
+  - docs/agent-plan/TRACEABILITY-MATRIX.md
+  - PLAN/*
+  - docs/IMPLEMENTATION-STATUS.md
+  - PROGRESS.md
+Spec References:
+  - SPEC-P1-LANG (module/decl/stmt/expr bootstrap)
+  - TR-P1-004
+Gates:
+  - G0 PASS
+  - G1 PASS
+  - G4 PASS
+  - G5 PASS
+Tests:
+  - cargo test -p script_parse PASS (6 tests, fib shape)
+Summary:
+  Added recursive-descent parser and AST for bootstrap Phase 1 surface
+  (let/const/def/if/while/return/call/arith/list). WP-22 COMPLETE bootstrap.
+Next:
+  WP-23 semantic binding skeleton.

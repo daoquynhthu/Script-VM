@@ -155,6 +155,10 @@ WP-16 Cache compatibility checks
 WP-17 Fast interpreter core
 WP-18 Conformance test matrix
 WP-19 Integration and regression gates
+WP-20 Phase 1 language pipeline process and traceability
+WP-21 Phase 1 lexical analysis
+WP-22 Phase 1 parser and AST (bootstrap COMPLETE)
+WP-23 Phase 1 semantic binding skeleton (planned)
 ```
 
 ---
@@ -2294,3 +2298,159 @@ If these cannot run because the repository is not yet fully initialized, record 
 
 `ISSUE.md` must receive audit findings only if bootstrap checks fail.
 
+---
+
+## 26. Phase 1 Language Pipeline Work Packages
+
+After WP-00..WP-19 (Phase 3 bootstrap CLOSED), new packages implement the
+source to AST to SIR to RuntimePlan/EIR product path. Do not reopen WP-00..19
+without documented reason.
+
+`	ext
+WP-20 Phase 1 language pipeline process and traceability
+WP-21 Phase 1 lexical analysis (source text + tokens)
+WP-22 Phase 1 parser and AST (bootstrap COMPLETE)
+WP-23 Phase 1 semantic binding skeleton (planned)
+`
+
+### WP-20 · Phase 1 Language Pipeline Process
+
+`	ext
+WP-ID: WP-20
+Title: Phase 1 language pipeline process and traceability
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+Frozen Spec References:
+
+`	ext
+SPEC-P1-FREEZE
+SPEC-P1-LANG
+SPEC-P1-DESIGN
+TR-GAP-001
+`
+
+Outputs:
+
+`	ext
+WP-20..23 package rows
+TRACE rows TR-P1-000.. for language frontend
+coding stage 15+ notes in IMPLEMENTATION-STATUS
+`
+
+Non-Goals:
+
+`	ext
+no frozen-spec edits
+no Phase 3 reopen
+`
+
+Completion Criteria:
+
+`	ext
+Phase 1 frontend work packages and trace rows exist and cite SPEC-P1-*
+`
+
+### WP-21 · Phase 1 Lexical Analysis
+
+`	ext
+WP-ID: WP-21
+Title: Phase 1 lexical analysis (source text + tokens)
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+Frozen Spec References:
+
+`	ext
+SPEC-P1-FREEZE
+SPEC-P1-LANG (sections 3-6 lexical)
+`
+
+Outputs:
+
+`	ext
+crates/script_lex
+token model; INDENT/DEDENT/NEWLINE; keyword/ident/literal/operator lexing
+positive and negative lexer tests
+`
+
+Non-Goals:
+
+`	ext
+no parser/AST; no SIR lowering; no public bytecode
+`
+
+Dependencies:
+
+`	ext
+WP-20
+`
+
+Validation Gates:
+
+`	ext
+G0-G5, G7
+`
+
+Tests Required:
+
+`	ext
+UTF-8/comment/indent/keyword/integer/float/string/operators
+negative: tab indent, bad int, unclosed string, indent mismatch
+`
+
+Completion Criteria:
+
+`	ext
+lexer implements PHASE-1-LANGUAGE-SPEC lexical subset with tests
+`
+
+### WP-22 · Phase 1 Parser and AST (bootstrap)
+
+`	ext
+WP-ID: WP-22
+Title: Phase 1 parser and AST (bootstrap subset)
+Status: COMPLETE
+Owner: Main Agent
+Agent Mode: main-only
+`
+
+Frozen Spec References:
+
+`	ext
+SPEC-P1-FREEZE
+SPEC-P1-LANG (module/declarations/statements/expressions bootstrap)
+`
+
+Outputs:
+
+`	ext
+crates/script_parse
+AST nodes; recursive-descent parser
+minimal surface: let/const/def/if/while/return/assign/call/arith/list
+tests include fib-shaped module
+`
+
+Non-Goals:
+
+`	ext
+full grammar (match/record/enum/import/export/...)
+semantic analysis
+SIR lowering
+`
+
+Dependencies:
+
+`	ext
+WP-21
+`
+
+Completion Criteria:
+
+`	ext
+bootstrap subset parses fib-shaped scripts with tests
+`

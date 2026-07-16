@@ -582,3 +582,74 @@ Test Requirement:
 Status: COMPLETE (bootstrap Phase 3)
 ```
 
+---
+
+## 6. Phase 1 Language Frontend Trace Rows
+
+### TR-P1-000 · Phase 1 Freeze Boundary
+
+```text
+Trace ID: TR-P1-000
+Implementation Item: Preserve Phase 1 frozen language baseline
+Work Package: WP-20, WP-21
+Frozen Spec References:
+  - SPEC-P1-FREEZE
+  - SPEC-P1-LANG
+  - SPEC-P1-DESIGN
+Required Implementation Behavior:
+  Frontend implementation must not expand language features beyond freeze.
+Validation Gates:
+  - G0
+  - G1
+Test Requirement:
+  Planning review rejects feature expansion without amendment.
+Status: COMPLETE (WP-20 process)
+```
+
+### TR-P1-001 · Source Text Model
+
+```text
+Trace ID: TR-P1-001
+Implementation Item: UTF-8 source text, line terminators, comments, logical lines
+Work Package: WP-21
+Frozen Spec References:
+  - SPEC-P1-LANG §3
+Status: COMPLETE (bootstrap Phase 1 lexer)
+```
+
+### TR-P1-002 · Indentation and Blocks (Lexer)
+
+```text
+Trace ID: TR-P1-002
+Implementation Item: Indentation stack; INDENT/DEDENT/NEWLINE; spaces-only
+Work Package: WP-21
+Frozen Spec References:
+  - SPEC-P1-LANG §4
+Status: COMPLETE (bootstrap Phase 1 lexer)
+```
+
+### TR-P1-003 · Lexical Tokens and Literals
+
+```text
+Trace ID: TR-P1-003
+Implementation Item: Keywords, identifiers (NFC), numbers, strings, operators, delimiters
+Work Package: WP-21
+Frozen Spec References:
+  - SPEC-P1-LANG §5, §6.1–6.5
+Status: COMPLETE (bootstrap Phase 1 lexer)
+```
+
+### TR-GAP-001 update note
+
+TR-GAP-001 remains GAP for full language product surface; TR-P1-* rows track bootstrap frontend work that closes the gap incrementally.
+
+### TR-P1-004 · Parser and AST Bootstrap
+
+`	ext
+Trace ID: TR-P1-004
+Implementation Item: Recursive-descent parser + AST for minimal module surface
+Work Package: WP-22
+Frozen Spec References:
+  - SPEC-P1-LANG sections 7-9 (bootstrap subset)
+Status: COMPLETE (bootstrap Phase 1 parser)
+`
